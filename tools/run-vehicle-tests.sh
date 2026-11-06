@@ -8,7 +8,10 @@ cd "$(dirname "$0")/.."
 adb forward tcp:8088 tcp:8088 >/dev/null
 ( while :; do curl -s -m 2 -o /dev/null -X POST "$VC/browser/session?client=roadcraft-test"; sleep 1; done ) &
 HB=$!
-trap 'curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/controls?speed_kph=0"; curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/gear?gear=Park"; kill $HB' EXIT
+# 구간 알림 시험용: 반경(37.5000, 127.0000) 안팎을 4초 간격으로 오간다.
+( while :; do adb emu geo fix 127.0200 37.5200 >/dev/null 2>&1; sleep 4; adb emu geo fix 127.0000 37.5000 >/dev/null 2>&1; sleep 4; done ) &
+GEO=$!
+trap 'curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/controls?speed_kph=0"; curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/gear?gear=Park"; kill $HB $GEO' EXIT
 sleep 3
 curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/gear?gear=$GEAR"
 curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/controls?speed_kph=$SPEED"
