@@ -13,8 +13,12 @@ data class DriveState(
     /** 코스를 끝까지 달리고 멈췄을 때 그 코스. 요약 화면이 쓴다. */
     val finished: Course? = null,
     val course: Course? = null,
+    /** 주행 칸의 한 줄. 기능의 ShowLine 과 음성 문구 중 가장 최근 것이다. */
     val line: String = "",
     val spoken: String = "",
+    val sectionIndex: Int = 0,
+    /** 첫 위치가 오기 전에는 null 이다. */
+    val remainingMeters: Double? = null,
     val cabin: String = "",
     val position: GeoPoint? = null,
 )

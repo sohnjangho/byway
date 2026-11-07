@@ -75,7 +75,7 @@ internal class DriveScreen(
     }
 
     fun show(state: DriveState) {
-        val readout = readoutOf(course, sectionMeters, state.line)
+        val readout = readoutOf(sectionMeters, state.sectionIndex, state.remainingMeters)
         val current = course.sections[readout.sectionIndex]
         setBackgroundColor(colors.airColor(current.mood))
         where.text = "${course.name} · 구간 ${readout.sectionIndex + 1} / ${course.sections.size}"
@@ -83,7 +83,7 @@ internal class DriveScreen(
         section.setTextColor(colors.moodColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
-        spoken.text = state.spoken
+        spoken.text = state.line
         map.moveTo(state.position)
     }
 }

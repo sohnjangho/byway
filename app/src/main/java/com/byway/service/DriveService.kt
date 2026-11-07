@@ -88,7 +88,7 @@ class DriveService : Service() {
         host = DriveHost(CourseEngine(ability = route.ability), courseFeatures() + boardFeature + FinishRecorder(this)) { id, failure ->
             Log.e(TAG, "feature off: $id", failure)
         }
-        DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", cabin = "") }
+        DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", sectionIndex = 0, remainingMeters = null, cabin = "") }
         sendParked(DriveBoard.state.parked)
         dispatch(DriveEvent.CourseStarted(course))
     }
@@ -108,13 +108,16 @@ class DriveService : Service() {
             is DriveCommand.FollowRoute -> route.follow(command)
             is DriveCommand.Say -> {
                 if (MyDrives.voiceOn) voice.say(command.text)
-                DriveBoard.update { it.copy(spoken = command.text) }
+                DriveBoard.update { it.copy(line = command.text, spoken = command.text) }
             }
             is DriveCommand.SetCabin -> {
                 cabin.apply(command.scene)
                 DriveBoard.update { it.copy(cabin = describe(command.scene)) }
             }
             is DriveCommand.ShowLine -> DriveBoard.update { it.copy(line = command.text) }
+            is DriveCommand.ShowProgress -> DriveBoard.update {
+                it.copy(sectionIndex = command.sectionIndex, remainingMeters = command.remainingMeters)
+            }
             is DriveCommand.ShowPanel, is DriveCommand.Publish -> Log.w(TAG, "unhandled $command")
         }
     }

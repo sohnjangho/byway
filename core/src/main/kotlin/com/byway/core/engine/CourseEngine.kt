@@ -7,7 +7,7 @@ import com.byway.core.course.Stop
 import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveCommand.Publish
 import com.byway.core.drive.DriveCommand.Say
-import com.byway.core.drive.DriveCommand.ShowLine
+import com.byway.core.drive.DriveCommand.ShowProgress
 import com.byway.core.drive.DriveCommand.FollowRoute
 import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.DriveFeature
@@ -86,7 +86,7 @@ class CourseEngine(
                     add(route(remainingLeg()))
                     add(Say(Messages.NEXT_LEG))
                 }
-                add(progressLine())
+                add(report())
             }
         }
 
@@ -114,7 +114,7 @@ class CourseEngine(
                 }
                 add(route(remainingLeg()))
                 add(Say(Messages.REJOINED))
-                add(progressLine())
+                add(report())
             }
         }
 
@@ -140,7 +140,7 @@ class CourseEngine(
             return listOf(Say(Messages.FINISHED), Publish(DriveEvent.CourseFinished))
         }
 
-        private fun progressLine() = ShowLine(Messages.line(section.name, travelled.last() - travelled[progress]))
+        private fun report() = ShowProgress(course.sections.indexOf(section), travelled.last() - travelled[progress])
 
         private fun sectionAt(index: Int) = course.sections.first { index in it.startIndex..it.endIndex }
 

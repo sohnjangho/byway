@@ -47,6 +47,9 @@ sealed interface DriveCommand {
     data class Say(val text: String) : DriveCommand
     data class ShowLine(val text: String) : DriveCommand
 
+    /** 화면이 그릴 주행 진행값. 문구가 아니라 값으로 주어 문구를 고쳐도 화면이 깨지지 않는다. */
+    data class ShowProgress(val sectionIndex: Int, val remainingMeters: Double) : DriveCommand
+
     /** 차 안 상태를 바꾼다. 값이 null 인 항목은 건드리지 않는다. */
     data class SetCabin(val scene: CabinScene) : DriveCommand
 

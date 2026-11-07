@@ -8,6 +8,4 @@ internal object Messages {
     const val REJOINED = "코스로 돌아왔습니다."
     const val FINISHED = "코스를 끝까지 달렸습니다."
     const val REJOIN_POINT = "코스 복귀 지점"
-    fun line(sectionName: String, remainingMeters: Double) =
-        "$sectionName · 남은 거리 ${"%.1f".format(java.util.Locale.ROOT, remainingMeters / 1_000)}km"
 }

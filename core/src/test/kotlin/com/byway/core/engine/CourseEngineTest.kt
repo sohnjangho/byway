@@ -6,7 +6,7 @@ import com.byway.core.course.Stop
 import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveCommand.Publish
 import com.byway.core.drive.DriveCommand.Say
-import com.byway.core.drive.DriveCommand.ShowLine
+import com.byway.core.drive.DriveCommand.ShowProgress
 import com.byway.core.drive.DriveCommand.FollowRoute
 import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.RouteAbility
@@ -42,10 +42,16 @@ class CourseEngineTest {
     }
 
     @Test
-    fun drivingInsideALegOnlyUpdatesTheLine() {
-        val commands = started().at(10)
-        assertEquals(1, commands.size)
-        assertTrue((commands.single() as ShowLine).text.startsWith("첫 구간 · 남은 거리 8.0km"))
+    fun drivingInsideALegOnlyUpdatesTheProgress() {
+        val progress = started().at(10).single() as ShowProgress
+        assertEquals(0, progress.sectionIndex)
+        assertEquals(8_000.0, progress.remainingMeters, 50.0)
+    }
+
+    @Test
+    fun theProgressFollowsTheCourseIntoTheNextSection() {
+        val last = started().drive(1..55).filterIsInstance<ShowProgress>().last()
+        assertEquals(1, last.sectionIndex)
     }
 
     @Test
