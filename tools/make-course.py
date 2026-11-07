@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""코스 정의로 앱 코스 파일을 만든다. 사용: tools/make-course.py [코스 id ...] (없으면 전부)
+"""코스 정의로 앱 코스 파일을 만든다. 사용: tools/make-course.py [--keep-path] [코스 id ...] (없으면 전부)
 
 정의 파일은 tools/courses/<id>.json, 결과는 app/src/main/assets/courses/<id>.json 이다.
 좌표는 모두 [위도, 경도] 순서다. 구간은 경유지 사이마다 하나씩 둔다.
+--keep-path 는 경로를 다시 받지 않고 앱 파일에 지역과 고도만 더한다.
+충실도를 잰 코스(정의의 fidelity 가 있는 코스)는 측정값과 시험이 경로에 묶여 있어서 --keep-path 로만 고친다.
 """
 import json
 import math
@@ -12,11 +14,14 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-ROUTER = "https://router.project-osrm.org/route/v1/driving/{}?overview=full&geometries=geojson"
+ROUTER = "https://router.project-osrm.org/route/v1/driving/{}?overview=full&geometries=geojson&steps=true"
+ELEVATION = "https://api.open-meteo.com/v1/elevation?latitude={}&longitude={}"
+ELEVATION_POINTS = 60
 USER_AGENT = "byway-course-tool"
 REQUEST_GAP_SECONDS = 2
 ATTRIBUTION = "© OpenStreetMap contributors (ODbL)"
 MOODS = {"forest", "city", "river"}
+REGIONS = {"수도권", "강원", "충청", "경상", "전라", "남해안", "제주"}
 SPOT_KINDS = {"view", "food", "rest", "photo"}
 SPOTS_PER_COURSE = range(2, 5)
 SPOT_MAX_METERS = 500
@@ -90,11 +95,18 @@ def build_spots(definition, path):
     return spots
 
 
+def region_of(definition):
+    if definition["region"] not in REGIONS:
+        raise ValueError(f"모르는 지역: {definition['region']}")
+    return definition["region"]
+
+
 def build_course(definition, path):
     return {
         "schemaVersion": 2,
         "id": definition["id"],
         "name": definition["name"],
+        "region": region_of(definition),
         "attribution": ATTRIBUTION,
         "summary": definition["summary"],
         "toleranceMeters": definition["toleranceMeters"],
@@ -121,6 +133,11 @@ def resample(path, step):
     return points
 
 
+def even_points(path, count):
+    """코스를 따라 거리가 고른 count개 지점. 양 끝을 포함한다."""
+    return resample(path, length(path) / (count - 1))[:count - 1] + [path[-1]]
+
+
 def retrace(path):
     """같은 길을 코스 먼 번호에서 다시 지나는 비율(0~1)과 가장 긴 연속 길이(m)."""
     points = resample(path, RETRACE_STEP_METERS)
@@ -145,11 +162,47 @@ def retrace(path):
     return sum(flags) / len(flags), float(longest * RETRACE_STEP_METERS)
 
 
+def fetch_json(url):
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.load(response)
+
+
+def route_path(reply):
+    """경로 서버 응답을 좌표열로 바꾼다. 차가 달리지 못하는 뱃길이 끼면 받지 않는다."""
+    route = reply["routes"][0]
+    ferries = [step["name"] for leg in route["legs"] for step in leg["steps"] if step["mode"] == "ferry"]
+    if ferries:
+        raise ValueError(f"뱃길이 낀 경로: {ferries}")
+    return to_path(route["geometry"]["coordinates"])
+
+
 def fetch_route(waypoints):
     joined = ";".join(f"{lon},{lat}" for lat, lon in waypoints)
-    request = urllib.request.Request(ROUTER.format(joined), headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return to_path(json.load(response)["routes"][0]["geometry"]["coordinates"])
+    return route_path(fetch_json(ROUTER.format(joined)))
+
+
+def elevation_url(points):
+    return ELEVATION.format(",".join(f"{lat:.5f}" for lat, _ in points), ",".join(f"{lon:.5f}" for _, lon in points))
+
+
+def to_elevation(reply, count):
+    if len(reply["elevation"]) != count:
+        raise ValueError(f"고도 {count}개를 요청했는데 {len(reply['elevation'])}개가 왔습니다")
+    return [round(float(height), 1) for height in reply["elevation"]]
+
+
+def fetch_elevation(path):
+    points = even_points(path, ELEVATION_POINTS)
+    return to_elevation(fetch_json(elevation_url(points)), len(points))
+
+
+def with_region_and_elevation(course, region, elevation):
+    return {**course, "region": region, "elevation": elevation}
+
+
+def to_text(course):
+    return json.dumps(course, ensure_ascii=False, separators=(",", ":"))
 
 
 def report(course):
@@ -163,22 +216,33 @@ def report(course):
         print(f"  스팟 {spot['name']}({spot['kind']}): 번호 {spot['pathIndex']}, 코스에서 {off:.0f}m")
     ratio, longest = retrace(path)
     print(f"  되밟기: {ratio * 100:.1f}%, 최장 연속 {longest:.0f}m")
+    print(f"  지역: {course['region']}, 고도 {len(course['elevation'])}개, 최고 {max(course['elevation']):.0f}m")
 
 
-def make(course_id):
-    definition = json.loads((ROOT / "tools/courses" / f"{course_id}.json").read_text())
+def make(definition):
+    if definition.get("fidelity"):
+        raise ValueError(f"충실도를 잰 코스는 경로를 다시 받지 않습니다. --keep-path 를 쓰세요: {definition['id']}")
     course = build_course(definition, fetch_route(definition["waypoints"]))
-    text = json.dumps(course, ensure_ascii=False, separators=(",", ":"))
-    (ROOT / "app/src/main/assets/courses" / f"{course_id}.json").write_text(text)
-    report(course)
+    return {**course, "elevation": fetch_elevation(course["path"])}
+
+
+def keep_path(definition, file):
+    course = json.loads(file.read_text())
+    return with_region_and_elevation(course, region_of(definition), fetch_elevation(course["path"]))
 
 
 def main():
-    ids = sys.argv[1:] or sorted(p.stem for p in (ROOT / "tools/courses").glob("*.json"))
+    arguments = sys.argv[1:]
+    keep = "--keep-path" in arguments
+    ids = [a for a in arguments if a != "--keep-path"] or sorted(p.stem for p in (ROOT / "tools/courses").glob("*.json"))
     for number, course_id in enumerate(ids):
         if number:
             time.sleep(REQUEST_GAP_SECONDS)
-        make(course_id)
+        definition = json.loads((ROOT / "tools/courses" / f"{course_id}.json").read_text())
+        file = ROOT / "app/src/main/assets/courses" / f"{course_id}.json"
+        course = keep_path(definition, file) if keep else make(definition)
+        file.write_text(to_text(course))
+        report(course)
 
 
 if __name__ == "__main__":

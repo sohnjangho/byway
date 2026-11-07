@@ -1,6 +1,7 @@
 {
   "id": "baegun-lake",
   "name": "호수 잇는 길",
+  "region": "수도권",
   "summary": "하오고개를 넘어 백운호수를 지나고, 왕송호수까지 호숫가 두 곳을 잇는 짧은 길.",
   "toleranceMeters": 1200.0,
   "tags": {

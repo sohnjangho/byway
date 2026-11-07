@@ -1,6 +1,7 @@
 {
   "id": "gwanggyo-mountain",
   "name": "광교산 자락길",
+  "region": "수도권",
   "summary": "수지를 지나 광교 도심을 가로지르고, 광교저수지를 끼고 산자락까지 오르는 길.",
   "toleranceMeters": 2000.0,
   "tags": {
