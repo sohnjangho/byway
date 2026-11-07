@@ -82,7 +82,7 @@ private fun Context.heroText(kit: BrowseKit, course: Course, line: String): View
     if (kit.wide) {
         val title = row().apply {
             addView(name, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_4) })
-            addView(pickRow(course.tags))
+            addView(pickRow(course.tags, limit = 2))
         }
         addView(title)
     } else {

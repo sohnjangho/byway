@@ -24,3 +24,6 @@ Pleos Connect 앱 창 1700×1184 기준 시안이다. 야간 원본 8장과, 원
 - 지도 바탕과 코스 선 SVG는 `.map-canvas` 한 박스를 같이 쓴다. `.map`의 `aspect-ratio`는 `viewBox`와 같아야 한다.
 - `support.js`는 브라우저에서 `.dc.html`을 돌리는 렌더러다.
 - 코스 커버는 `images/covers`다. 앱의 `app/src/main/assets/covers`를 가리키는 링크라 복사본이 없다. `tools/make-covers.py`만 돌리면 앱과 시안이 함께 바뀐다.
+- 코스 설명 뒤의 흐린 배경은 `.soft`와 `.soft-img`로 쓴다. 이 위 글자는 `ink`만 쓴다. 파일은 `images/covers/<id>-soft.jpg`다.
+- 추천 표시는 `.picks`와 `.pick`이다. 값은 코스 파일의 `tags.seasons`, `tags.ages`, `tags.moods`다.
+- 코스 상세의 풍경 칸은 사진이 정해질 때까지 자리만 둔다.
