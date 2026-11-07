@@ -28,11 +28,7 @@
       <a href="Main.dc.html" class="btn-small t-small">← 뒤로</a>
       <a href="Me.dc.html" class="btn-small t-small">이 코스 저장</a>
     </div>
-    <div class="detail-photo">
-      <img src="{{ photo }}" alt="코스 풍경">
-      <p class="map-credit">{{ credit }}</p>
-    </div>
-    <div class="detail-info soft">
+    <div class="info-box soft">
       <img class="soft-img" src="{{ soft }}" alt="">
       <h1 class="t-title">{{ name }}</h1>
       <div class="picks">
@@ -57,9 +53,21 @@
             <path class="sec-river" d="M312.0 67.2 L318.6 67.2 L325.4 67.5 L332.2 57.1 L339.0 56.7 L345.8 55.9 L352.5 64.8 L359.3 61.7 L366.1 65.6 L372.9 61.4 L379.7 63.9 L386.4 67.3 L393.2 66.4 L400.0 66.7"/>
           </svg>
         </div>
+    <ol class="sec-list">
+      <sc-for list="{{ sections }}" as="s" hint-placeholder-count="3">
+        <li class="sec-row sec-{{ s.mood }}">
+          <i class="dot"></i>
+          <span class="sec-row-body t-small sec-row-name">{{ s.name }}</span>
+          <span class="sec-row-share t-small">{{ s.share }}</span>
+        </li>
+      </sc-for>
+    </ol>
     <a href="Drive.dc.html" class="btn-primary t-heading">내비에 코스 입히기</a>
   </div>
-  <div class="map">
+  <div class="swipe detail-swipe">
+    <div class="swipe-pages">
+      <div id="course-route" class="swipe-page">
+        <div class="map">
     <div class="{{ canvasClass }}">
       <sc-if value="{{ satellite }}" hint-placeholder-val="{{ true }}">
         <img class="map-img" src="images/sat_paldang_base-night.jpg" alt="팔당 노을 코스 위성 지도">
@@ -79,6 +87,15 @@
       <div class="seg-toggle">
         <button type="button" onClick="{{ pickSatellite }}" class="{{ satelliteClass }}">위성</button>
         <button type="button" onClick="{{ pickDrawing }}" class="{{ drawingClass }}">코스 그림</button>
+      </div>
+    </div>
+  </div>
+        <a href="#course-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
+      </div>
+      <div id="course-photo" class="swipe-page">
+        <img src="{{ photo }}" alt="코스 풍경">
+        <a href="#course-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
+        <p class="map-credit">{{ credit }}</p>
       </div>
     </div>
   </div>

@@ -33,7 +33,7 @@
         <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
           <button type="button" onClick="{{ row.pick }}" class="{{ row.cls }}">
             <span class="ranked-no t-heading num">{{ row.rank }}</span>
-            <img class="thumb" src="{{ row.picture }}" alt="">
+            <img class="thumb" src="{{ row.route }}" alt="">
             <span class="ranked-name"><span class="t-body bold">{{ row.name }}</span><span class="t-label ink-2">{{ row.note }}</span></span>
             <span class="t-heading num nowrap">{{ row.value }}</span>
           </button>
@@ -42,7 +42,23 @@
       <p class="t-label ink-2">추천 표시는 에움길이 고른 것입니다</p>
     </div>
     <div class="ranked-view">
-      <img class="ranked-photo" src="{{ view.picture }}" alt="">
+      <div class="swipe ranked-swipe">
+        <div class="swipe-pages">
+          <div id="view-route" class="swipe-page">
+            <img src="{{ view.route }}" alt="코스 경로">
+            <sc-if value="{{ view.photo }}" hint-placeholder-val="{{ true }}">
+              <a href="#view-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
+            </sc-if>
+          </div>
+          <sc-if value="{{ view.photo }}" hint-placeholder-val="{{ true }}">
+            <div id="view-photo" class="swipe-page">
+              <img src="{{ view.photo }}" alt="코스 풍경">
+              <a href="#view-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
+              <p class="map-credit">{{ view.credit }}</p>
+            </div>
+          </sc-if>
+        </div>
+      </div>
       <div class="ranked-info soft">
         <img class="soft-img" src="{{ view.soft }}" alt="">
         <h1 class="t-title">{{ view.name }}</h1>
@@ -59,7 +75,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
 const COVER = "coverDay";
-const picture = (c) => c.photo || c[COVER];
+const route = (c) => c[COVER];
 const KINDS = [
   { id: 'curves', label: '굽이', show: (c) => c.curves + '개' },
   { id: 'eum', label: '에움 배율', show: (c) => c.eum.toFixed(1) + '배' },
@@ -75,12 +91,12 @@ class Component extends DCLogic {
     return {
       tabs: KINDS.map((k) => ({ label: k.label, cls: k.id === kind.id ? 'tab t-small is-on' : 'tab t-small', pick: () => this.setState({ kind: k.id, chosen: null }) })),
       rows: sorted.map((c, i) => ({
-        rank: i + 1, name: c.name, picture: picture(c), value: kind.show(c),
+        rank: i + 1, name: c.name, route: route(c), value: kind.show(c),
         note: c.picks[0] + ' · ' + c.picks[1],
         cls: c.id === view.id ? 'ranked-row is-on' : 'ranked-row',
         pick: () => this.setState({ chosen: c.id }),
       })),
-      view: { name: view.name, picture: picture(view), soft: view.soft, summary: view.summary, tags: view.picks.map((text) => ({ text })) },
+      view: { name: view.name, route: route(view), photo: view.photo, credit: view.credit, soft: view.soft, summary: view.summary, tags: view.picks.map((text) => ({ text })) },
     };
   }
 }

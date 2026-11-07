@@ -5,8 +5,8 @@ Pleos Connect 앱 창 1700×1184 기준 시안이다. 야간 원본 8장과, 원
 | 파일 | 화면 |
 |---|---|
 | `index.html` | 모아 보기. 화면 탭, 야간·주간 전환, 전체 보기 |
-| `Main.dc.html` | 둘러보기. 왼쪽 메뉴, 큰 사진 타일, 코스 사진 격자 |
-| `Preview.dc.html` | 코스 상세. 왼쪽 풍경과 설명, 오른쪽 지도 |
+| `Main.dc.html` | 둘러보기. 왼쪽 메뉴, 대표 코스, 경로 카드 격자 |
+| `Preview.dc.html` | 코스 상세. 왼쪽 설명, 오른쪽 경로. 밀면 풍경 |
 | `Drive.dc.html` | 내비 옆 주행 칸 |
 | `DriveAuto.dc.html` | 구상 화면. 자율주행 연동 시 주행 칸 |
 | `Summary.dc.html` | 정차 요약 |
@@ -27,3 +27,4 @@ Pleos Connect 앱 창 1700×1184 기준 시안이다. 야간 원본 8장과, 원
 - 코스 커버는 `images/covers`다. 앱의 `app/src/main/assets/covers`를 가리키는 링크라 복사본이 없다. `tools/make-covers.py`만 돌리면 앱과 시안이 함께 바뀐다.
 - 코스 설명 뒤의 흐린 배경은 `.soft`와 `.soft-img`로 쓴다. 이 위 글자는 `ink`만 쓴다. 파일은 `images/covers/<id>-soft.jpg`다.
 - 추천 표시는 `.picks`와 `.pick`이다. 값은 코스 파일의 `tags.seasons`, `tags.ages`, `tags.moods`다.
+- 밀어서 넘기는 칸은 `.swipe`와 `.swipe-page`다. 첫 장은 경로, 다음 장은 풍경이다. 스크립트 없이 CSS 스크롤로 넘어간다.

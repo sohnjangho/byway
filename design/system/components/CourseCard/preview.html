@@ -3,16 +3,16 @@
 <style>
   body { margin: 0; display: grid; grid-template-columns: 1fr 1fr; }
   .stage { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-8); }
-  .cover-card { height: 440px; }
+  .course-card { width: 340px; }
 </style>
 <template id="sample">
-  <a class="cover-card">
+  <a class="course-card">
     <img src="{cover}" alt="">
-    <div class="photo-band">
-      <span class="t-heading">팔당 노을</span>
-      <div class="sec-bar"><i class="sec-forest" style="flex: 35"></i><i class="sec-city" style="flex: 43"></i><i class="sec-river" style="flex: 22"></i></div>
-      <span class="t-small num">50.3km</span>
-    </div>
+    <span class="info-box soft">
+      <img class="soft-img" src="/_blob/eade09a0431e36b70c8eb5fb6b88e95e" alt="">
+      <span class="t-body bold">팔당 노을</span>
+      <span class="t-label ink-2">가을에 추천</span>
+    </span>
   </a>
 </template>
 <section class="stage" data-theme="night"></section>

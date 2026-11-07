@@ -24,20 +24,37 @@
   </nav>
   <div class="browse">
     <div class="browse-top">
-      <a href="Preview.dc.html" class="tile-photo">
-        <img src="{{ hero.picture }}" alt="">
-        <div class="photo-band">
-          <span class="t-small">오늘 저녁 달리기 좋은 길</span>
-          <h1 class="t-title">{{ hero.name }}</h1>
-          <div class="picks">
-            <sc-for list="{{ hero.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
+      <div class="tile-route">
+        <div class="swipe">
+          <div class="swipe-pages">
+            <div id="hero-route" class="swipe-page">
+              <a href="Preview.dc.html"><img src="{{ hero.route }}" alt="코스 경로"></a>
+              <a href="#hero-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
+            </div>
+            <div id="hero-photo" class="swipe-page">
+              <a href="Preview.dc.html"><img src="{{ hero.photo }}" alt="코스 풍경"></a>
+              <a href="#hero-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
+            </div>
           </div>
         </div>
-      </a>
+        <a href="Preview.dc.html" class="info-box soft">
+          <img class="soft-img" src="{{ hero.soft }}" alt="">
+          <span class="t-small">오늘 저녁 달리기 좋은 길</span>
+          <h1 class="t-title">{{ hero.name }}</h1>
+          <span class="picks">
+            <sc-for list="{{ hero.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
+          </span>
+          <span class="t-small ink-2">{{ hero.summary }}</span>
+        </a>
+      </div>
       <sc-for list="{{ shelves }}" as="s" hint-placeholder-count="2">
-        <button type="button" onClick="{{ s.pick }}" class="tile-photo">
-          <img src="{{ s.picture }}" alt="">
-          <span class="photo-band"><span class="t-heading">{{ s.label }}</span><span class="t-small">코스 {{ s.count }}개</span></span>
+        <button type="button" onClick="{{ s.pick }}" class="course-card">
+          <img src="{{ s.route }}" alt="">
+          <span class="info-box soft">
+            <img class="soft-img" src="{{ s.soft }}" alt="">
+            <span class="t-heading">{{ s.label }}</span>
+            <span class="t-small ink-2">코스 {{ s.count }}개</span>
+          </span>
         </button>
       </sc-for>
     </div>
@@ -48,10 +65,13 @@
     </div>
     <div class="browse-grid">
       <sc-for list="{{ cards }}" as="c" hint-placeholder-count="10">
-        <a href="Preview.dc.html" class="photo-card">
-          <img src="{{ c.picture }}" alt="">
-          <span class="t-body bold">{{ c.name }}</span>
-          <span class="t-label ink-2">{{ c.note }}</span>
+        <a href="Preview.dc.html" class="course-card">
+          <img src="{{ c.route }}" alt="">
+          <span class="info-box soft">
+            <img class="soft-img" src="{{ c.soft }}" alt="">
+            <span class="t-body bold">{{ c.name }}</span>
+            <span class="t-label ink-2">{{ c.note }}</span>
+          </span>
         </a>
       </sc-for>
     </div>
@@ -61,7 +81,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
 const COVER = "coverNight";
-const picture = (c) => c.photo || c[COVER];
+const route = (c) => c[COVER];
 const byId = (id) => window.COURSES.find((c) => c.id === id);
 const REGIONS = ['수도권', '강원', '충청', '경상', '전라', '남해안', '제주'];
 const SHELVES = [
@@ -81,14 +101,14 @@ class Component extends DCLogic {
       pick: () => this.setState({ region: label, theme: null }),
     });
     return {
-      hero: { name: hero.name, picture: picture(hero), tags: hero.picks.map((text) => ({ text })) },
+      hero: { name: hero.name, route: route(hero), photo: hero.photo, soft: hero.soft, summary: hero.summary, tags: hero.picks.map((text) => ({ text })) },
       shelves: SHELVES.map((s) => ({
-        label: s.label, picture: picture(byId(s.cover)),
+        label: s.label, route: route(byId(s.cover)), soft: byId(s.cover).soft,
         count: all.filter((c) => c.themes.includes(s.theme)).length,
         pick: () => this.setState({ theme: s.theme }),
       })),
       regions: [chip('전체', all.length), ...REGIONS.map((r) => chip(r, all.filter((c) => c.region === r).length))],
-      cards: shown.map((c) => ({ name: c.name, picture: picture(c), note: c.picks[0] + ' · ' + c.picks[1] })),
+      cards: shown.map((c) => ({ name: c.name, route: route(c), soft: c.soft, note: c.picks[0] })),
     };
   }
 }
