@@ -1,6 +1,7 @@
 {
   "id": "gonjiam-forest",
   "name": "화담숲 가는 길",
+  "region": "수도권",
   "summary": "분당을 벗어나 쌍동고개를 넘고, 곤지암 산자락의 화담숲에서 끝나는 숲길.",
   "toleranceMeters": 1200.0,
   "tags": {

@@ -1,6 +1,7 @@
 {
   "id": "yangpyeong-river",
   "name": "남한강 물길",
+  "region": "수도권",
   "summary": "경안천 습지를 지나 염치고개를 넘고, 남한강 남쪽 강변을 따라 양평읍까지 가는 길.",
   "toleranceMeters": 2000.0,
   "tags": {

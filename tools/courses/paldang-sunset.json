@@ -1,6 +1,7 @@
 {
   "id": "paldang-sunset",
   "name": "팔당 노을",
+  "region": "수도권",
   "summary": "남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.",
   "toleranceMeters": 1200.0,
   "tags": {
