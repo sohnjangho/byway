@@ -41,6 +41,9 @@ dependencies {
     implementation("ai.pleos.playground:TextToSpeech:3.3.1")
     implementation("ai.pleos.playground:SpeechToText:3.3.1")
 
+    implementation(project(":core"))
+    rootProject.subprojects.filter { it.path.startsWith(":feature:") }.forEach { implementation(it) }
+
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

@@ -1,0 +1,2 @@
+# 부가 기능 레인들이 한 줄씩 동시에 추가하는 파일
+app/src/main/java/com/byway/FeatureRegistry.kt merge=union
