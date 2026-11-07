@@ -17,6 +17,7 @@ import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.DriveFeature
 import com.byway.core.drive.DriveHost
+import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.platform.PleosCabin
@@ -31,6 +32,9 @@ internal fun courseFeatures(): List<DriveFeature> =
 /** 코스 주행을 소유한다. 내비가 앞에 있어도 코스가 끊기지 않게 하는 곳이다. */
 class DriveService : Service() {
     private lateinit var navi: PleosNavi
+
+    /** 코스를 따라갈 쪽. 자율주행 구현이 생기면 여기서 고른다(제작가이드 14장). */
+    private val route: RouteFollower get() = navi
     private lateinit var voice: PleosVoice
     private lateinit var cabin: PleosCabin
     private lateinit var location: PleosLocation
@@ -81,7 +85,7 @@ class DriveService : Service() {
 
     private fun startCourse(courseId: String) {
         val course = CourseCatalog.find(this, courseId)
-        host = DriveHost(CourseEngine(), courseFeatures() + boardFeature + FinishRecorder(this)) { id, failure ->
+        host = DriveHost(CourseEngine(ability = route.ability), courseFeatures() + boardFeature + FinishRecorder(this)) { id, failure ->
             Log.e(TAG, "feature off: $id", failure)
         }
         DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", cabin = "") }
@@ -101,7 +105,7 @@ class DriveService : Service() {
 
     private fun execute(command: DriveCommand) {
         when (command) {
-            is DriveCommand.FollowRoute -> navi.show(command.leg)
+            is DriveCommand.FollowRoute -> route.follow(command)
             is DriveCommand.Say -> {
                 if (MyDrives.voiceOn) voice.say(command.text)
                 DriveBoard.update { it.copy(spoken = command.text) }

@@ -12,9 +12,13 @@ import android.content.Context
 import android.util.Log
 import com.byway.core.course.Leg
 import com.byway.core.course.Stop
+import com.byway.core.drive.DriveCommand
+import com.byway.core.drive.RouteAbility
+import com.byway.core.drive.RouteFollower
 
 /** 차의 내장 내비에 구간을 올린다. */
-class PleosNavi(context: Context) {
+class PleosNavi(context: Context) : RouteFollower {
+    override val ability = RouteAbility()
     private val navi = NaviHelper(context)
     private var connected = false
     private var waiting: Leg? = null
@@ -36,7 +40,9 @@ class PleosNavi(context: Context) {
         )
     }
 
-    fun show(leg: Leg) {
+    override fun follow(route: DriveCommand.FollowRoute) = show(route.leg)
+
+    private fun show(leg: Leg) {
         if (!connected) {
             waiting = leg
             return
