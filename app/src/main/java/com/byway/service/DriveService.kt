@@ -30,6 +30,9 @@ class DriveService : Service() {
     private lateinit var cabin: PleosCabin
     private lateinit var location: PleosLocation
     private var host: DriveHost? = null
+    private var parked = DriveBoard.state.parked
+
+    private val boardListener: (DriveState) -> Unit = { if (it.parked != parked) sendParked(it.parked) }
 
     private val boardFeature = object : DriveFeature {
         override val id = "board"
@@ -60,6 +63,7 @@ class DriveService : Service() {
         }
         navi.connect { Log.w(TAG, "navi connect failed", it) }
         location.start()
+        DriveBoard.listen(boardListener)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -76,7 +80,14 @@ class DriveService : Service() {
             Log.e(TAG, "feature off: $id", failure)
         }
         DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", cabin = "") }
+        sendParked(DriveBoard.state.parked)
         dispatch(DriveEvent.CourseStarted(course))
+    }
+
+    private fun sendParked(value: Boolean) {
+        parked = value
+        Log.i(TAG, "parked $value")
+        dispatch(DriveEvent.DrivingStateChanged(value))
     }
 
     private fun dispatch(event: DriveEvent) {
@@ -103,6 +114,7 @@ class DriveService : Service() {
         "창문 ${scene.windowPosition ?: "-"} · 풍량 ${scene.fanSpeed ?: "-"} · 조명 ${scene.ambientBrightness ?: "-"}"
 
     override fun onDestroy() {
+        DriveBoard.stopListening(boardListener)
         location.release()
         cabin.release()
         navi.release()
