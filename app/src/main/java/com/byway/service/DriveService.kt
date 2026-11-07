@@ -18,10 +18,15 @@ import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.DriveFeature
 import com.byway.core.drive.DriveHost
 import com.byway.core.engine.CourseEngine
+import com.byway.feature.ambience.AmbienceFeature
 import com.byway.platform.PleosCabin
 import com.byway.platform.PleosLocation
 import com.byway.platform.PleosNavi
 import com.byway.platform.PleosVoice
+
+/** 이번 코스에 넣을 부가 기능. 차 안 연출 설정은 코스 시작 때 읽는다. */
+internal fun courseFeatures(): List<DriveFeature> =
+    FeatureRegistry.create().filter { MyDrives.ambienceOn || it !is AmbienceFeature }
 
 /** 코스 주행을 소유한다. 내비가 앞에 있어도 코스가 끊기지 않게 하는 곳이다. */
 class DriveService : Service() {
@@ -76,7 +81,7 @@ class DriveService : Service() {
 
     private fun startCourse(courseId: String) {
         val course = CourseCatalog.find(this, courseId)
-        host = DriveHost(CourseEngine(), FeatureRegistry.create() + boardFeature) { id, failure ->
+        host = DriveHost(CourseEngine(), courseFeatures() + boardFeature + FinishRecorder(this)) { id, failure ->
             Log.e(TAG, "feature off: $id", failure)
         }
         DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", cabin = "") }
@@ -98,7 +103,7 @@ class DriveService : Service() {
         when (command) {
             is DriveCommand.ShowRoute -> navi.show(command.leg)
             is DriveCommand.Say -> {
-                voice.say(command.text)
+                if (MyDrives.voiceOn) voice.say(command.text)
                 DriveBoard.update { it.copy(spoken = command.text) }
             }
             is DriveCommand.SetCabin -> {
