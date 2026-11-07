@@ -9,6 +9,7 @@ class DriveApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        MyDrives.restore(this)
         gear = PleosGear(this) { parked -> DriveBoard.update { it.copy(parked = parked) } }
         gear.start()
     }
