@@ -126,8 +126,15 @@ class SoftTest(unittest.TestCase):
     def test_without_a_photo_it_blurs_the_satellite_ground(self):
         green = Image.new("RGB", (256, 256), (60, 110, 70))
         with mock.patch.object(mc, "tile", return_value=green):
-            image = mc.soft(self.course)
-        self.assertEqual(image.getpixel((10, 10)), (60, 110, 70))
+            red, grn, blue = mc.soft(self.course).getpixel((10, 10))
+        self.assertGreater(grn, red)
+        self.assertGreater(grn, blue)
+
+    def test_bright_and_dark_ends_are_held_so_text_stays_readable(self):
+        image = mc.soft(self.course, self.half_black())
+        values = [value for pixel in image.getdata() for value in pixel]
+        self.assertGreaterEqual(min(values), mc.SOFT_DARKEST)
+        self.assertLessEqual(max(values), mc.SOFT_BRIGHTEST)
 
 
 if __name__ == "__main__":

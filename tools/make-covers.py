@@ -28,6 +28,10 @@ NIGHT_CONTRAST = 1.12
 # 설명 뒤에 까는 흐린 배경. 실시간 블러 대신 작은 파일 하나를 앱과 시안이 같이 쓴다.
 SOFT_SIZE = (320, 200)
 SOFT_BLUR = 14
+SOFT_COLOUR = 1.6
+# 사진이 아주 밝거나 어두워도 흐린 배경 위 글자가 4.5:1 을 넘도록 밝기 범위를 묶는다.
+SOFT_DARKEST = 40
+SOFT_BRIGHTEST = 200
 SCENERY = ROOT / "app/src/main/assets/scenery"
 # 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 흰 지붕이나 옅은 모래, 콘크리트도 함께 덮인다.
 CLOUD_LEVEL = 150
@@ -117,7 +121,9 @@ def ground(path):
 def soft(course, photo=None):
     """풍경 사진이 있으면 그것을, 없으면 위성 사진을 흐리게 만든다."""
     base = photo or ground(course["path"])[0]
-    return ImageOps.fit(base, SOFT_SIZE, Image.LANCZOS).filter(ImageFilter.GaussianBlur(SOFT_BLUR))
+    blurred = ImageOps.fit(base, SOFT_SIZE, Image.LANCZOS).filter(ImageFilter.GaussianBlur(SOFT_BLUR))
+    vivid = ImageEnhance.Color(blurred).enhance(SOFT_COLOUR)
+    return vivid.point(lambda value: min(max(value, SOFT_DARKEST), SOFT_BRIGHTEST))
 
 
 def cover(course, night=False):

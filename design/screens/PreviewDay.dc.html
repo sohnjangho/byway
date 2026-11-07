@@ -16,8 +16,9 @@
 <div class="screen screen-row">
   <div class="detail-side">
     <a href="MainDay.dc.html" class="btn-small t-small">← 뒤로</a>
-    <div>
-      <h1 class="t-title">팔당 노을</h1>
+    <div class="card detail-intro soft">
+      <img class="soft-img" src="images/covers/paldang-sunset-soft.jpg" alt="">
+      <div class="title-row"><h1 class="t-title">팔당 노을</h1><div class="picks"><span class="pick t-label">가을에 추천</span><span class="pick t-label">20대 추천</span><span class="pick t-label">데이트</span></div></div>
       <p class="t-body ink-2">남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.</p>
     </div>
     <div class="stats stats-4">
@@ -68,6 +69,14 @@
       <sc-if value="{{ satellite }}" hint-placeholder-val="{{ true }}">
         <img class="map-img" src="images/sat_paldang_base.jpg" alt="팔당 노을 코스 위성 지도">
       </sc-if>
+      <sc-if value="{{ scenery }}" hint-placeholder-val="{{ false }}">
+        <div class="map-img scenery-slot soft">
+          <img class="soft-img" src="images/covers/paldang-sunset-soft.jpg" alt="">
+          <p class="t-heading">풍경 사진 자리</p>
+          <p class="t-small ink-2">이용 조건을 확인한 코스 사진이 이 칸에 들어갑니다</p>
+        </div>
+      </sc-if>
+      <sc-if value="{{ line }}" hint-placeholder-val="{{ true }}">
       <svg class="map-svg" viewBox="0 0 1100 1352" preserveAspectRatio="xMidYMid slice" role="img" aria-label="팔당 노을 코스 선">
         <sc-for list="{{ notes }}" as="n"><line class="map-leader" x1="{{ n.ax }}" y1="{{ n.ay }}" x2="{{ n.bx }}" y2="{{ n.by }}"/></sc-for>
         <sc-for list="{{ sections }}" as="s"><path class="route route-glow sec-{{ s.mood }}" d="{{ s.d }}"/></sc-for>
@@ -77,11 +86,13 @@
         <sc-for list="{{ spots }}" as="p"><circle class="route-spot" cx="{{ p.x }}" cy="{{ p.y }}" r="9"/></sc-for>
       </svg>
       <sc-for list="{{ notes }}" as="n"><span class="map-note t-label" style="left: {{ n.left }}%; top: {{ n.top }}%">{{ n.text }}</span></sc-for>
+      </sc-if>
       <sc-if value="{{ satellite }}" hint-placeholder-val="{{ true }}">
         <p class="map-credit">Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016) · 코스 선 © OpenStreetMap contributors</p>
       </sc-if>
       <div class="seg-toggle">
         <button type="button" onClick="{{ pickSatellite }}" class="{{ satelliteClass }}">위성</button>
+        <button type="button" onClick="{{ pickScenery }}" class="{{ sceneryClass }}">풍경</button>
         <button type="button" onClick="{{ pickDrawing }}" class="{{ drawingClass }}">코스 그림</button>
       </div>
     </div>
@@ -107,13 +118,17 @@ const NOTES = [
 class Component extends DCLogic {
   constructor(props) { super(props); this.state = { view: 'satellite' }; }
   renderVals() {
-    const sat = this.state.view === 'satellite';
+    const view = this.state.view;
+    const sat = view === 'satellite';
     const seg = (on) => (on ? 'seg-btn t-small is-on' : 'seg-btn t-small');
     return {
       satellite: sat,
-      canvasClass: sat ? 'map-canvas' : 'map-canvas is-drawing',
-      satelliteClass: seg(sat), drawingClass: seg(!sat),
+      scenery: view === 'scenery',
+      line: view !== 'scenery',
+      canvasClass: view === 'drawing' ? 'map-canvas is-drawing' : 'map-canvas',
+      satelliteClass: seg(sat), sceneryClass: seg(view === 'scenery'), drawingClass: seg(view === 'drawing'),
       pickSatellite: () => this.setState({ view: 'satellite' }),
+      pickScenery: () => this.setState({ view: 'scenery' }),
       pickDrawing: () => this.setState({ view: 'drawing' }),
       sections: OVERLAY.sections.map((s) => ({ ...s, share: MIX[s.mood] + '%', cabin: CABIN[s.mood] })),
       stops: OVERLAY.stops.map(([x, y]) => ({ x, y })),

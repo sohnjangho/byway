@@ -195,6 +195,26 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
   pointer-events: none;
 }
 
+/* 흐린 배경: 코스 풍경을 흐리게 깔고 테마 바닥색 막을 덮는다. 이 위 글자는 ink 만 쓴다 */
+.soft { position: relative; overflow: hidden; isolation: isolate; }
+.soft-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.soft .ink-2 { color: var(--ink); }
+.soft::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--soft-wash); pointer-events: none; }
+
+/* 추천 표시: 터치 대상이 아니라 코스를 고를 이유를 보여 주는 표시다 */
+.picks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.pick {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* 커버 카드 */
 .covers { display: grid; gap: var(--space-4); min-height: 0; }
 .covers-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -387,9 +407,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 
 /* 순위 표시 */
 .rank { flex: none; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: var(--bg-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
-.rank-track { height: 10px; overflow: hidden; border-radius: 5px; background: var(--bg-deep); }
-.rank-fill { height: 100%; border-radius: 5px; background: var(--ink-muted); }
-.rank-row.is-first .rank-fill { background: var(--ink); }
 .thumb { flex: none; object-fit: cover; border-radius: var(--radius-sm); }
 
 /* 홈 */
@@ -416,13 +433,15 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .ranking-tabs { flex: none; display: flex; align-items: center; gap: var(--space-3); }
 .ranking-note { margin-left: auto; text-align: right; color: var(--ink-secondary); }
 .ranking-rows { flex: 1 1 auto; min-height: 0; display: grid; grid-template-rows: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
-.rank-row { display: grid; grid-template-columns: 64px 176px minmax(0, 1fr) 260px; gap: var(--space-6); align-items: center; padding: var(--space-3) var(--space-8) var(--space-3) var(--space-4); }
+.rank-row { display: grid; grid-template-columns: 64px 176px minmax(0, 1fr) 140px; gap: var(--space-6); align-items: center; padding: var(--space-3) var(--space-8) var(--space-3) var(--space-4); }
 .rank-row.is-first { background: var(--bg-elevated); }
 .rank-row .rank { width: 64px; height: 64px; }
 .rank-row .thumb { width: 176px; height: 140px; }
-.rank-row-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.rank-row-value { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
-.rank-row-value .rank-track { width: 100%; }
+.rank-row-body { min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.rank-row-title { display: flex; align-items: center; gap: var(--space-4); }
+.rank-row-title > .t-heading { white-space: nowrap; }
+.rank-row-line { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank-row-value { display: flex; flex-direction: column; align-items: flex-end; }
 
 /* 코스 상세 */
 .detail-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); }
@@ -522,3 +541,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .wait-course { display: block; width: 300px; height: 280px; }
 .wait-course .route-line { stroke-width: var(--course-line-thumb); }
 .wait-course .route-glow { stroke-width: calc(var(--course-line-thumb) * 3); }
+
+/* 코스 제목 묶음과 풍경 칸 */
+.title-row { display: flex; align-items: center; gap: var(--space-4); }
+.detail-intro { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-6); }
+.scenery-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); text-align: center; }
