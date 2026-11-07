@@ -1,0 +1,108 @@
+{
+  "id": "gonjiam-forest",
+  "name": "화담숲 가는 길",
+  "summary": "분당을 벗어나 쌍동고개를 넘고, 곤지암 산자락의 화담숲에서 끝나는 숲길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "forest"
+    ],
+    "moods": [
+      "family",
+      "date"
+    ],
+    "times": [
+      "day"
+    ]
+  },
+  "waypoints": [
+    [
+      37.3947,
+      127.1112
+    ],
+    [
+      37.391232,
+      127.256173
+    ],
+    [
+      37.357905,
+      127.315906
+    ],
+    [
+      37.3365,
+      127.2985
+    ]
+  ],
+  "sections": [
+    {
+      "name": "분당 광주 국도",
+      "mood": "city"
+    },
+    {
+      "name": "쌍동고개",
+      "mood": "forest"
+    },
+    {
+      "name": "독고개 숲길",
+      "mood": "forest"
+    }
+  ],
+  "spots": [
+    {
+      "name": "중대물빛공원",
+      "kind": "view",
+      "lat": 37.40048,
+      "lon": 127.22053
+    },
+    {
+      "name": "대쌍령리 생태도시숲공원",
+      "kind": "rest",
+      "lat": 37.38338,
+      "lon": 127.28415
+    },
+    {
+      "name": "산이리 지석묘",
+      "kind": "photo",
+      "lat": 37.3644,
+      "lon": 127.31112
+    },
+    {
+      "name": "화담숲",
+      "kind": "view",
+      "lat": 37.33654,
+      "lon": 127.29849
+    }
+  ],
+  "fidelity": {
+    "measuredOn": "2026-11-07",
+    "rows": [
+      {
+        "toleranceMeters": 800.0,
+        "stops": 4,
+        "legEndIndex": 338,
+        "courseMeters": 22393,
+        "naviMeters": 24000,
+        "ratio": 1.072,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 1200.0,
+        "stops": 4,
+        "legEndIndex": 338,
+        "courseMeters": 22393,
+        "naviMeters": 24000,
+        "ratio": 1.072,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 2000.0,
+        "stops": 3,
+        "legEndIndex": 434,
+        "courseMeters": 25923,
+        "naviMeters": 28000,
+        "ratio": 1.08,
+        "firstStopTollFare": 0
+      }
+    ]
+  }
+}
