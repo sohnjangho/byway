@@ -6,30 +6,31 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.byway.core.course.Course
 
-/** 코스 데이터 출처와 앱 버전. */
-fun aboutScreen(context: Context, courses: List<Course>, onBack: () -> Unit): View =
+/** 코스·지도·위성·고도 자료 출처와 앱 버전. */
+internal fun aboutScreen(context: Context, kit: BrowseKit, onBack: () -> Unit): View =
     with(context) {
-        val edge = dp(Look.EDGE)
+        val edge = dp(kit.edge)
         val version = packageManager.getPackageInfo(packageName, 0).versionName
         val details = column().apply {
-            addView(label("앱 정보", Look.TITLE, bold = true))
-            addSpaced(label("코스 출처", Look.SMALL, Look.MUTED), 40)
-            courses.forEach { course ->
-                addSpaced(label(course.name, Look.BODY), 16)
-                addSpaced(label(course.attribution, Look.SMALL, Look.MUTED), 4)
-            }
-            addSpaced(label("지도 데이터", Look.SMALL, Look.MUTED), 40)
-            addSpaced(label("© OpenStreetMap contributors (ODbL)", Look.BODY), 16)
-            addSpaced(label("앱 버전", Look.SMALL, Look.MUTED), 40)
-            addSpaced(label(version.orEmpty(), Look.BODY), 16)
+            addView(label("앱 정보", Dimens.TITLE, bold = true))
+            addSpaced(label("출처", Dimens.SMALL, palette.inkMuted), Dimens.SPACE_8)
+            credits(kit.book.courses).forEach { addSpaced(label(it, Dimens.BODY), Dimens.SPACE_2) }
+            addSpaced(label("앱 버전", Dimens.SMALL, palette.inkMuted), Dimens.SPACE_8)
+            addSpaced(label(version.orEmpty(), Dimens.BODY), Dimens.SPACE_2)
         }
         column().apply {
-            setBackgroundColor(Look.BACKGROUND)
-            setPadding(edge, edge, edge, edge)
-            addView(
-                quietButton("뒤로", onBack),
-                LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
-            )
-            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(32) })
+            setBackgroundColor(palette.bg)
+            setPadding(edge, dp(Dimens.SPACE_6), edge, dp(Dimens.SPACE_6))
+            addView(smallButton("← 뒤로", onBack), LinearLayout.LayoutParams(WRAP, WRAP))
+            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(Dimens.SPACE_4) })
         }
     }
+
+private fun credits(courses: List<Course>): List<String> =
+    (courses.map { it.attribution } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
+
+private val FIXED_CREDITS = listOf(
+    "© OpenStreetMap contributors (ODbL)",
+    "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)",
+    "고도: Open-Meteo, Copernicus DEM",
+)
