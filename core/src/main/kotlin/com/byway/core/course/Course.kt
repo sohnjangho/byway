@@ -31,6 +31,10 @@ data class Course(
     val attribution: String = "",
     /** 코스별 경유지 허용 오차. 없으면 기본값을 쓴다. */
     val toleranceMeters: Double? = null,
+    /** 지역 묶음 이름. 없으면 지역 목록에서 빠진다. */
+    val region: String = "",
+    /** 코스를 따라 고르게 뽑은 고도(m). */
+    val elevation: List<Double> = emptyList(),
 )
 
 /** 내비에 올리는 코스 위의 한 지점. */

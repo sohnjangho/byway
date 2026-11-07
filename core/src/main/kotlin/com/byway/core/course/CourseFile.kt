@@ -18,6 +18,8 @@ private data class CourseFile(
     val toleranceMeters: Double? = null,
     val tags: TagsFile = TagsFile(),
     val spots: List<SpotFile> = emptyList(),
+    val region: String = "",
+    val elevation: List<Double> = emptyList(),
 )
 
 @Serializable
@@ -63,6 +65,8 @@ fun parseCourse(text: String): Course {
         summary = file.summary,
         attribution = file.attribution,
         toleranceMeters = file.toleranceMeters,
+        region = file.region,
+        elevation = file.elevation,
     )
 }
 

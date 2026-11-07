@@ -67,6 +67,14 @@ class CourseFileTest {
     }
 
     @Test
+    fun readsRegionAndElevationWhenPresent() {
+        val text = v2().replace("\"spots\":", "\"region\":\"강원\",\"elevation\":[10.0,20.5],\"spots\":")
+        val course = parseCourse(text)
+        assertEquals("강원", course.region)
+        assertEquals(listOf(10.0, 20.5), course.elevation)
+    }
+
+    @Test
     fun v1FilesStillReadWithoutSpots() {
         assertEquals(emptyList<Spot>(), parseCourse(json()).spots)
     }
