@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 랭킹</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day">
+<div class="screen">
+  <nav class="gnb">
+    <a href="MainDay.dc.html" class="brand t-brand">에움길</a>
+    <div class="gnb-tabs">
+      <a href="MainDay.dc.html" class="gnb-tab t-body">홈</a>
+      <a href="MainDay.dc.html" class="gnb-tab t-body">테마</a>
+      <a href="RankingDay.dc.html" class="gnb-tab t-body is-on">랭킹</a>
+      <a href="MainDay.dc.html" class="gnb-tab t-body">지역</a>
+      <a href="MeDay.dc.html" class="gnb-tab t-body">내 코스</a>
+    </div>
+    <a href="MeDay.dc.html" class="gnb-me t-small"><span class="avatar">나</span>내 정보</a>
+  </nav>
+  <div class="ranking">
+    <div class="ranking-tabs">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+        <button type="button" onClick="{{ tab.pick }}" class="{{ tab.cls }}">{{ tab.label }}</button>
+      </sc-for>
+      <p class="ranking-note t-label">코스 15개 중 위 5개 · {{ note }}</p>
+    </div>
+    <div class="ranking-rows">
+      <sc-for list="{{ rows }}" as="row" hint-placeholder-count="5">
+        <a href="PreviewDay.dc.html" class="{{ row.cls }}">
+          <span class="rank t-heading">{{ row.rank }}</span>
+          <img class="thumb" src="{{ row.cover }}" alt="">
+          <div class="rank-row-body">
+            <span class="t-heading">{{ row.name }}</span>
+            <span class="t-label ink-2">{{ row.line }}</span>
+            <span class="t-label ink-3 num">{{ row.meta }}</span>
+          </div>
+          <div class="rank-row-value">
+            <span class="t-title num">{{ row.value }}</span>
+            <div class="rank-track"><div class="rank-fill" style="width: {{ row.pct }}%"></div></div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
+const COURSES = [
+  { name: '애월 노을', cover: 'images/covers/aewol-sunset.jpg', km: 28.0, eum: 1.3, curves: 26, gain: 135, line: '이호테우에서 하귀를 지나 애월해안로로 바다를 끼고 달리고, 한림해안로를 거쳐 협재까지 가는 길.' },
+  { name: '호수 잇는 길', cover: 'images/covers/baegun-lake.jpg', km: 25.3, eum: 1.5, curves: 17, gain: 459, line: '하오고개를 넘어 백운호수를 지나고, 왕송호수까지 호숫가 두 곳을 잇는 짧은 길.' },
+  { name: '변산 노을', cover: 'images/covers/byeonsan-sunset.jpg', km: 32.6, eum: 2.6, curves: 28, gain: 346, line: '변산해수욕장을 떠나 적벽강과 채석강을 지나고, 서해를 곁에 두고 모항을 돌아 곰소항까지 가는 해안길.' },
+  { name: '청풍호반 길', cover: 'images/covers/cheongpung-lake.jpg', km: 47.9, eum: 3.1, curves: 53, gain: 774, line: '청풍문화재단지를 나서 호숫가를 따라 옥순대교를 건너고, 계란재를 넘어 단양 도담삼봉까지 가는 길.' },
+  { name: '달맞이 바닷길', cover: 'images/covers/dalmaji-coast.jpg', km: 26.5, eum: 1.3, curves: 20, gain: 438, line: '해운대에서 달맞이길을 넘어 송정으로 내려오고, 기장 바다를 따라 대변과 일광을 지나 임랑까지 가는 길.' },
+  { name: '감포 가는 길', cover: 'images/covers/gampo-coast.jpg', km: 41.1, eum: 2.0, curves: 42, gain: 489, line: '보문호에서 덕동호를 끼고 추령을 넘어, 감은사지와 이견대를 지나 동해를 따라 감포까지 가는 길.' },
+  { name: '화담숲 가는 길', cover: 'images/covers/gonjiam-forest.jpg', km: 25.9, eum: 1.5, curves: 11, gain: 721, line: '분당을 벗어나 쌍동고개를 넘고, 곤지암 산자락의 화담숲에서 끝나는 숲길.' },
+  { name: '광교산 자락길', cover: 'images/covers/gwanggyo-mountain.jpg', km: 24.0, eum: 2.3, curves: 14, gain: 300, line: '수지를 지나 광교 도심을 가로지르고, 광교저수지를 끼고 산자락까지 오르는 길.' },
+  { name: '1100도로 숲길', cover: 'images/covers/halla-forest.jpg', km: 36.5, eum: 1.4, curves: 32, gain: 1063, line: '제주시에서 1100도로로 어리목을 지나 1100고지를 넘고, 거린사슴을 거쳐 중문까지 내려가는 한라산 횡단길.' },
+  { name: '헌화로 바닷길', cover: 'images/covers/heonhwa-coast.jpg', km: 35.0, eum: 1.5, curves: 31, gain: 355, line: '강릉 안목을 떠나 안인을 돌아 정동진에 닿고, 벼랑과 바다 사이로 난 헌화로를 달려 망상까지 내려가는 길.' },
+  { name: '만항재 고갯길', cover: 'images/covers/manhang-mountain.jpg', km: 31.3, eum: 2.5, curves: 35, gain: 760, line: '고한에서 함백산로를 타고 만항재를 넘은 뒤, 화방재를 지나 태백 황지연못까지 내려가는 고갯길.' },
+  { name: '물미 해안길', cover: 'images/covers/mulmi-coast.jpg', km: 52.9, eum: 3.5, curves: 54, gain: 830, line: '창선교에서 물건을 지나 물미해안도로로 미조까지 돌고, 상주와 앵강만을 거쳐 가천 다랑이논까지 가는 길.' },
+  { name: '팔당 노을', cover: 'images/covers/paldang-sunset.jpg', km: 50.3, eum: 2.1, curves: 48, gain: 732, line: '남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.' },
+  { name: '섬진강 물길', cover: 'images/covers/seomjin-river.jpg', km: 42.7, eum: 1.4, curves: 22, gain: 230, line: '곡성 기차마을에서 섬진강을 따라 압록을 지나고, 구례의 남쪽 강변을 달려 화개장터까지 가는 길.' },
+  { name: '남한강 물길', cover: 'images/covers/yangpyeong-river.jpg', km: 50.9, eum: 1.4, curves: 26, gain: 553, line: '경안천 습지를 지나 염치고개를 넘고, 남한강 남쪽 강변을 따라 양평읍까지 가는 길.' },
+];
+const KINDS = [
+  { id: 'curves', label: '굽이', note: '코스 선의 꺾임에서 센 굽이 수입니다', show: (c) => c.curves + '개' },
+  { id: 'eum', label: '에움 배율', note: '출발과 도착의 직선거리에 견준 코스 길이입니다', show: (c) => c.eum.toFixed(1) + '배' },
+  { id: 'gain', label: '오르막', note: '코스 전 구간의 오르막을 더한 값입니다', show: (c) => '+' + c.gain + 'm' },
+  { id: 'km', label: '거리', note: '코스 전체 길이입니다', show: (c) => c.km.toFixed(1) + 'km' },
+];
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { kind: 'curves' }; }
+  renderVals() {
+    const kind = KINDS.find((k) => k.id === this.state.kind);
+    const sorted = [...COURSES].sort((a, b) => b[kind.id] - a[kind.id]);
+    const max = sorted[0][kind.id];
+    return {
+      note: kind.note,
+      tabs: KINDS.map((k) => ({ label: k.label, cls: k.id === kind.id ? 'tab t-small is-on' : 'tab t-small', pick: () => this.setState({ kind: k.id }) })),
+      rows: sorted.slice(0, 5).map((c, i) => ({
+        ...c,
+        rank: i + 1,
+        value: kind.show(c),
+        meta: '거리 ' + c.km.toFixed(1) + 'km · 굽이 ' + c.curves + '개 · 에움 배율 ' + c.eum.toFixed(1) + '배 · 오르막 +' + c.gain + 'm',
+        cls: i === 0 ? 'card rank-row is-first' : 'card rank-row',
+        pct: Math.round((c[kind.id] / max) * 100),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

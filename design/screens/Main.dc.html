@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 홈</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+</helmet>
+<div class="stage" data-theme="night">
+<div class="screen">
+  <nav class="gnb">
+    <a href="Main.dc.html" class="brand t-brand">에움길</a>
+    <div class="gnb-tabs">
+      <a href="Main.dc.html" class="gnb-tab t-body is-on">홈</a>
+      <a href="Main.dc.html" class="gnb-tab t-body">테마</a>
+      <a href="Ranking.dc.html" class="gnb-tab t-body">랭킹</a>
+      <a href="Main.dc.html" class="gnb-tab t-body">지역</a>
+      <a href="Me.dc.html" class="gnb-tab t-body">내 코스</a>
+    </div>
+    <a href="Me.dc.html" class="gnb-me t-small"><span class="avatar">나</span>내 정보</a>
+  </nav>
+  <div class="home">
+    <div class="home-top">
+      <a href="Preview.dc.html" class="card hero">
+        <div class="hero-cover"><img src="images/covers/paldang-sunset-night.jpg" alt="팔당 노을 코스 위성 커버"></div>
+        <div class="hero-body">
+          <div>
+            <p class="t-small ink-2">남한산성 → 팔당대교 → 두물머리</p>
+            <h1 class="t-title">팔당 노을</h1>
+          </div>
+          <div class="stats stats-4">
+            <div class="stat"><span class="t-label stat-label">거리</span><span class="stat-value"><span class="t-value">50.3</span><span class="t-label stat-unit">km</span></span></div>
+            <div class="stat"><span class="t-label stat-label">굽이</span><span class="stat-value"><span class="t-value">48</span><span class="t-label stat-unit">개</span></span></div>
+            <div class="stat"><span class="t-label stat-label">에움 배율</span><span class="stat-value"><span class="t-value">2.1</span><span class="t-label stat-unit">배</span></span></div>
+            <div class="stat"><span class="t-label stat-label">오르막</span><span class="stat-value"><span class="t-value">+732</span><span class="t-label stat-unit">m</span></span></div>
+          </div>
+          <div class="elev-box">
+            <div class="head-row"><span class="t-label ink-2">구간별 고도</span><span class="legend"><span class="t-label"><i class="dot sec-forest"></i>숲길 35%</span> <span class="t-label"><i class="dot sec-city"></i>도심 43%</span> <span class="t-label"><i class="dot sec-river"></i>강변 22%</span></span></div>
+            <div class="elev">
+          <svg class="elev-area" viewBox="0 0 400 72" preserveAspectRatio="none" aria-hidden="true">
+            <path class="sec-forest" d="M0.0 72 L0.0 64.7 L6.8 64.8 L13.6 65.6 L20.3 65.6 L27.1 64.1 L33.9 66.3 L40.7 66.7 L47.5 66.9 L54.2 64.7 L61.0 64.2 L67.8 63.0 L74.6 57.1 L81.4 50.6 L88.1 47.9 L94.9 36.9 L101.7 27.7 L108.5 22.1 L115.3 14.1 L122.0 18.4 L128.8 4.7 L135.6 6.5 L140.0 9.3 L140.0 72 Z"/>
+            <path class="sec-city" d="M140.0 72 L140.0 9.3 L142.4 10.8 L149.2 4.0 L155.9 13.0 L162.7 22.7 L169.5 26.7 L176.3 36.0 L183.1 39.3 L189.8 41.5 L196.6 45.8 L203.4 49.5 L210.2 51.8 L216.9 49.1 L223.7 56.2 L230.5 53.7 L237.3 47.8 L244.1 53.1 L250.8 56.7 L257.6 59.3 L264.4 59.8 L271.2 62.9 L278.0 64.2 L284.7 64.1 L291.5 66.9 L298.3 67.9 L305.1 70.0 L311.9 67.2 L312.0 67.2 L312.0 72 Z"/>
+            <path class="sec-river" d="M312.0 72 L312.0 67.2 L318.6 67.2 L325.4 67.5 L332.2 57.1 L339.0 56.7 L345.8 55.9 L352.5 64.8 L359.3 61.7 L366.1 65.6 L372.9 61.4 L379.7 63.9 L386.4 67.3 L393.2 66.4 L400.0 66.7 L400.0 72 Z"/>
+          </svg>
+          <svg class="elev-line" viewBox="0 0 400 72" preserveAspectRatio="none" role="img" aria-label="코스 고도 모양">
+            <path class="sec-forest" d="M0.0 64.7 L6.8 64.8 L13.6 65.6 L20.3 65.6 L27.1 64.1 L33.9 66.3 L40.7 66.7 L47.5 66.9 L54.2 64.7 L61.0 64.2 L67.8 63.0 L74.6 57.1 L81.4 50.6 L88.1 47.9 L94.9 36.9 L101.7 27.7 L108.5 22.1 L115.3 14.1 L122.0 18.4 L128.8 4.7 L135.6 6.5 L140.0 9.3"/>
+            <path class="sec-city" d="M140.0 9.3 L142.4 10.8 L149.2 4.0 L155.9 13.0 L162.7 22.7 L169.5 26.7 L176.3 36.0 L183.1 39.3 L189.8 41.5 L196.6 45.8 L203.4 49.5 L210.2 51.8 L216.9 49.1 L223.7 56.2 L230.5 53.7 L237.3 47.8 L244.1 53.1 L250.8 56.7 L257.6 59.3 L264.4 59.8 L271.2 62.9 L278.0 64.2 L284.7 64.1 L291.5 66.9 L298.3 67.9 L305.1 70.0 L311.9 67.2 L312.0 67.2"/>
+            <path class="sec-river" d="M312.0 67.2 L318.6 67.2 L325.4 67.5 L332.2 57.1 L339.0 56.7 L345.8 55.9 L352.5 64.8 L359.3 61.7 L366.1 65.6 L372.9 61.4 L379.7 63.9 L386.4 67.3 L393.2 66.4 L400.0 66.7"/>
+          </svg>
+        </div>
+          </div>
+        </div>
+      </a>
+      <div class="card top3">
+        <div class="head-row"><h2 class="t-heading">굽이 많은 코스</h2><a href="Ranking.dc.html" class="more-link t-label">랭킹 전체</a></div>
+        <a href="Preview.dc.html" class="top3-row">
+          <span class="rank t-small">1</span>
+          <img class="thumb" src="images/covers/mulmi-coast-night.jpg" alt="">
+          <span class="top3-name"><span class="t-body bold">물미 해안길</span><span class="t-label ink-2 num">52.9km</span></span>
+          <span class="top3-value"><span class="t-value num">54</span><span class="t-label ink-2">개</span></span>
+        </a>
+        <a href="Preview.dc.html" class="top3-row">
+          <span class="rank t-small">2</span>
+          <img class="thumb" src="images/covers/cheongpung-lake-night.jpg" alt="">
+          <span class="top3-name"><span class="t-body bold">청풍호반 길</span><span class="t-label ink-2 num">47.9km</span></span>
+          <span class="top3-value"><span class="t-value num">53</span><span class="t-label ink-2">개</span></span>
+        </a>
+        <a href="Preview.dc.html" class="top3-row">
+          <span class="rank t-small">3</span>
+          <img class="thumb" src="images/covers/paldang-sunset-night.jpg" alt="">
+          <span class="top3-name"><span class="t-body bold">팔당 노을</span><span class="t-label ink-2 num">50.3km</span></span>
+          <span class="top3-value"><span class="t-value num">48</span><span class="t-label ink-2">개</span></span>
+        </a>
+      </div>
+    </div>
+    <section class="home-section">
+      <h2 class="t-heading">테마로 고르기</h2>
+      <div class="tiles">
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot sec-river"></i>강변<span class="tile-count t-small">3</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot sec-river"></i>해안<span class="tile-count t-small">6</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot sec-forest"></i>숲길<span class="tile-count t-small">5</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot sec-river"></i>호수<span class="tile-count t-small">4</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot sec-forest"></i>산길<span class="tile-count t-small">5</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot ink-3"></i>노을<span class="tile-count t-small">5</span></a>
+        <a href="Main.dc.html" class="card tile t-body"><i class="dot ink-3"></i>일출<span class="tile-count t-small">5</span></a>
+      </div>
+    </section>
+    <section class="home-section is-fill">
+      <div class="chips">
+        <h2 class="t-heading">지역별 추천</h2>
+          <span class="chip t-small is-on">수도권 <span class="chip-count">5</span></span>
+          <span class="chip t-small">강원 <span class="chip-count">2</span></span>
+          <span class="chip t-small">충청 <span class="chip-count">1</span></span>
+          <span class="chip t-small">경상 <span class="chip-count">1</span></span>
+          <span class="chip t-small">전라 <span class="chip-count">2</span></span>
+          <span class="chip t-small">남해안 <span class="chip-count">2</span></span>
+          <span class="chip t-small">제주 <span class="chip-count">2</span></span>
+      </div>
+      <div class="covers covers-5">
+        <a href="Preview.dc.html" class="cover-card">
+          <img src="images/covers/paldang-sunset-night.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">팔당 노을</span>
+            <div class="sec-bar"><i class="sec-forest" style="flex: 35"></i><i class="sec-city" style="flex: 43"></i><i class="sec-river" style="flex: 22"></i></div>
+            <span class="t-small num">50.3km</span>
+          </div>
+        </a>
+        <a href="Preview.dc.html" class="cover-card">
+          <img src="images/covers/gwanggyo-mountain-night.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">광교산 자락길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 60"></i><i class="sec-river" style="flex: 25"></i><i class="sec-forest" style="flex: 15"></i></div>
+            <span class="t-small num">24.0km</span>
+          </div>
+        </a>
+        <a href="Preview.dc.html" class="cover-card">
+          <img src="images/covers/gonjiam-forest-night.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">화담숲 가는 길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 61"></i><i class="sec-forest" style="flex: 39"></i></div>
+            <span class="t-small num">25.9km</span>
+          </div>
+        </a>
+        <a href="Preview.dc.html" class="cover-card">
+          <img src="images/covers/baegun-lake-night.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">호수 잇는 길</span>
+            <div class="sec-bar"><i class="sec-forest" style="flex: 30"></i><i class="sec-river" style="flex: 21"></i><i class="sec-city" style="flex: 49"></i></div>
+            <span class="t-small num">25.3km</span>
+          </div>
+        </a>
+        <a href="Preview.dc.html" class="cover-card">
+          <img src="images/covers/yangpyeong-river-night.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">남한강 물길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 56"></i><i class="sec-forest" style="flex: 28"></i><i class="sec-river" style="flex: 16"></i></div>
+            <span class="t-small num">50.9km</span>
+          </div>
+        </a>
+      </div>
+    </section>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

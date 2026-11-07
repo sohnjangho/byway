@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 내 정보</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day">
+<div class="screen">
+  <nav class="gnb">
+    <a href="MainDay.dc.html" class="brand t-brand">에움길</a>
+    <div class="gnb-tabs">
+      <a href="MainDay.dc.html" class="gnb-tab t-body">홈</a>
+      <a href="MainDay.dc.html" class="gnb-tab t-body">테마</a>
+      <a href="RankingDay.dc.html" class="gnb-tab t-body">랭킹</a>
+      <a href="MainDay.dc.html" class="gnb-tab t-body">지역</a>
+      <a href="MeDay.dc.html" class="gnb-tab t-body is-on">내 코스</a>
+    </div>
+    <a href="MeDay.dc.html" class="gnb-me t-small"><span class="avatar">나</span>내 정보</a>
+  </nav>
+  <div class="me">
+    <div class="card me-side">
+      <div class="me-id">
+        <span class="avatar avatar-lg t-heading">나</span>
+        <div>
+          <h1 class="t-heading">내 기록</h1>
+          <p class="t-label ink-2">이 차에 저장됩니다</p>
+        </div>
+      </div>
+      <div class="stats stats-2">
+        <div class="stat stat-lg"><span class="t-label stat-label">끝까지 달린 코스</span><span class="stat-value"><span class="t-title">3</span><span class="t-label stat-unit">개</span></span></div>
+        <div class="stat stat-lg"><span class="t-label stat-label">코스로 달린 거리</span><span class="stat-value"><span class="t-title">127.1</span><span class="t-label stat-unit">km</span></span></div>
+        <div class="stat stat-lg"><span class="t-label stat-label">지나온 굽이</span><span class="stat-value"><span class="t-title">85</span><span class="t-label stat-unit">개</span></span></div>
+        <div class="stat stat-lg"><span class="t-label stat-label">저장한 코스</span><span class="stat-value"><span class="t-title">2</span><span class="t-label stat-unit">개</span></span></div>
+      </div>
+      <p class="t-label ink-2">시안의 수치는 예시입니다. 앱에서는 실제 주행 기록으로 쌓입니다.</p>
+      <h2 class="t-small bold">차 안 설정</h2>
+      <div class="toggle-row">
+        <div><p class="t-body bold">차 안 연출</p><p class="t-label ink-2">구간이 바뀌면 창문·풍량·조명을 맞춥니다</p></div>
+        <span class="toggle" aria-label="켜짐"></span>
+      </div>
+      <div class="toggle-row">
+        <div><p class="t-body bold">음성 안내</p><p class="t-label ink-2">구간과 스팟을 음성으로 알려 줍니다</p></div>
+        <span class="toggle" aria-label="켜짐"></span>
+      </div>
+      <p class="me-credit">Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)</p>
+    </div>
+    <div class="me-main">
+      <h2 class="t-heading">최근 달린 코스</h2>
+      <div class="covers covers-3">
+        <a href="PreviewDay.dc.html" class="cover-card">
+          <img src="images/covers/paldang-sunset.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">팔당 노을</span>
+            <div class="sec-bar"><i class="sec-forest" style="flex: 35"></i><i class="sec-city" style="flex: 43"></i><i class="sec-river" style="flex: 22"></i></div>
+            <span class="t-small num">50.3km</span>
+          </div>
+        </a>
+        <a href="PreviewDay.dc.html" class="cover-card">
+          <img src="images/covers/gonjiam-forest.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">화담숲 가는 길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 61"></i><i class="sec-forest" style="flex: 39"></i></div>
+            <span class="t-small num">25.9km</span>
+          </div>
+        </a>
+        <a href="PreviewDay.dc.html" class="cover-card">
+          <img src="images/covers/yangpyeong-river.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">남한강 물길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 56"></i><i class="sec-forest" style="flex: 28"></i><i class="sec-river" style="flex: 16"></i></div>
+            <span class="t-small num">50.9km</span>
+          </div>
+        </a>
+      </div>
+      <div class="head-row"><h2 class="t-heading">저장한 코스</h2><span class="t-label ink-2">P단에서 내비에 입힐 수 있습니다</span></div>
+      <div class="covers covers-3">
+        <a href="PreviewDay.dc.html" class="cover-card">
+          <img src="images/covers/gwanggyo-mountain.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">광교산 자락길</span>
+            <div class="sec-bar"><i class="sec-city" style="flex: 60"></i><i class="sec-river" style="flex: 25"></i><i class="sec-forest" style="flex: 15"></i></div>
+            <span class="t-small num">24.0km</span>
+          </div>
+        </a>
+        <a href="PreviewDay.dc.html" class="cover-card">
+          <img src="images/covers/baegun-lake.jpg" alt="">
+          <div class="photo-band">
+            <span class="t-heading">호수 잇는 길</span>
+            <div class="sec-bar"><i class="sec-forest" style="flex: 30"></i><i class="sec-river" style="flex: 21"></i><i class="sec-city" style="flex: 49"></i></div>
+            <span class="t-small num">25.3km</span>
+          </div>
+        </a>
+        <a href="MainDay.dc.html" class="cover-new t-body">코스 고르러 가기</a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

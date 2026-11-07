@@ -1,0 +1,120 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-07T10:58:00Z"
+ },
+ "title": "에움길 화면 디자인",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 1184,
+   "title": "홈 · 테마 · 랭킹 · 지역",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Ranking.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 1700,
+   "h": 1184,
+   "title": "랭킹 (코스 실측 수치 기준)",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Preview.dc.html": {
+   "x": 3560,
+   "y": 0,
+   "w": 1700,
+   "h": 1184,
+   "title": "코스 상세 · 위성 지도",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Drive.dc.html": {
+   "x": 0,
+   "y": 1304,
+   "w": 1706,
+   "h": 1210,
+   "title": "3분할: 내장 내비 옆 에움길 주행 칸",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Me.dc.html": {
+   "x": 1786,
+   "y": 1304,
+   "w": 1700,
+   "h": 1184,
+   "title": "내 코스 · 내 정보",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Summary.dc.html": {
+   "x": 3566,
+   "y": 1304,
+   "w": 1700,
+   "h": 1184,
+   "title": "정차 요약 (완주 후 P단)",
+   "is_interactive": true,
+   "radius": 40
+  },
+  "Waiting.dc.html": {
+   "x": 5346,
+   "y": 1304,
+   "w": 1700,
+   "h": 1184,
+   "title": "주행 중 대기",
+   "radius": 40
+  },
+  "DriveAuto.dc.html": {
+   "x": 7126,
+   "y": 1304,
+   "w": 1706,
+   "h": 1210,
+   "title": "구상 화면: 자율주행 연동 시 주행 칸",
+   "is_interactive": true,
+   "radius": 40
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Ranking.dc.html",
+  "Preview.dc.html",
+  "Drive.dc.html",
+  "Me.dc.html",
+  "Summary.dc.html",
+  "Waiting.dc.html",
+  "DriveAuto.dc.html"
+ ],
+ "notes": {
+  "row1": {
+   "x": 0,
+   "y": -300,
+   "text": "에움길 시안 2 · 음악 앱처럼 고르는 코스",
+   "kind": "title1",
+   "maxW": 5260
+  },
+  "row2": {
+   "x": 0,
+   "y": 1004,
+   "text": "코스를 고르면: 내장 내비 옆 칸에서 함께 달린다",
+   "kind": "title1",
+   "maxW": 7046
+  }
+ },
+ "designSystems": [
+  {
+   "title": "에움길",
+   "namespace": "eumgil",
+   "artifact": "https://claude.ai/artifact/58aKfmsy4AupfUqnWHQVp6",
+   "version": "1794047643-4598",
+   "copiedAt": "2026-11-07T10:58:00Z"
+  }
+ ]
+}
