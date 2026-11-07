@@ -10,6 +10,8 @@ ROOT = Path(__file__).parent.parent
 SOURCE = ROOT / "design/tokens.json"
 CSS_OUT = ROOT / "design/screens/tokens.css"
 KOTLIN_OUT = ROOT / "app/src/main/java/com/byway/ui/Palette.kt"
+SHARED_CSS = ROOT / "design/screens/app.css"
+BUNDLE_OUT = ROOT / "design/system/components/bundle.css"
 FIRST_LINE = "/* tools/make-theme.py 가 design/tokens.json 에서 만든 파일이다. 직접 고치지 않는다. */"
 LENGTH_FAMILIES = ("spacing", "radius", "size")
 
@@ -33,6 +35,12 @@ def css(tokens):
         lines.append(f'[data-theme="{theme}"] {{')
         lines += [f"  --{name}: {value};" for name, value in themes[theme]]
         lines.append("}")
+    lines += type_classes(tokens)
+    return "\n".join(lines) + "\n"
+
+
+def type_classes(tokens):
+    lines = []
     for group in tokens["type"]["groups"]:
         for style in group["styles"]:
             spacing = f" letter-spacing: {style['letterSpacing']};" if "letterSpacing" in style else ""
@@ -40,7 +48,12 @@ def css(tokens):
                 f".t-{style['name']} {{ font-size: {style['fontSize']}; line-height: {style['lineHeight']}; "
                 f"font-weight: {style['fontWeight']};{spacing} }}"
             )
-    return "\n".join(lines) + "\n"
+    return lines
+
+
+def bundle(tokens, shared):
+    """디자인 시스템 미리보기가 시안과 같은 모양을 쓰게 한다. 색 값은 시스템이 tokens.json 에서 직접 만든다."""
+    return "\n".join([FIRST_LINE, *type_classes(tokens), shared])
 
 
 def camel(name):
@@ -90,7 +103,9 @@ def main():
     CSS_OUT.parent.mkdir(parents=True, exist_ok=True)
     CSS_OUT.write_text(css(tokens), encoding="utf-8")
     KOTLIN_OUT.write_text(kotlin(tokens), encoding="utf-8")
-    print(CSS_OUT.relative_to(ROOT), KOTLIN_OUT.relative_to(ROOT))
+    BUNDLE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    BUNDLE_OUT.write_text(bundle(tokens, SHARED_CSS.read_text(encoding="utf-8")), encoding="utf-8")
+    print(CSS_OUT.relative_to(ROOT), KOTLIN_OUT.relative_to(ROOT), BUNDLE_OUT.relative_to(ROOT))
 
 
 if __name__ == "__main__":

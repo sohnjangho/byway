@@ -46,6 +46,20 @@ class CssTest(unittest.TestCase):
         self.assertIn(".t-drive-number { font-size: 112px; line-height: 134px; font-weight: 700;", self.css)
 
 
+class BundleTest(unittest.TestCase):
+    def setUp(self):
+        self.bundle = theme.bundle(TOKENS, ".card { border-radius: 24px; }\n")
+
+    def test_it_carries_the_type_classes(self):
+        self.assertIn(".t-drive-number {", self.bundle)
+
+    def test_it_carries_the_shared_styles(self):
+        self.assertIn(".card { border-radius: 24px; }", self.bundle)
+
+    def test_it_leaves_theme_values_to_the_design_system(self):
+        self.assertNotIn("--bg:", self.bundle)
+
+
 class KotlinTest(unittest.TestCase):
     def setUp(self):
         self.kt = theme.kotlin(TOKENS)
