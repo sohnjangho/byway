@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """코스 커버 이미지를 만든다. 위성 타일 위에 구간 색 코스 선을 그린다. 사용: tools/make-covers.py [출력 폴더]
-위성 출처: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"""
+위성 출처: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+2016년판은 CC BY 4.0 이다. 2018년 이후판은 비상업 허가이고 2017년판에는 한국이 없어서 바꿀 수 없다."""
 import io
 import json
 import math
@@ -10,7 +11,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 
 ROOT = Path(__file__).parent.parent
 TILE = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
@@ -21,6 +22,8 @@ CACHE = Path(tempfile.gettempdir()) / "byway-tiles"
 CACHE.mkdir(exist_ok=True)
 COLORS = {"forest": (124, 196, 143), "city": (214, 222, 238), "river": (95, 198, 216)}
 FALLBACK = (240, 168, 104)
+# 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 밭이나 모래처럼 색이 있는 곳은 걸리지 않는다.
+CLOUD_LEVEL = 150
 
 
 def pixel(point, zoom):
@@ -54,14 +57,30 @@ def tile(zoom, x, y):
     return Image.open(io.BytesIO(cached.read_bytes())).convert("RGB")
 
 
-def cover(course):
-    """코스가 프레임의 FILL 비율을 채우도록 잘라 낸다."""
-    path = course["path"]
+def without_clouds(image):
+    """2016년판에는 구름이 남은 지역이 있다. 구름 자리를 주변 땅색으로 덮어 코스 선이 묻히지 않게 한다."""
+    red, green, blue = image.split()
+    darkest = ImageChops.darker(ImageChops.darker(red, green), blue)
+    cloud = darkest.point(lambda v: 255 if v > CLOUD_LEVEL else 0).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
+    clear = ImageChops.invert(cloud).point(lambda v: 255 if v > 250 else 0)
+    land = tuple(int(v) for v in ImageStat.Stat(image, clear).mean)
+    filled = Image.composite(Image.new("RGB", image.size, land), image, cloud)
+    for radius in (48, 24, 12):
+        filled = Image.composite(filled.filter(ImageFilter.GaussianBlur(radius)), image, cloud)
+    return filled
+
+
+def frame(path):
+    """코스가 프레임의 FILL 비율을 채우는 정사각 창. 줌과 왼쪽 위 픽셀, 한 변 길이를 준다."""
     zoom = zoom_for(path)
     xs, ys = zip(*(pixel(p, zoom) for p in path))
     window = max(max(xs) - min(xs), max(ys) - min(ys)) / FILL
-    left = (min(xs) + max(xs)) / 2 - window / 2
-    top = (min(ys) + max(ys)) / 2 - window / 2
+    return zoom, (min(xs) + max(xs)) / 2 - window / 2, (min(ys) + max(ys)) / 2 - window / 2, window
+
+
+def cover(course):
+    path = course["path"]
+    zoom, left, top, window = frame(path)
     first_x, last_x = int(left // 256), int((left + window) // 256)
     first_y, last_y = int(top // 256), int((top + window) // 256)
     sheet = Image.new("RGB", ((last_x - first_x + 1) * 256, (last_y - first_y + 1) * 256))
@@ -70,7 +89,7 @@ def cover(course):
             sheet.paste(tile(zoom, x, y), ((x - first_x) * 256, (y - first_y) * 256))
     box = (int(left - first_x * 256), int(top - first_y * 256))
     drawn = SIZE * SCALE
-    image = sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS)
+    image = without_clouds(sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS))
     ratio = drawn / window
     pen = ImageDraw.Draw(image)
 
@@ -97,4 +116,5 @@ def main():
         print(target.name, target.stat().st_size, flush=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
