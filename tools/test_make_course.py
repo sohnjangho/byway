@@ -14,7 +14,7 @@ LINE = [[37.5, 127.0 + i * 0.001] for i in range(11)]
 
 def definition(**changes):
     base = {
-        "id": "t", "name": "시험", "summary": "짧은 설명", "toleranceMeters": 800.0,
+        "id": "t", "name": "시험", "region": "강원", "summary": "짧은 설명", "toleranceMeters": 800.0,
         "tags": {"themes": ["river"], "moods": ["alone"], "times": ["day"]},
         "waypoints": [[37.5, 127.0], [37.5002, 127.0041], [37.5, 127.01]],
         "sections": [{"name": "앞", "mood": "city"}, {"name": "뒤", "mood": "river"}],
@@ -73,6 +73,72 @@ class CourseFileTest(unittest.TestCase):
     def test_route_points_become_lat_lon_without_repeats(self):
         self.assertEqual([[37.5, 127.0], [37.6, 127.1]],
                          mc.to_path([[127.0, 37.5], [127.0, 37.5], [127.1000001, 37.6]]))
+
+
+class RegionTest(unittest.TestCase):
+    def test_the_course_file_carries_the_region(self):
+        self.assertEqual("강원", mc.build_course(definition(), LINE)["region"])
+
+    def test_an_unknown_region_is_rejected(self):
+        with self.assertRaises(ValueError):
+            mc.build_course(definition(region="서해안"), LINE)
+
+
+class EvenPointsTest(unittest.TestCase):
+    def test_the_count_is_exact_and_both_ends_are_kept(self):
+        points = mc.even_points(LINE, 7)
+        self.assertEqual(7, len(points))
+        self.assertEqual(LINE[0], points[0])
+        self.assertEqual(LINE[-1], points[-1])
+
+    def test_spacing_follows_distance_not_the_number_of_coordinates(self):
+        # 앞쪽 100m에 좌표가 몰려 있어도 지점은 거리로 고르게 놓인다
+        crowded = [[37.5, 127.0 + i * 0.00001] for i in range(100)] + [[37.5, 127.0 + i * 0.001] for i in range(1, 11)]
+        points = mc.even_points(crowded, 11)
+        gaps = [mc.distance(a, b) for a, b in zip(points, points[1:])]
+        self.assertLess(max(gaps) - min(gaps), 1.0)
+
+
+class ElevationRequestTest(unittest.TestCase):
+    def test_one_url_carries_every_point_in_lat_lon_order(self):
+        url = mc.elevation_url([[37.5, 127.0], [37.25, 127.125]])
+        self.assertEqual("https://api.open-meteo.com/v1/elevation?latitude=37.50000,37.25000&longitude=127.00000,127.12500", url)
+
+    def test_heights_keep_one_decimal(self):
+        self.assertEqual([12.3, 40.0], mc.to_elevation({"elevation": [12.34, 40]}, 2))
+
+    def test_a_reply_with_the_wrong_count_is_rejected(self):
+        with self.assertRaises(ValueError):
+            mc.to_elevation({"elevation": [12.0]}, 2)
+
+
+class KeepPathTest(unittest.TestCase):
+    OLD = {"schemaVersion": 2, "id": "t", "toleranceMeters": 800.0, "path": LINE,
+           "sections": [{"name": "앞", "startIndex": 0, "endIndex": 10, "mood": "city"}]}
+
+    def test_only_region_and_elevation_are_added(self):
+        added = mc.with_region_and_elevation(self.OLD, "수도권", [1.0, 2.0])
+        self.assertEqual({"region": "수도권", "elevation": [1.0, 2.0]}, {k: v for k, v in added.items() if k not in self.OLD})
+        self.assertEqual(self.OLD, {k: v for k, v in added.items() if k in self.OLD})
+
+    def test_the_old_text_survives_byte_for_byte(self):
+        old_text = mc.to_text(self.OLD)
+        new_text = mc.to_text(mc.with_region_and_elevation(self.OLD, "수도권", [1.0]))
+        self.assertTrue(new_text.startswith(old_text[:-1]))
+
+
+class FerryTest(unittest.TestCase):
+    @staticmethod
+    def reply(*modes):
+        steps = [{"name": f"길{i}", "mode": mode} for i, mode in enumerate(modes)]
+        return {"routes": [{"legs": [{"steps": steps}], "geometry": {"coordinates": [[127.0, 37.5], [127.1, 37.6]]}}]}
+
+    def test_a_road_route_becomes_a_path(self):
+        self.assertEqual([[37.5, 127.0], [37.6, 127.1]], mc.route_path(self.reply("driving", "driving")))
+
+    def test_a_route_over_a_ferry_is_rejected(self):
+        with self.assertRaises(ValueError):
+            mc.route_path(self.reply("driving", "ferry"))
 
 
 class RetraceTest(unittest.TestCase):
