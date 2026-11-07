@@ -16,6 +16,12 @@ class CreditTest(unittest.TestCase):
         self.assertEqual(credit, "사진: 홍길동 (CC BY 4.0, Wikimedia Commons)")
 
 
+class SourceTest(unittest.TestCase):
+    def test_it_asks_for_a_photo_at_app_size_not_the_original(self):
+        url = scenery.source_url({"file": "Namhan River 01.jpg"})
+        self.assertEqual(url, "https://commons.wikimedia.org/wiki/Special:FilePath/Namhan%20River%2001.jpg?width=1600")
+
+
 class FitTest(unittest.TestCase):
     def test_a_big_photo_is_cut_down_to_the_app_size(self):
         image = scenery.fitted(Image.new("RGB", (4000, 3000)))

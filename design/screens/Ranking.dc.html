@@ -4,98 +4,83 @@
 <meta charset="utf-8">
 <title>에움길 랭킹</title>
 <script src="./support.js"></script>
+<script src="courses.js"></script>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 </helmet>
 <div class="stage" data-theme="night">
-<div class="screen">
-  <nav class="gnb">
+<div class="screen screen-rail">
+  <nav class="rail">
     <a href="Main.dc.html" class="brand t-brand">에움길</a>
-    <div class="gnb-tabs">
-      <a href="Main.dc.html" class="gnb-tab t-body">홈</a>
-      <a href="Main.dc.html" class="gnb-tab t-body">테마</a>
-      <a href="Ranking.dc.html" class="gnb-tab t-body is-on">랭킹</a>
-      <a href="Main.dc.html" class="gnb-tab t-body">지역</a>
-      <a href="Me.dc.html" class="gnb-tab t-body">내 코스</a>
-    </div>
-    <a href="Me.dc.html" class="gnb-me t-small"><span class="avatar">나</span>내 정보</a>
+    <a href="Main.dc.html" class="rail-item t-small">둘러보기</a>
+    <a href="Ranking.dc.html" class="rail-item t-small is-on">랭킹</a>
+    <a href="Me.dc.html" class="rail-item t-small">내 코스</a>
+    <a href="Me.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
   </nav>
-  <div class="ranking">
-    <div class="ranking-tabs">
-      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
-        <button type="button" onClick="{{ tab.pick }}" class="{{ tab.cls }}">{{ tab.label }}</button>
-      </sc-for>
-      <p class="ranking-note t-label">코스 15개 중 위 5개 · 추천 표시는 에움길이 고른 것입니다</p>
+  <div class="ranked">
+    <div class="ranked-list">
+      <div class="ranking-tabs">
+        <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+          <button type="button" onClick="{{ tab.pick }}" class="{{ tab.cls }}">{{ tab.label }}</button>
+        </sc-for>
+      </div>
+      <div class="ranked-rows">
+        <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+          <button type="button" onClick="{{ row.pick }}" class="{{ row.cls }}">
+            <span class="ranked-no t-heading num">{{ row.rank }}</span>
+            <img class="thumb" src="{{ row.picture }}" alt="">
+            <span class="ranked-name"><span class="t-body bold">{{ row.name }}</span><span class="t-label ink-2">{{ row.note }}</span></span>
+            <span class="t-heading num nowrap">{{ row.value }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <p class="t-label ink-2">추천 표시는 에움길이 고른 것입니다</p>
     </div>
-    <div class="ranking-rows">
-      <sc-for list="{{ rows }}" as="row" hint-placeholder-count="5">
-        <a href="Preview.dc.html" class="{{ row.cls }}">
-          <img class="soft-img" src="{{ row.soft }}" alt="">
-          <span class="rank t-heading">{{ row.rank }}</span>
-          <img class="thumb" src="{{ row.cover }}" alt="">
-          <div class="rank-row-body">
-            <div class="rank-row-title">
-              <span class="t-heading">{{ row.name }}</span>
-              <div class="picks">
-                <sc-for list="{{ row.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
-              </div>
-            </div>
-            <span class="rank-row-line t-small ink-2">{{ row.line }}</span>
-          </div>
-          <div class="rank-row-value">
-            <span class="t-value num">{{ row.value }}</span>
-            <span class="t-label ink-2">{{ row.unit }}</span>
-          </div>
-        </a>
-      </sc-for>
+    <div class="ranked-view">
+      <img class="ranked-photo" src="{{ view.picture }}" alt="">
+      <div class="ranked-info soft">
+        <img class="soft-img" src="{{ view.soft }}" alt="">
+        <h1 class="t-title">{{ view.name }}</h1>
+        <div class="picks">
+          <sc-for list="{{ view.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
+        </div>
+        <p class="t-body ink-2">{{ view.summary }}</p>
+        <a href="Preview.dc.html" class="btn-quiet t-body">코스 자세히 보기</a>
+      </div>
     </div>
   </div>
 </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
-const COURSES = [
-  { name: '애월 노을', cover: 'images/covers/aewol-sunset-night.jpg', soft: 'images/covers/aewol-sunset-soft.jpg', tags: [{ text: '여름에 추천' }, { text: '20대 추천' }, { text: '데이트' }], km: 28.0, eum: 1.3, curves: 26, gain: 135, line: '이호테우에서 하귀를 지나 애월해안로로 바다를 끼고 달리고, 한림해안로를 거쳐 협재까지 가는 길.' },
-  { name: '호수 잇는 길', cover: 'images/covers/baegun-lake-night.jpg', soft: 'images/covers/baegun-lake-soft.jpg', tags: [{ text: '봄에 추천' }, { text: '30대 추천' }, { text: '데이트' }], km: 25.3, eum: 1.5, curves: 17, gain: 459, line: '하오고개를 넘어 백운호수를 지나고, 왕송호수까지 호숫가 두 곳을 잇는 짧은 길.' },
-  { name: '변산 노을', cover: 'images/covers/byeonsan-sunset-night.jpg', soft: 'images/covers/byeonsan-sunset-soft.jpg', tags: [{ text: '가을에 추천' }, { text: '40대 추천' }, { text: '데이트' }], km: 32.6, eum: 2.6, curves: 28, gain: 346, line: '변산해수욕장을 떠나 적벽강과 채석강을 지나고, 서해를 곁에 두고 모항을 돌아 곰소항까지 가는 해안길.' },
-  { name: '청풍호반 길', cover: 'images/covers/cheongpung-lake-night.jpg', soft: 'images/covers/cheongpung-lake-soft.jpg', tags: [{ text: '봄에 추천' }, { text: '50대 추천' }, { text: '가족' }], km: 47.9, eum: 3.1, curves: 53, gain: 774, line: '청풍문화재단지를 나서 호숫가를 따라 옥순대교를 건너고, 계란재를 넘어 단양 도담삼봉까지 가는 길.' },
-  { name: '달맞이 바닷길', cover: 'images/covers/dalmaji-coast-night.jpg', soft: 'images/covers/dalmaji-coast-soft.jpg', tags: [{ text: '봄에 추천' }, { text: '20대 추천' }, { text: '데이트' }], km: 26.5, eum: 1.3, curves: 20, gain: 438, line: '해운대에서 달맞이길을 넘어 송정으로 내려오고, 기장 바다를 따라 대변과 일광을 지나 임랑까지 가는 길.' },
-  { name: '감포 가는 길', cover: 'images/covers/gampo-coast-night.jpg', soft: 'images/covers/gampo-coast-soft.jpg', tags: [{ text: '봄에 추천' }, { text: '50대 추천' }, { text: '가족' }], km: 41.1, eum: 2.0, curves: 42, gain: 489, line: '보문호에서 덕동호를 끼고 추령을 넘어, 감은사지와 이견대를 지나 동해를 따라 감포까지 가는 길.' },
-  { name: '화담숲 가는 길', cover: 'images/covers/gonjiam-forest-night.jpg', soft: 'images/covers/gonjiam-forest-soft.jpg', tags: [{ text: '가을에 추천' }, { text: '40대 추천' }, { text: '가족' }], km: 25.9, eum: 1.5, curves: 11, gain: 721, line: '분당을 벗어나 쌍동고개를 넘고, 곤지암 산자락의 화담숲에서 끝나는 숲길.' },
-  { name: '광교산 자락길', cover: 'images/covers/gwanggyo-mountain-night.jpg', soft: 'images/covers/gwanggyo-mountain-soft.jpg', tags: [{ text: '가을에 추천' }, { text: '30대 추천' }, { text: '혼자' }], km: 24.0, eum: 2.3, curves: 14, gain: 300, line: '수지를 지나 광교 도심을 가로지르고, 광교저수지를 끼고 산자락까지 오르는 길.' },
-  { name: '1100도로 숲길', cover: 'images/covers/halla-forest-night.jpg', soft: 'images/covers/halla-forest-soft.jpg', tags: [{ text: '겨울에 추천' }, { text: '40대 추천' }, { text: '혼자' }], km: 36.5, eum: 1.4, curves: 32, gain: 1063, line: '제주시에서 1100도로로 어리목을 지나 1100고지를 넘고, 거린사슴을 거쳐 중문까지 내려가는 한라산 횡단길.' },
-  { name: '헌화로 바닷길', cover: 'images/covers/heonhwa-coast-night.jpg', soft: 'images/covers/heonhwa-coast-soft.jpg', tags: [{ text: '겨울에 추천' }, { text: '30대 추천' }, { text: '혼자' }], km: 35.0, eum: 1.5, curves: 31, gain: 355, line: '강릉 안목을 떠나 안인을 돌아 정동진에 닿고, 벼랑과 바다 사이로 난 헌화로를 달려 망상까지 내려가는 길.' },
-  { name: '만항재 고갯길', cover: 'images/covers/manhang-mountain-night.jpg', soft: 'images/covers/manhang-mountain-soft.jpg', tags: [{ text: '여름에 추천' }, { text: '50대 추천' }, { text: '혼자' }], km: 31.3, eum: 2.5, curves: 35, gain: 760, line: '고한에서 함백산로를 타고 만항재를 넘은 뒤, 화방재를 지나 태백 황지연못까지 내려가는 고갯길.' },
-  { name: '물미 해안길', cover: 'images/covers/mulmi-coast-night.jpg', soft: 'images/covers/mulmi-coast-soft.jpg', tags: [{ text: '여름에 추천' }, { text: '20대 추천' }, { text: '데이트' }], km: 52.9, eum: 3.5, curves: 54, gain: 830, line: '창선교에서 물건을 지나 물미해안도로로 미조까지 돌고, 상주와 앵강만을 거쳐 가천 다랑이논까지 가는 길.' },
-  { name: '팔당 노을', cover: 'images/covers/paldang-sunset-night.jpg', soft: 'images/covers/paldang-sunset-soft.jpg', tags: [{ text: '가을에 추천' }, { text: '20대 추천' }, { text: '데이트' }], km: 50.3, eum: 2.1, curves: 48, gain: 732, line: '남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.' },
-  { name: '섬진강 물길', cover: 'images/covers/seomjin-river-night.jpg', soft: 'images/covers/seomjin-river-soft.jpg', tags: [{ text: '봄에 추천' }, { text: '50대 추천' }, { text: '데이트' }], km: 42.7, eum: 1.4, curves: 22, gain: 230, line: '곡성 기차마을에서 섬진강을 따라 압록을 지나고, 구례의 남쪽 강변을 달려 화개장터까지 가는 길.' },
-  { name: '남한강 물길', cover: 'images/covers/yangpyeong-river-night.jpg', soft: 'images/covers/yangpyeong-river-soft.jpg', tags: [{ text: '여름에 추천' }, { text: '30대 추천' }, { text: '혼자' }], km: 50.9, eum: 1.4, curves: 26, gain: 553, line: '경안천 습지를 지나 염치고개를 넘고, 남한강 남쪽 강변을 따라 양평읍까지 가는 길.' },
-];
+const COVER = "coverNight";
+const picture = (c) => c.photo || c[COVER];
 const KINDS = [
   { id: 'curves', label: '굽이', show: (c) => c.curves + '개' },
   { id: 'eum', label: '에움 배율', show: (c) => c.eum.toFixed(1) + '배' },
-  { id: 'gain', label: '오르막', show: (c) => '+' + c.gain + 'm' },
+  { id: 'gain', label: '오르막', show: (c) => c.gain + 'm' },
   { id: 'km', label: '거리', show: (c) => c.km.toFixed(1) + 'km' },
 ];
 class Component extends DCLogic {
-  constructor(props) { super(props); this.state = { kind: 'curves' }; }
+  constructor(props) { super(props); this.state = { kind: 'curves', chosen: null }; }
   renderVals() {
     const kind = KINDS.find((k) => k.id === this.state.kind);
-    const sorted = [...COURSES].sort((a, b) => b[kind.id] - a[kind.id]);
+    const sorted = [...window.COURSES].sort((a, b) => b[kind.id] - a[kind.id]);
+    const view = sorted.find((c) => c.id === this.state.chosen) || sorted[0];
     return {
-      tabs: KINDS.map((k) => ({ label: k.label, cls: k.id === kind.id ? 'tab t-small is-on' : 'tab t-small', pick: () => this.setState({ kind: k.id }) })),
-      rows: sorted.slice(0, 5).map((c, i) => ({
-        ...c,
-        rank: i + 1,
-        value: kind.show(c),
-        unit: kind.label,
-        cls: 'card rank-row soft',
+      tabs: KINDS.map((k) => ({ label: k.label, cls: k.id === kind.id ? 'tab t-small is-on' : 'tab t-small', pick: () => this.setState({ kind: k.id, chosen: null }) })),
+      rows: sorted.map((c, i) => ({
+        rank: i + 1, name: c.name, picture: picture(c), value: kind.show(c),
+        note: c.picks[0] + ' · ' + c.picks[1],
+        cls: c.id === view.id ? 'ranked-row is-on' : 'ranked-row',
+        pick: () => this.setState({ chosen: c.id }),
       })),
+      view: { name: view.name, picture: picture(view), soft: view.soft, summary: view.summary, tags: view.picks.map((text) => ({ text })) },
     };
   }
 }

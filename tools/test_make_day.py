@@ -23,6 +23,10 @@ class DayVersionTest(unittest.TestCase):
     def test_links_stay_inside_the_day_screens(self):
         self.assertIn('href="MainDay.dc.html"', self.page)
 
+    def test_screens_read_the_day_cover_field(self):
+        page = day.day_version(SOURCE + "", ["Main"]) + day.day_version('<i data-theme="night"></i>const COVER = "coverNight";', ["Main"])
+        self.assertIn('const COVER = "coverDay";', page)
+
     def test_a_screen_must_name_its_theme_once(self):
         with self.assertRaises(SystemExit):
             day.day_version(SOURCE + SOURCE, ["Main"])

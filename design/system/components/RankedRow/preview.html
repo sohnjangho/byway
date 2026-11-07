@@ -1,0 +1,19 @@
+<!-- @dsCard group="정보" height=240 width=1400 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  body { margin: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .stage { min-height: 0; display: flex; gap: var(--space-6); padding: var(--space-8); }
+  .ranked-row { width: 100%; }
+</style>
+<template id="sample">
+  <button type="button" class="ranked-row is-on">
+    <span class="ranked-no t-heading num">1</span>
+    <span class="ranked-name"><span class="t-body bold">물미 해안길</span><span class="t-label ink-2">여름에 추천 · 20대 추천</span></span>
+    <span class="t-heading num nowrap">54개</span>
+  </button>
+</template>
+<section class="stage" data-theme="night"></section>
+<section class="stage" data-theme="day"></section>
+<script>
+  document.querySelectorAll('.stage').forEach((stage) => stage.append(document.getElementById('sample').content.cloneNode(true)));
+</script>

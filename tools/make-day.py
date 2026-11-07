@@ -13,6 +13,7 @@ def day_version(text, names):
         raise SystemExit('화면마다 data-theme="night" 가 한 곳이어야 합니다')
     text = text.replace('data-theme="night"', 'data-theme="day"')
     text = re.sub(r"images/([\w/-]+)-night\.jpg", r"images/\1.jpg", text)
+    text = text.replace('"coverNight"', '"coverDay"')
     return re.sub(rf"\b({'|'.join(names)})\.dc\.html", r"\1Day.dc.html", text)
 
 

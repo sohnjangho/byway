@@ -1,0 +1,20 @@
+<!-- @dsCard group="행동" height=460 width=1400 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  body { margin: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .stage { min-height: 0; display: flex; gap: var(--space-6); padding: var(--space-8); }
+  .rail { height: 400px; border-radius: var(--radius-md); }
+</style>
+<template id="sample">
+  <nav class="rail">
+    <a class="brand t-brand">에움길</a>
+    <a class="rail-item t-small is-on">둘러보기</a>
+    <a class="rail-item t-small">랭킹</a>
+    <a class="rail-item t-small">내 코스</a>
+  </nav>
+</template>
+<section class="stage" data-theme="night"></section>
+<section class="stage" data-theme="day"></section>
+<script>
+  document.querySelectorAll('.stage').forEach((stage) => stage.append(document.getElementById('sample').content.cloneNode(true)));
+</script>
