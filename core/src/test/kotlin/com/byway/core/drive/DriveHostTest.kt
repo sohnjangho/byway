@@ -86,6 +86,38 @@ class DriveHostTest {
     }
 
     @Test
+    fun handsOffStillCountsAsDriving() {
+        val host = panelHost()
+        host.dispatch(DriveEvent.DriveModeChanged(DriveMode.HANDS_OFF))
+        assertTrue(host.dispatch(location).isEmpty())
+    }
+
+    @Test
+    fun panelsOpenWhenTheDriverMayLookAway() {
+        val host = panelHost()
+        host.dispatch(DriveEvent.DriveModeChanged(DriveMode.EYES_OFF))
+        assertEquals(listOf(ShowPanel("spots")), host.dispatch(location))
+    }
+
+    @Test
+    fun panelsCloseAtOnceWhenTheDriverTakesOver() {
+        val host = panelHost()
+        host.dispatch(DriveEvent.DriveModeChanged(DriveMode.EYES_OFF))
+        host.dispatch(DriveEvent.DriveModeChanged(DriveMode.MANUAL))
+        assertTrue(host.dispatch(location).isEmpty())
+    }
+
+    @Test
+    fun parkingAndDrivingModeAreIndependent() {
+        val host = panelHost()
+        host.dispatch(DriveEvent.DriveModeChanged(DriveMode.EYES_OFF))
+        host.dispatch(DriveEvent.DrivingStateChanged(parked = false))
+        assertEquals(listOf(ShowPanel("spots")), host.dispatch(location))
+    }
+
+    private fun panelHost() = DriveHost(silentEngine, listOf(feature("list") { listOf(ShowPanel("spots")) }))
+
+    @Test
     fun voiceIsAllowedWhileDriving() {
         val host = DriveHost(silentEngine, listOf(feature("voice") { listOf(Say("안내")) }))
         assertEquals(listOf(Say("안내")), host.dispatch(location))

@@ -37,6 +37,11 @@ class LegPlannerTest {
         assertEquals(stops(8).map { it.name }, names)
     }
 
+    @Test
+    fun aRoomierFollowerCarriesMoreWaypointsPerLeg() {
+        assertEquals(listOf(3, 3), planLegs(stops(8), maxWaypoints = 3).map { it.waypoints.size })
+    }
+
     private val ridgeCourse = Course(
         id = "ridge",
         name = "능선",

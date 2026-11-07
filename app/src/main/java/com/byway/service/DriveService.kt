@@ -96,7 +96,7 @@ class DriveService : Service() {
 
     private fun execute(command: DriveCommand) {
         when (command) {
-            is DriveCommand.ShowRoute -> navi.show(command.leg)
+            is DriveCommand.FollowRoute -> navi.show(command.leg)
             is DriveCommand.Say -> {
                 voice.say(command.text)
                 DriveBoard.update { it.copy(spoken = command.text) }

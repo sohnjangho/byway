@@ -15,6 +15,7 @@ class DriveHost(
         while (pending.isNotEmpty()) {
             val next = pending.removeFirst()
             if (next is DriveEvent.DrivingStateChanged) gate.onDrivingState(next.parked)
+            if (next is DriveEvent.DriveModeChanged) gate.onDriveMode(next.mode)
             for (command in engine.onEvent(next) + featureCommands(next)) {
                 if (command is DriveCommand.Publish) pending += command.event
                 if (gate.allows(command)) allowed += command

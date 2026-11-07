@@ -7,8 +7,9 @@ import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveCommand.Publish
 import com.byway.core.drive.DriveCommand.Say
 import com.byway.core.drive.DriveCommand.ShowLine
-import com.byway.core.drive.DriveCommand.ShowRoute
+import com.byway.core.drive.DriveCommand.FollowRoute
 import com.byway.core.drive.DriveEvent
+import com.byway.core.drive.RouteAbility
 import com.byway.core.geo.GeoPoint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,14 +22,14 @@ class CourseEngineTest {
     private val sections = listOf(Section("첫 구간", 0, 49), Section("강변", 50, 100, mood = "river"))
     private val course = Course("c", "시험", path, sections)
     private val stops = listOf(20, 40, 60, 80, 100).map { Stop("지점$it", path[it], it) }
-    private fun engine() = CourseEngine(DriveTuning(simplifyToleranceMeters = 50.0, offCourseMeters = 150.0, lookaheadMeters = 2_000.0)) { stops }
+    private fun engine() = CourseEngine(DriveTuning(simplifyToleranceMeters = 50.0, offCourseMeters = 150.0, lookaheadMeters = 2_000.0), stopsOf = { stops })
     private fun started() = engine().also { it.onEvent(DriveEvent.CourseStarted(course)) }
 
     private fun CourseEngine.at(index: Int) = onEvent(DriveEvent.LocationUpdated(path[index]))
     private fun CourseEngine.drive(range: IntProgression) = range.flatMap { at(it) }
     private fun CourseEngine.offBy(index: Int, degrees: Double = 0.01) =
         onEvent(DriveEvent.LocationUpdated(GeoPoint(37.0 + degrees, path[index].lon)))
-    private fun List<DriveCommand>.routes() = filterIsInstance<ShowRoute>().map { it.leg }
+    private fun List<DriveCommand>.routes() = filterIsInstance<FollowRoute>().map { it.leg }
     private fun List<DriveCommand>.says() = filterIsInstance<Say>().map { it.text }
 
     @Test
@@ -131,7 +132,7 @@ class CourseEngineTest {
         val loop = out + back
         val loopCourse = Course("l", "왕복", loop, listOf(Section("왕복", 0, loop.lastIndex)))
         val end = Stop("끝", loop.last(), loop.lastIndex)
-        val engine = CourseEngine(DriveTuning(lookaheadMeters = 1_000.0)) { listOf(end) }
+        val engine = CourseEngine(DriveTuning(lookaheadMeters = 1_000.0), stopsOf = { listOf(end) })
         engine.onEvent(DriveEvent.CourseStarted(loopCourse))
         val commands = engine.onEvent(DriveEvent.LocationUpdated(loop[1]))
         assertFalse(Publish(DriveEvent.CourseFinished) in commands)
@@ -152,7 +153,7 @@ class CourseEngineTest {
     @Test
     fun aWideCourseToleranceWidensTheStrayLimit() {
         val wide = Course("w", "넓음", path, sections, toleranceMeters = 2_000.0)
-        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0)) { stops }
+        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0), stopsOf = { stops })
         engine.onEvent(DriveEvent.CourseStarted(wide))
         val commands = (1..3).flatMap { engine.offBy(10 + it, degrees = 0.015) }
         assertTrue(commands.routes().isEmpty())
@@ -161,10 +162,41 @@ class CourseEngineTest {
     @Test
     fun beyondTheCourseToleranceStillCountsAsStraying() {
         val wide = Course("w", "넓음", path, sections, toleranceMeters = 2_000.0)
-        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0, lookaheadMeters = 2_000.0)) { stops }
+        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0, lookaheadMeters = 2_000.0), stopsOf = { stops })
         engine.onEvent(DriveEvent.CourseStarted(wide))
         val commands = (1..3).flatMap { engine.offBy(10 + it, degrees = 0.03) }
         assertEquals(1, commands.routes().size)
+    }
+
+    @Test
+    fun aFollowerWithMoreWaypointsGetsLongerLegs() {
+        val roomy = CourseEngine(DriveTuning(), RouteAbility(maxWaypoints = 3), { stops })
+        val leg = roomy.onEvent(DriveEvent.CourseStarted(course)).routes().single()
+        assertEquals(listOf(20, 40, 60), leg.waypoints.map { it.pathIndex })
+        assertEquals(80, leg.destination.pathIndex)
+    }
+
+    @Test
+    fun aFollowerThatTakesTheWholePathGetsItOnce() {
+        val whole = CourseEngine(DriveTuning(), RouteAbility(acceptsWholePath = true), { stops })
+        val first = whole.onEvent(DriveEvent.CourseStarted(course)).filterIsInstance<FollowRoute>().single()
+        assertEquals(path, first.path)
+        assertEquals(100, first.leg.destination.pathIndex)
+    }
+
+    @Test
+    fun aWholePathNeedsNoLegChanges() {
+        val whole = CourseEngine(DriveTuning(), RouteAbility(acceptsWholePath = true), { stops })
+        whole.onEvent(DriveEvent.CourseStarted(course))
+        val commands = (1..100).flatMap { whole.at(it) }
+        assertTrue(commands.routes().isEmpty())
+        assertTrue(Publish(DriveEvent.CourseFinished) in commands)
+    }
+
+    @Test
+    fun theNavigationGetsWaypointsNotThePath() {
+        val first = engine().onEvent(DriveEvent.CourseStarted(course)).filterIsInstance<FollowRoute>().single()
+        assertEquals(null, first.path)
     }
 
     @Test

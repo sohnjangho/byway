@@ -6,14 +6,19 @@ package com.byway.core.drive
  */
 class DriveGate {
     private var parked = false
+    private var mode = DriveMode.MANUAL
 
     fun onDrivingState(parked: Boolean) {
         this.parked = parked
     }
 
+    fun onDriveMode(mode: DriveMode) {
+        this.mode = mode
+    }
+
     fun allows(command: DriveCommand): Boolean = when (command) {
-        is DriveCommand.ShowRoute, is DriveCommand.Say, is DriveCommand.ShowLine, is DriveCommand.SetCabin -> true
-        is DriveCommand.ShowPanel -> parked
+        is DriveCommand.FollowRoute, is DriveCommand.Say, is DriveCommand.ShowLine, is DriveCommand.SetCabin -> true
+        is DriveCommand.ShowPanel -> parked || mode == DriveMode.EYES_OFF
         is DriveCommand.Publish -> false
     }
 }

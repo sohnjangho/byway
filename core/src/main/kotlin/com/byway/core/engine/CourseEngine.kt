@@ -8,14 +8,16 @@ import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveCommand.Publish
 import com.byway.core.drive.DriveCommand.Say
 import com.byway.core.drive.DriveCommand.ShowLine
-import com.byway.core.drive.DriveCommand.ShowRoute
+import com.byway.core.drive.DriveCommand.FollowRoute
 import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.DriveFeature
+import com.byway.core.drive.RouteAbility
 import com.byway.core.geo.GeoPoint
 
 /** 핵심 ②③: 구간을 순서대로 내비에 올리고, 이탈하면 코스로 되돌린다. */
 class CourseEngine(
     private val tuning: DriveTuning = DriveTuning(),
+    private val ability: RouteAbility = RouteAbility(),
     private val stopsOf: (Course) -> List<Stop> = { planStops(it, it.toleranceMeters ?: tuning.simplifyToleranceMeters) },
 ) : DriveFeature {
     override val id = "course"
@@ -29,10 +31,12 @@ class CourseEngine(
     }
 
     private fun start(course: Course): List<DriveCommand> {
-        val started = Run(course, planLegs(stopsOf(course)))
+        val stops = stopsOf(course)
+        val legs = if (ability.acceptsWholePath) listOf(Leg(emptyList(), stops.last())) else planLegs(stops, ability.maxWaypoints)
+        val started = Run(course, legs)
         run = started
         return listOf(
-            ShowRoute(started.currentLeg),
+            started.route(started.currentLeg),
             Say(Messages.courseStart(course.name)),
             Publish(DriveEvent.SectionEntered(started.section)),
         )
@@ -59,6 +63,9 @@ class CourseEngine(
             private set
         val currentLeg get() = legs[legIndex]
 
+        /** 경로 전체를 받는 쪽에는 지금 지점부터 끝까지의 좌표를 함께 준다. */
+        fun route(leg: Leg) = FollowRoute(leg, if (ability.acceptsWholePath) path.drop(progress) else null)
+
         fun onLocation(point: GeoPoint): List<DriveCommand> =
             if (rejoining) whileRejoining(point) else whileOnCourse(point)
 
@@ -76,7 +83,7 @@ class CourseEngine(
                     return@buildList
                 }
                 if (legChanged) {
-                    add(ShowRoute(remainingLeg()))
+                    add(route(remainingLeg()))
                     add(Say(Messages.NEXT_LEG))
                 }
                 add(progressLine())
@@ -89,7 +96,7 @@ class CourseEngine(
             rejoining = true
             val index = nearestIndex(point, path.lastIndex).index
             val target = Stop(Messages.REJOIN_POINT, path[index], index)
-            return listOf(ShowRoute(Leg(emptyList(), target)), Say(Messages.REJOINING))
+            return listOf(route(Leg(emptyList(), target)), Say(Messages.REJOINING))
         }
 
         private fun whileRejoining(point: GeoPoint): List<DriveCommand> {
@@ -105,7 +112,7 @@ class CourseEngine(
                     addAll(finish())
                     return@buildList
                 }
-                add(ShowRoute(remainingLeg()))
+                add(route(remainingLeg()))
                 add(Say(Messages.REJOINED))
                 add(progressLine())
             }
