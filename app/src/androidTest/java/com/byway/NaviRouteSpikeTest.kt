@@ -104,6 +104,8 @@ class NaviRouteSpikeTest {
             ),
         )
         assertTrue("경로 시작 이벤트 없음: $events", waitFor(30, "started"))
+        // 앞 시험의 cancelRoute 가 늦게 보낸 빈 경유지 알림이 남아 있으면 조회 응답으로 오인한다.
+        events.clear()
         navi.getWaypointInfo()
         assertTrue("경유지 조회 없음: $events", waitFor(10, "waypointInfo"))
         assertEquals(2, waypoints.size)
