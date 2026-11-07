@@ -31,7 +31,7 @@ class CourseFileTest {
 
     @Test
     fun rejectsAnUnknownSchemaVersion() {
-        assertThrows(IllegalArgumentException::class.java) { parseCourse(json(version = 2)) }
+        assertThrows(IllegalArgumentException::class.java) { parseCourse(json(version = 3)) }
     }
 
     @Test
