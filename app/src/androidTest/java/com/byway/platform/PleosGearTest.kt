@@ -1,5 +1,8 @@
 package com.byway.platform
 
+import ai.pleos.playground.vehicle.Vehicle
+import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import ai.pleos.playground.vehicle.listener.GearSelectionListener
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -123,6 +126,26 @@ class PleosGearTest {
         awaitBoard(parked = true)
         shift("Drive")
         awaitBoard(parked = false)
+    }
+
+    /** 알림이 조용히 끊겨도 정차로 굳으면 안 된다. 주행 중 규제가 풀리기 때문이다. */
+    @Test
+    fun gearStillFollowsAfterNotificationsStop() {
+        shift("Park")
+        startGear()
+        assertEquals(true, next())
+        val silent = object : GearSelectionListener {
+            override fun onSelected(gear: VehicleGear?) = Unit
+            override fun onFailed(e: Exception) = Unit
+        }
+        Vehicle(context).run {
+            initialize()
+            Thread.sleep(1_000)
+            getGear().unregisterGearSelection(silent)
+        }
+        Thread.sleep(500)
+        shift("Drive")
+        assertEquals(false, next())
     }
 
     private companion object {

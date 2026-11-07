@@ -22,11 +22,18 @@ class PleosGear(context: Context, private val onParked: (Boolean) -> Unit) {
         override fun onFailed(e: Exception) = fail(e)
     }
 
+    /** 알림이 조용히 끊겨도 정차로 굳지 않도록 주기적으로 다시 읽는다. 주행 규제가 이 값에 달려 있다. */
+    private val recheck = object : Runnable {
+        override fun run() {
+            vehicle.getGear().getCurrentGearSelectionState(::report, ::fail)
+            handler.postDelayed(this, RECHECK_MS)
+        }
+    }
+
     fun start() {
         vehicle.initialize()
-        val gear = vehicle.getGear()
-        gear.registerGearSelection(listener)
-        gear.getCurrentGearSelectionState(::report, ::fail)
+        vehicle.getGear().registerGearSelection(listener)
+        recheck.run()
     }
 
     private fun report(gear: VehicleGear?) {
@@ -42,5 +49,9 @@ class PleosGear(context: Context, private val onParked: (Boolean) -> Unit) {
     private fun fail(failure: Exception) {
         Log.w("DRIVE", "gear unknown: $failure")
         report(null)
+    }
+
+    private companion object {
+        const val RECHECK_MS = 2_000L
     }
 }
