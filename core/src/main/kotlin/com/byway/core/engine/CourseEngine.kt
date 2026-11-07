@@ -44,6 +44,12 @@ class CourseEngine(
             sum + previous.distanceTo(point) to point
         }.drop(1).map { it.first }
 
+        /** 내비는 지점 사이 길을 스스로 고른다. 코스 허용 오차 안의 차이는 이탈로 보지 않는다. */
+        private val strayLimit = maxOf(
+            tuning.offCourseMeters,
+            (course.toleranceMeters ?: tuning.simplifyToleranceMeters) + STRAY_MARGIN_METERS,
+        )
+
         private var legIndex = 0
         private var progress = 0
         private var strayFixes = 0
@@ -59,7 +65,7 @@ class CourseEngine(
         private fun whileOnCourse(point: GeoPoint): List<DriveCommand> {
             val windowEnd = lastIndexWithin(tuning.lookaheadMeters)
             val nearest = nearestIndex(point, windowEnd)
-            if (nearest.distance > tuning.offCourseMeters) return onStray(point)
+            if (nearest.distance > strayLimit) return onStray(point)
             strayFixes = 0
             progress = maxOf(progress, nearest.index)
             val legChanged = advanceLegs()
@@ -88,7 +94,7 @@ class CourseEngine(
 
         private fun whileRejoining(point: GeoPoint): List<DriveCommand> {
             val nearest = nearestIndex(point, path.lastIndex)
-            if (nearest.distance > tuning.offCourseMeters) return emptyList()
+            if (nearest.distance > strayLimit) return emptyList()
             rejoining = false
             strayFixes = 0
             progress = nearest.index
@@ -151,4 +157,8 @@ class CourseEngine(
     }
 
     private data class Nearest(val index: Int, val distance: Double)
+
+    private companion object {
+        const val STRAY_MARGIN_METERS = 100.0
+    }
 }

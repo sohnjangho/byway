@@ -81,6 +81,28 @@ class CourseFileTest {
         assertThrows(IllegalArgumentException::class.java) { parseCourse(v2(attribution = "")) }
     }
 
+    private val allCourses by lazy {
+        File("../app/src/main/assets/courses").listFiles().orEmpty().map { parseCourse(it.readText()) }
+    }
+
+    @Test
+    fun everyCourseStartsNearPangyoForTheDemo() {
+        val pangyo = GeoPoint(37.3947, 127.1112)
+        assertTrue(allCourses.size >= 4)
+        allCourses.forEach { assertTrue(it.id, it.path.first().distanceTo(pangyo) < 2_000.0) }
+    }
+
+    @Test
+    fun everyCourseCanBeDrivenToTheEndWithoutStraying() {
+        allCourses.forEach { course ->
+            val engine = CourseEngine()
+            engine.onEvent(DriveEvent.CourseStarted(course))
+            val commands = course.path.flatMap { engine.onEvent(DriveEvent.LocationUpdated(it)) }
+            assertTrue(course.id, DriveCommand.Publish(DriveEvent.CourseFinished) in commands)
+            assertTrue(course.id, commands.filterIsInstance<DriveCommand.Say>().none { "벗어났습니다" in it.text })
+        }
+    }
+
     private val demoCourse by lazy {
         parseCourse(File("../app/src/main/assets/courses/paldang-sunset.json").readText())
     }

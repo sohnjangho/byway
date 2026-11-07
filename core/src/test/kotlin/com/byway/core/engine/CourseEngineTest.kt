@@ -21,7 +21,7 @@ class CourseEngineTest {
     private val sections = listOf(Section("첫 구간", 0, 49), Section("강변", 50, 100, mood = "river"))
     private val course = Course("c", "시험", path, sections)
     private val stops = listOf(20, 40, 60, 80, 100).map { Stop("지점$it", path[it], it) }
-    private fun engine() = CourseEngine(DriveTuning(offCourseMeters = 150.0, lookaheadMeters = 2_000.0)) { stops }
+    private fun engine() = CourseEngine(DriveTuning(simplifyToleranceMeters = 50.0, offCourseMeters = 150.0, lookaheadMeters = 2_000.0)) { stops }
     private fun started() = engine().also { it.onEvent(DriveEvent.CourseStarted(course)) }
 
     private fun CourseEngine.at(index: Int) = onEvent(DriveEvent.LocationUpdated(path[index]))
@@ -147,6 +147,24 @@ class CourseEngineTest {
         }
         assertEquals(1, firstLegStops(null))
         assertEquals(2, firstLegStops(100.0))
+    }
+
+    @Test
+    fun aWideCourseToleranceWidensTheStrayLimit() {
+        val wide = Course("w", "넓음", path, sections, toleranceMeters = 2_000.0)
+        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0)) { stops }
+        engine.onEvent(DriveEvent.CourseStarted(wide))
+        val commands = (1..3).flatMap { engine.offBy(10 + it, degrees = 0.015) }
+        assertTrue(commands.routes().isEmpty())
+    }
+
+    @Test
+    fun beyondTheCourseToleranceStillCountsAsStraying() {
+        val wide = Course("w", "넓음", path, sections, toleranceMeters = 2_000.0)
+        val engine = CourseEngine(DriveTuning(offCourseMeters = 1_300.0, lookaheadMeters = 2_000.0)) { stops }
+        engine.onEvent(DriveEvent.CourseStarted(wide))
+        val commands = (1..3).flatMap { engine.offBy(10 + it, degrees = 0.03) }
+        assertEquals(1, commands.routes().size)
     }
 
     @Test
