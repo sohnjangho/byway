@@ -30,6 +30,15 @@ def definition(**changes):
     return {**base, **changes}
 
 
+class SceneryCreditTest(unittest.TestCase):
+    def test_a_course_keeps_its_scenery_credit(self):
+        course = mc.build_course(definition(sceneryCredit="사진: 가 (CC0)"), LINE)
+        self.assertEqual("사진: 가 (CC0)", course["sceneryCredit"])
+
+    def test_a_course_without_a_photo_has_no_credit_field(self):
+        self.assertNotIn("sceneryCredit", mc.build_course(definition(), LINE))
+
+
 class SectionTest(unittest.TestCase):
     def test_sections_split_at_the_point_nearest_each_waypoint(self):
         sections = mc.build_course(definition(), LINE)["sections"]

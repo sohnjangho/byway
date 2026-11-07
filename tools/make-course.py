@@ -102,6 +102,7 @@ def region_of(definition):
 
 
 def build_course(definition, path):
+    photo = {"sceneryCredit": definition["sceneryCredit"]} if "sceneryCredit" in definition else {}
     return {
         "schemaVersion": 2,
         "id": definition["id"],
@@ -114,6 +115,7 @@ def build_course(definition, path):
         "spots": build_spots(definition, path),
         "path": path,
         "sections": build_sections(definition, path),
+        **photo,
     }
 
 
