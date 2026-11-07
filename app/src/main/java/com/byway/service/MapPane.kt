@@ -1,8 +1,10 @@
 package com.byway.service
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import com.byway.core.course.Course
+import com.byway.platform.CourseMapPane
 
 enum class MapStyle { STREET, SATELLITE }
 
@@ -15,5 +17,6 @@ interface MapPane {
 
 object MapPanes {
     /** 지도를 쓸 수 없으면 null 이다. 화면은 코스 그림으로 대신한다. */
-    fun create(context: Context): MapPane? = null
+    fun create(context: Context): MapPane? =
+        runCatching { CourseMapPane(context) }.onFailure { Log.w("DRIVE", "map unavailable", it) }.getOrNull()
 }
