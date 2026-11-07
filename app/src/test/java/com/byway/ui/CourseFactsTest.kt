@@ -81,6 +81,24 @@ class CourseFactsTest {
     }
 
     @Test
+    fun theUnitStartsAfterTheNumber() {
+        assertEquals(4, unitStart("50.3km"))
+        assertEquals(3, unitStart("2.1배"))
+        assertEquals(3, unitStart("713m"))
+    }
+
+    @Test
+    fun aBareValueHasNoUnit() {
+        assertEquals(2, unitStart("48"))
+        assertEquals(1, unitStart("-"))
+    }
+
+    @Test
+    fun moodsReadAsRoadKinds() {
+        assertEquals(listOf("숲길", "도심", "강변"), listOf("forest", "city", "river").map(::moodWord))
+    }
+
+    @Test
     fun rankMeasuresReadAsTheirNames() {
         assertEquals(listOf("굽이", "에움 배율", "오르막", "거리"), RankBy.entries.map(::rankTitle))
     }

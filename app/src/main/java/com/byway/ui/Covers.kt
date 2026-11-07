@@ -8,6 +8,17 @@ import android.os.Looper
 import android.util.LruCache
 import java.util.concurrent.Executors
 
+/** 야간에는 사진만 어둡게 만든 커버를 쓴다. 코스 선이 함께 어두워지므로 앱에서 필터를 걸지 않는다. 없으면 주간 커버를 쓴다. */
+fun coverFile(courseId: String, night: Boolean, files: Set<String>): String? {
+    val dayFile = "$courseId.jpg"
+    val nightFile = "$courseId-night.jpg"
+    return when {
+        night && nightFile in files -> nightFile
+        dayFile in files -> dayFile
+        else -> null
+    }
+}
+
 /** 코스 커버를 앱 자산에서 읽는다. 코스가 많아도 화면이 멈추지 않게 작은 크기로 뒤에서 읽고 한 번 읽은 것은 둔다. */
 internal object Covers {
     private const val FOLDER = "covers"
@@ -22,10 +33,9 @@ internal object Covers {
 
     /** 커버가 있으면 [onLoaded]를 메인 스레드에서 부른다. 없으면 부르지 않는다. 화면은 코스 그림을 그대로 둔다. */
     fun load(context: Context, courseId: String, sizePx: Int, onLoaded: (Bitmap) -> Unit) {
-        val file = "$courseId.jpg"
-        if (file !in files(context)) return
+        val file = coverFile(courseId, context.night, files(context)) ?: return
         val sample = sampleFor(sizePx)
-        val key = "$courseId/$sample"
+        val key = "$file/$sample"
         cache[key]?.let { return onLoaded(it) }
         val assets = context.applicationContext.assets
         worker.execute {

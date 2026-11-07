@@ -1,6 +1,7 @@
 package com.byway.ui
 
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
@@ -16,8 +17,8 @@ import java.util.Calendar
 
 /**
  * 상태를 받아 화면을 바꾸기만 한다. 어떤 화면인지는 [screenFor]가 정한다.
- * 창 막대를 끌면 창 크기가 바뀐다. Activity 가 다시 만들어지면 [Nav]를 Bundle 에서 되살리고,
- * 그대로 살아 있으면 root 폭이 바뀐 것을 보고 다시 그린다. 둘 다 Manifest 변경 없이 된다.
+ * 창 막대를 끌거나 시스템 주야 모드가 바뀌면 Activity 가 다시 만들어지고 [Nav]를 Bundle 에서 되살린다.
+ * 다시 만들어지지 않고 살아 있어도 root 폭과 [onConfigurationChanged]를 보고 지금 화면을 다시 그린다.
  */
 class MainActivity : AppCompatActivity() {
     private lateinit var book: CourseBook
@@ -25,15 +26,15 @@ class MainActivity : AppCompatActivity() {
     private var nav = Nav()
     private var current: Screen? = null
     private var builtWidth = 0
+    private var builtPalette: Palette? = null
     private val render: (DriveState) -> Unit = ::render
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setBackgroundDrawable(ColorDrawable(Look.BACKGROUND))
         @Suppress("DEPRECATION")
         (savedInstanceState?.getSerializable(NAV) as? Nav)?.let { nav = it }
         book = sharedBook ?: CourseBook(CourseCatalog.all(this)).also { sharedBook = it }
-        root = FrameLayout(this).apply { setBackgroundColor(Look.BACKGROUND) }
+        root = FrameLayout(this)
         root.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
             if (widthDp() != builtWidth) view.post { render(DriveBoard.state) }
         }
@@ -43,6 +44,11 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putSerializable(NAV, nav)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        render(DriveBoard.state)
     }
 
     override fun onStart() {
@@ -91,9 +97,12 @@ class MainActivity : AppCompatActivity() {
         if (state.running) nav = nav.copy(courseId = null, about = false)
         val next = screenFor(state, nav)
         val width = widthDp()
-        if (next != current || width != builtWidth) {
+        if (next != current || width != builtWidth || palette != builtPalette) {
             current = next
             builtWidth = width
+            builtPalette = palette
+            window.setBackgroundDrawable(ColorDrawable(palette.bg))
+            root.setBackgroundColor(palette.bg)
             root.removeAllViews()
             root.addView(build(next, state, BrowseKit(book, width) { open(it) }))
         }

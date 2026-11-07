@@ -12,17 +12,17 @@ internal fun aboutScreen(context: Context, kit: BrowseKit, onBack: () -> Unit): 
         val edge = dp(kit.edge)
         val version = packageManager.getPackageInfo(packageName, 0).versionName
         val details = column().apply {
-            addView(label("앱 정보", Look.TITLE, bold = true))
-            addSpaced(label("출처", Look.SMALL, Look.MUTED), Look.WIDE_GAP)
-            credits(kit.book.courses).forEach { addSpaced(label(it, Look.BODY), 8) }
-            addSpaced(label("앱 버전", Look.SMALL, Look.MUTED), Look.WIDE_GAP)
-            addSpaced(label(version.orEmpty(), Look.BODY), 8)
+            addView(label("앱 정보", Dimens.TITLE, bold = true))
+            addSpaced(label("출처", Dimens.SMALL, palette.inkMuted), Dimens.SPACE_8)
+            credits(kit.book.courses).forEach { addSpaced(label(it, Dimens.BODY), Dimens.SPACE_2) }
+            addSpaced(label("앱 버전", Dimens.SMALL, palette.inkMuted), Dimens.SPACE_8)
+            addSpaced(label(version.orEmpty(), Dimens.BODY), Dimens.SPACE_2)
         }
         column().apply {
-            setBackgroundColor(Look.BACKGROUND)
-            setPadding(edge, dp(Look.GAP), edge, dp(Look.GAP))
+            setBackgroundColor(palette.bg)
+            setPadding(edge, dp(Dimens.SPACE_6), edge, dp(Dimens.SPACE_6))
             addView(smallButton("← 뒤로", onBack), LinearLayout.LayoutParams(WRAP, WRAP))
-            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(Look.CARD_GAP) })
+            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(Dimens.SPACE_4) })
         }
     }
 

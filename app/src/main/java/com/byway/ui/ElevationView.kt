@@ -5,8 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.view.View
+import android.widget.FrameLayout
+import com.byway.core.course.Course
 
-/** 코스 고도 그래프. 구간을 주면 구간 색으로, 주지 않으면 한 색 실루엣으로 그린다. */
+/** 코스 고도 그래프. 구간마다 그 구간의 색으로 칠한다. */
 class ElevationView(context: Context) : View(context) {
     private class Band(val share: Float, val color: Int)
 
@@ -14,20 +16,13 @@ class ElevationView(context: Context) : View(context) {
     private var bands: List<Band> = emptyList()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    fun silhouette(elevation: List<Double>) {
-        show(elevation, listOf(Band(1f, Look.LINE)))
-    }
-
-    /** [sectionMeters]는 구간 거리, [moods]는 구간 분위기다. 고도는 코스를 따라 고르게 뽑혀 있다. */
-    fun sections(elevation: List<Double>, sectionMeters: List<Double>, moods: List<String?>) {
+    /** [sectionMeters]는 구간 거리다. 고도는 코스를 따라 고르게 뽑혀 있어 거리 비율로 구간을 나눈다. */
+    fun show(course: Course, sectionMeters: List<Double>) {
         val total = sectionMeters.sum()
-        show(elevation, sectionMeters.zip(moods) { meters, mood -> Band((meters / total).toFloat(), moodColor(mood)) })
-    }
-
-    private fun show(elevation: List<Double>, bands: List<Band>) {
-        heights = elevation
-        this.bands = bands
-        visibility = if (elevation.size < 2) GONE else VISIBLE
+        heights = course.elevation
+        bands = sectionMeters.zip(course.sections) { meters, section ->
+            Band((meters / total).toFloat(), context.palette.moodColor(section.mood))
+        }
         invalidate()
     }
 
@@ -65,5 +60,15 @@ class ElevationView(context: Context) : View(context) {
 
     private companion object {
         const val TOP_SHARE = 0.85f
+    }
+}
+
+/** 고도 자료가 없으면 null 이다. 빈 그래프를 그리지 않는다. */
+internal fun Context.elevationChart(course: Course, sectionMeters: List<Double>): View? {
+    if (course.elevation.size < 2) return null
+    return FrameLayout(this).apply {
+        background = rounded(palette.bgDeep, Dimens.RADIUS_SM)
+        clipToOutline = true
+        addView(ElevationView(context).apply { show(course, sectionMeters) }, matchFrame())
     }
 }

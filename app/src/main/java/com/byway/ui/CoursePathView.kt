@@ -12,6 +12,7 @@ import kotlin.math.cos
 
 /** 코스 모양과 내비에 올라가는 지점, 현재 위치를 그린다. 지도가 아니라 코스 그림이다. */
 class CoursePathView(context: Context) : View(context) {
+    private val colors = context.palette
     private var course: Course? = null
     private var stops: List<Stop> = emptyList()
     private var position: GeoPoint? = null
@@ -26,8 +27,8 @@ class CoursePathView(context: Context) : View(context) {
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
     }
-    private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Look.INK }
-    private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Look.ACCENT }
+    private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.ink }
+    private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.accent }
 
     /** [thin]은 카드 썸네일용 가는 선이다. */
     fun show(course: Course, stops: List<Stop>, thin: Boolean = false) {
@@ -56,21 +57,25 @@ class CoursePathView(context: Context) : View(context) {
                 moveTo(frame.x(points.first()), frame.y(points.first()))
                 points.drop(1).forEach { lineTo(frame.x(it), frame.y(it)) }
             }
-            drawn to moodColor(section.mood)
+            drawn to colors.moodColor(section.mood)
         }
     }
 
     override fun onDraw(canvas: Canvas) {
         val frame = frame ?: return
         val density = resources.displayMetrics.density
-        val unit = density * if (thin) THIN_LINE else COURSE_LINE
-        line.strokeWidth = unit
+        val width = density * if (thin) Dimens.COURSE_LINE_THUMB else Dimens.COURSE_LINE
+        // 코스 선은 어두운 외곽선 위에 구간 색을 그린다. 주간의 흰 면에서도 선이 묻히지 않는다.
+        line.strokeWidth = width + density * Dimens.COURSE_OUTLINE
+        line.color = colors.photoScrim
+        lines.forEach { (drawn, _) -> canvas.drawPath(drawn, line) }
+        line.strokeWidth = width
         lines.forEach { (drawn, color) ->
             line.color = color
             canvas.drawPath(drawn, line)
         }
-        stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * STOP_RADIUS, stop) }
-        position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * CAR_RADIUS, car) }
+        stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * Dimens.STOP_RADIUS, stop) }
+        position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * Dimens.CAR_RADIUS, car) }
     }
 
     /** 코스를 칸 안에 맞추는 좌표 변환. */
@@ -89,12 +94,5 @@ class CoursePathView(context: Context) : View(context) {
 
         fun x(p: GeoPoint) = (left + (p.lon - minLon) * lonScale * scale).toFloat()
         fun y(p: GeoPoint) = (bottom - (p.lat - minLat) * scale).toFloat()
-    }
-
-    private companion object {
-        const val COURSE_LINE = 6f
-        const val THIN_LINE = 3f
-        const val STOP_RADIUS = 7f
-        const val CAR_RADIUS = 13f
     }
 }

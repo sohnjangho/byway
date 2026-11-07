@@ -24,26 +24,30 @@ internal fun Context.chipRow(choices: List<Choice>, selected: String?, size: Flo
         choices.forEachIndexed { i, choice ->
             val chip = label(choice.title, size).apply {
                 gravity = Gravity.CENTER
-                minHeight = dp(Look.TOUCH_MIN)
-                setPadding(dp(28), 0, dp(28), 0)
+                minHeight = dp(Dimens.TOUCH_MIN)
+                setPadding(dp(Dimens.SPACE_6), 0, dp(Dimens.SPACE_6), 0)
                 setOnClickListener {
                     mark(choice.key)
                     onPick(choice.key)
                 }
             }
             chips[choice.key] = chip
-            line.addView(chip, LinearLayout.LayoutParams(WRAP, dp(Look.TOUCH_MIN)).apply { if (i > 0) marginStart = dp(12) })
+            line.addView(
+                chip,
+                LinearLayout.LayoutParams(WRAP, dp(Dimens.TOUCH_MIN)).apply { if (i > 0) marginStart = dp(Dimens.SPACE_3) },
+            )
         }
         mark(selected)
         addView(line)
     }
 
+/** 고른 칩은 accent 면이 아니라 옅은 바탕이다. 한 화면의 accent 면은 주 버튼 하나다. */
 private fun Context.paint(chip: TextView, on: Boolean) {
-    chip.setTextColor(if (on) Look.ON_ACCENT else Look.INK)
+    chip.setTextColor(if (on) palette.accent else palette.ink)
     chip.typeface = if (on) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
     chip.background = if (on) {
-        pressable(Look.ACCENT, Look.ACCENT_PRESSED)
+        pressable(palette.accentSoft, palette.bgPressed, Dimens.RADIUS_SM)
     } else {
-        pressable(Look.SURFACE, Look.SURFACE_PRESSED)
+        pressable(palette.bgRaised, palette.bgPressed, Dimens.RADIUS_SM, palette.lineSubtle)
     }
 }

@@ -27,7 +27,7 @@ internal fun shelfScreen(
     val chosen = selected?.takeIf { key -> choices.any { it.key == key } } ?: choices.first().key
     val scroll = ScrollView(this).apply {
         clipToPadding = false
-        setPadding(0, 0, 0, dp(Look.WIDE_GAP))
+        setPadding(0, 0, 0, dp(Dimens.SPACE_8))
     }
     fun show(key: String) {
         scroll.removeAllViews()
@@ -35,13 +35,13 @@ internal fun shelfScreen(
     }
     show(chosen)
     column().apply {
-        setPadding(dp(kit.edge), dp(Look.GAP), dp(kit.edge), 0)
+        setPadding(dp(kit.edge), dp(Dimens.SPACE_6), dp(kit.edge), 0)
         addView(
-            chipRow(choices, chosen, Look.BODY) { key ->
+            chipRow(choices, chosen, Dimens.BODY) { key ->
                 onPick(key)
                 show(key)
             },
         )
-        addView(scroll, fill().apply { topMargin = dp(Look.CARD_GAP) })
+        addView(scroll, fill().apply { topMargin = dp(Dimens.SPACE_4) })
     }
 }

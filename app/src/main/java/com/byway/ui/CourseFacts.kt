@@ -23,6 +23,19 @@ fun climbText(course: Course, facts: CourseFacts): String =
 fun topText(course: Course, facts: CourseFacts): String =
     if (course.elevation.isEmpty()) NO_VALUE else "${facts.topMeters}m"
 
+/** 값 글자에서 단위가 시작하는 자리. 숫자는 크게, 단위는 작게 쓸 때 쓴다. */
+fun unitStart(text: String): Int {
+    val end = text.indexOfLast { it.isDigit() } + 1
+    return if (end == 0) text.length else end
+}
+
+/** 구간 분위기를 길의 종류로 읽는다. */
+fun moodWord(mood: String): String = when (mood) {
+    "forest" -> "숲길"
+    "river" -> "강변"
+    else -> "도심"
+}
+
 fun rankValue(by: RankBy, ranked: Ranked): String = when (by) {
     RankBy.CURVES -> "${ranked.facts.curves}개"
     RankBy.EUM -> ratioText(ranked.facts)

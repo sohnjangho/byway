@@ -6,35 +6,38 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.byway.core.course.Course
 
-/** 코스를 끝까지 달리고 멈췄을 때 보여 준다. 기록에 없는 값(걸린 시간 등)은 쓰지 않는다. */
+/** 코스를 끝까지 달리고 멈췄을 때 보여 준다. 코스에서 계산한 값만 쓴다. 측정하지 않은 시간이나 속도는 쓰지 않는다. */
 internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onHome: () -> Unit): View =
     with(context) {
         val facts = kit.book.facts(course)
         val meters = kit.book.sectionMeters(course)
         val details = column().apply {
-            addView(label("끝까지 달렸습니다", Look.SMALL, Look.ACCENT))
-            addView(label(course.name, Look.TITLE, bold = true))
+            addView(label("끝까지 달렸습니다", Dimens.SMALL, palette.accent))
+            addView(label(course.name, Dimens.TITLE, bold = true))
             val numbers = listOf(
-                Fact(kmText(facts.meters), "달린 거리"),
-                Fact("${course.sections.size}구간", "끝까지 따라감"),
+                Fact(kmText(facts.meters), "코스 거리"),
+                Fact("${facts.curves}", "지나온 굽이"),
+                Fact(ratioText(facts), "에움 배율"),
+                Fact(climbText(course, facts), "오르막"),
             )
-            addSpaced(factRow(numbers, Look.TITLE), Look.GAP)
+            addSpaced(factRow(numbers, Dimens.HEADING), Dimens.SPACE_6)
             course.sections.forEachIndexed { i, section ->
-                addSpaced(sectionLine(section.name, section.mood, kmText(meters[i]), Look.BODY), if (i == 0) Look.GAP else 8)
+                val gap = if (i == 0) Dimens.SPACE_6 else Dimens.SPACE_2
+                addSpaced(sectionLine(i + 1, section.name, section.mood, kmText(meters[i])), gap)
             }
         }
         val buttons = LinearLayout(this).apply {
-            addView(primaryButton("홈으로", onHome), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Look.CARD_GAP) })
+            addView(primaryButton("홈으로", onHome), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_4) })
             addView(saveToggle(course, Context::quietButton), LinearLayout.LayoutParams(0, MATCH, 1f))
         }
         val text = column().apply {
             addView(ScrollView(context).apply { addView(details) }, fill())
-            addSpaced(buttons, Look.GAP)
+            addSpaced(buttons, Dimens.SPACE_6)
         }
         val drawing = CoursePathView(this).apply {
-            background = rounded(Look.SURFACE)
+            asCard()
             show(course, emptyList())
         }
-        val edge = dp(if (kit.wide) Look.EDGE else Look.NARROW_EDGE)
+        val edge = dp(kit.edge)
         panes(text, drawing, kit.wide).apply { setPadding(edge, edge, edge, edge) }
     }

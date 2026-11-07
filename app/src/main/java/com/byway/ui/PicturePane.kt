@@ -26,54 +26,57 @@ internal class PicturePane(
     picture: Picture,
     private val onPick: (Picture) -> Unit,
 ) : FrameLayout(context) {
+    private val colors = context.palette
     private val map = MapPanes.create(context)
     private val drawing = CoursePathView(context).apply { show(course, stops) }
-    private val credit = context.label("", Look.LABEL).apply {
-        background = context.rounded(Look.COVER_BAND, 12)
-        setPadding(context.dp(12), context.dp(4), context.dp(12), context.dp(4))
+    private val credit = context.label("", Dimens.LABEL, colors.onPhoto).apply {
+        background = context.rounded(colors.photoScrim, Dimens.SPACE_3)
+        val inset = context.dp(Dimens.CREDIT_PADDING)
+        setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
     }
     private val buttons = mutableMapOf<Picture, TextView>()
 
     init {
-        background = context.rounded(Look.SURFACE)
+        asCard()
         clipToOutline = true
         // 전환 버튼이 코스 선을 가리지 않게 버튼 아래부터 그린다.
-        val top = if (map != null) context.dp(Look.TOUCH_MIN + Look.GAP) else 0
+        val top = if (map != null) context.dp(Dimens.TOUCH_MIN + Dimens.SPACE_6) else 0
         addView(drawing, matchFrame().apply { topMargin = top })
         if (map != null) {
             addView(map.view, matchFrame())
             addView(
                 credit,
                 LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.START).apply {
-                    marginStart = context.dp(16)
-                    bottomMargin = context.dp(12)
+                    marginStart = context.dp(Dimens.SPACE_4)
+                    bottomMargin = context.dp(Dimens.SPACE_3)
                 },
             )
             addView(
                 switcher(),
                 LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.END).apply {
-                    topMargin = context.dp(Look.GAP)
-                    marginEnd = context.dp(Look.GAP)
+                    topMargin = context.dp(Dimens.SPACE_6)
+                    marginEnd = context.dp(Dimens.SPACE_6)
                 },
             )
             show(picture)
         }
     }
 
+    /** 흐림 효과 없이 단색 반투명 바탕을 쓴다. */
     private fun switcher(): View = LinearLayout(context).apply {
-        background = context.rounded(Look.COVER_BAND)
+        background = context.rounded(colors.photoScrim)
         clipToOutline = true
         Picture.entries.forEach { picture ->
-            val button = context.label(picture.title, Look.SMALL).apply {
+            val button = context.label(picture.title, Dimens.SMALL, colors.onPhoto).apply {
                 gravity = Gravity.CENTER
-                setPadding(context.dp(28), 0, context.dp(28), 0)
+                setPadding(context.dp(Dimens.SPACE_6), 0, context.dp(Dimens.SPACE_6), 0)
                 setOnClickListener {
                     show(picture)
                     onPick(picture)
                 }
             }
             buttons[picture] = button
-            addView(button, LinearLayout.LayoutParams(WRAP, context.dp(Look.TOUCH_MIN)))
+            addView(button, LinearLayout.LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN)))
         }
     }
 
@@ -81,8 +84,8 @@ internal class PicturePane(
         val pane = map ?: return
         buttons.forEach { (kind, button) ->
             val on = kind == picture
-            button.setBackgroundColor(if (on) Look.ACCENT else Color.TRANSPARENT)
-            button.setTextColor(if (on) Look.ON_ACCENT else Look.INK)
+            button.setBackgroundColor(if (on) colors.accent else Color.TRANSPARENT)
+            button.setTextColor(if (on) colors.onAccent else colors.onPhoto)
             button.typeface = if (on) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
         }
         drawing.visibility = if (picture == Picture.DRAWING) VISIBLE else GONE
