@@ -11,7 +11,7 @@ case "$lane" in
   contract) allowed="^($core/(drive|course)/|$coretest/(drive|course)/|settings\.gradle\.kts|docs/|CLAUDE\.md)" ;;
   engine)   allowed="^($core/(engine|geo)/|$coretest/(engine|geo)/)" ;;
   platform) allowed="^($app/(platform|service)/|app/src/main/AndroidManifest\.xml|app/src/androidTest/|app/build\.gradle\.kts)" ;;
-  ui)       allowed="^($app/ui/|app/src/main/res/)" ;;
+  ui)       allowed="^($app/ui/|app/src/test/java/com/byway/ui/|app/src/main/res/)" ;;
   tools)    allowed="^(tools/|app/src/main/assets/courses/)" ;;
   feature-*) name="${lane#feature-}"; allowed="^(feature/$name/|$app/ui/$name/|$app/FeatureRegistry\.kt)" ;;
   *) echo "모르는 레인: $lane"; exit 2 ;;
