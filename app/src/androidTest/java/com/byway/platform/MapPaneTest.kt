@@ -154,6 +154,51 @@ class MapPaneTest {
         awaitLine()
     }
 
+    /** 화면은 코스 그림을 보는 동안 지도 칸을 GONE 으로 둔다. */
+    @Test
+    fun drawsWhenFirstShownAfterBeingHidden() {
+        onMain {
+            pane.view.visibility = View.GONE
+            attach()
+            pane.show(course, MapStyle.SATELLITE)
+        }
+        Thread.sleep(HIDDEN_MS)
+
+        onMain { pane.view.visibility = View.VISIBLE }
+
+        awaitLine()
+    }
+
+    @Test
+    fun drawsAgainAfterBeingHiddenForAWhile() {
+        onMain {
+            attach()
+            pane.show(course, MapStyle.SATELLITE)
+        }
+        awaitLine()
+
+        onMain { pane.view.visibility = View.GONE }
+        Thread.sleep(HIDDEN_MS)
+        onMain { pane.view.visibility = View.VISIBLE }
+
+        awaitLine()
+    }
+
+    /** 화면은 칸이 창에서 빠질 때 놓는다. 이때 지도 뷰는 이미 창에서 빠진 뒤다. */
+    @Test
+    fun releaseAfterDetachIsSafe() {
+        onMain {
+            attach()
+            pane.show(course, MapStyle.SATELLITE)
+        }
+        awaitLine()
+
+        onMain {
+            detach()
+            pane.release()
+        }
+    }
+
     @Test
     fun releaseWithoutEverAttachingIsSafe() {
         onMain {
@@ -213,6 +258,7 @@ class MapPaneTest {
     private companion object {
         const val EMPTY_STYLE = """{"version":8,"sources":{},"layers":[]}"""
         const val OFFLINE_MS = 1_500L
+        const val HIDDEN_MS = 1_000L
         val MOODS = listOf("#7CC48F", "#A3B3D1", "#5FC6D8")
         const val WIDTH = 1200
         const val HEIGHT = 700
