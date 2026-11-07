@@ -40,6 +40,8 @@ dependencies {
     implementation("ai.pleos.playground:FusedLocation:1.1.3")
     implementation("ai.pleos.playground:TextToSpeech:3.3.1")
     implementation("ai.pleos.playground:SpeechToText:3.3.1")
+    implementation("org.maplibre.gl:android-sdk:12.3.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation(project(":core"))
     rootProject.subprojects.filter { it.path.startsWith(":feature:") }.forEach { implementation(it) }
