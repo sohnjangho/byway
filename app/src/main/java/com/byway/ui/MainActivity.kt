@@ -9,10 +9,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.byway.core.course.Course
-import com.byway.core.course.parseCourse
 import com.byway.core.engine.DriveTuning
 import com.byway.core.engine.planLegs
 import com.byway.core.engine.planStops
+import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
@@ -28,8 +28,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        course = parseCourse(assets.open(ASSET).bufferedReader().use { it.readText() })
-        val stops = planStops(course, DriveTuning().simplifyToleranceMeters)
+        course = CourseCatalog.all(this).first()
+        val stops = planStops(course, course.toleranceMeters ?: DriveTuning().simplifyToleranceMeters)
         val legs = planLegs(stops)
         val kilometers = course.path.zipWithNext { a, b -> a.distanceTo(b) }.sum() / 1_000
 
@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
     private fun toggle() {
         when {
             DriveBoard.state.running -> DriveService.stop(this)
-            checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED -> DriveService.start(this, ASSET)
+            checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED -> DriveService.start(this, course.id)
             else -> requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
         }
     }
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, results: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            DriveService.start(this, ASSET)
+            DriveService.start(this, course.id)
         }
     }
 
@@ -112,7 +112,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
-        const val ASSET = "courses/paldang-sunset.json"
         const val LOCATION = "pleos.car.permission.FUSED_LOCATION"
         const val LOCATION_REQUEST = 1
         val BACKGROUND = Color.parseColor("#14181D")

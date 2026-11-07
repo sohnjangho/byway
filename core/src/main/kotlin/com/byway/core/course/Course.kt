@@ -10,11 +10,27 @@ data class Section(
     val mood: String? = null,
 )
 
+/** 코스 위의 볼거리. kind 는 view, food, rest, photo 중 하나다. */
+data class Spot(val name: String, val kind: String, val point: GeoPoint, val pathIndex: Int)
+
+/** 추천에 쓰는 분류. 값은 소문자 영문이고 화면 문구는 앱이 정한다. */
+data class CourseTags(
+    val themes: List<String> = emptyList(),
+    val moods: List<String> = emptyList(),
+    val times: List<String> = emptyList(),
+)
+
 data class Course(
     val id: String,
     val name: String,
     val path: List<GeoPoint>,
     val sections: List<Section>,
+    val spots: List<Spot> = emptyList(),
+    val tags: CourseTags = CourseTags(),
+    val summary: String = "",
+    val attribution: String = "",
+    /** 코스별 경유지 허용 오차. 없으면 기본값을 쓴다. */
+    val toleranceMeters: Double? = null,
 )
 
 /** 내비에 올리는 코스 위의 한 지점. */

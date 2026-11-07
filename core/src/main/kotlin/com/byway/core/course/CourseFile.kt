@@ -4,7 +4,7 @@ import com.byway.core.geo.GeoPoint
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private const val SCHEMA_VERSION = 1
+private val SUPPORTED_VERSIONS = 1..2
 
 @Serializable
 private data class CourseFile(
@@ -14,6 +14,10 @@ private data class CourseFile(
     val attribution: String,
     val path: List<List<Double>>,
     val sections: List<SectionFile>,
+    val summary: String = "",
+    val toleranceMeters: Double? = null,
+    val tags: TagsFile = TagsFile(),
+    val spots: List<SpotFile> = emptyList(),
 )
 
 @Serializable
@@ -24,14 +28,42 @@ private data class SectionFile(
     val mood: String? = null,
 )
 
+@Serializable
+private data class TagsFile(
+    val themes: List<String> = emptyList(),
+    val moods: List<String> = emptyList(),
+    val times: List<String> = emptyList(),
+)
+
+@Serializable
+private data class SpotFile(
+    val name: String,
+    val kind: String,
+    val lat: Double,
+    val lon: Double,
+    val pathIndex: Int,
+)
+
 private val json = Json { ignoreUnknownKeys = true }
 
 fun parseCourse(text: String): Course {
     val file = json.decodeFromString<CourseFile>(text)
-    require(file.schemaVersion == SCHEMA_VERSION) { "지원하지 않는 코스 형식: ${file.schemaVersion}" }
+    require(file.schemaVersion in SUPPORTED_VERSIONS) { "지원하지 않는 코스 형식: ${file.schemaVersion}" }
+    require(file.schemaVersion < 2 || file.attribution.isNotBlank()) { "출처가 없는 코스: ${file.id}" }
     val sections = file.sections.map { Section(it.name, it.startIndex, it.endIndex, it.mood) }
     requireContinuous(sections, file.path.lastIndex)
-    return Course(file.id, file.name, file.path.map { (lat, lon) -> GeoPoint(lat, lon) }, sections)
+    require(file.spots.all { it.pathIndex in file.path.indices }) { "코스 밖 스팟: ${file.id}" }
+    return Course(
+        id = file.id,
+        name = file.name,
+        path = file.path.map { (lat, lon) -> GeoPoint(lat, lon) },
+        sections = sections,
+        spots = file.spots.map { Spot(it.name, it.kind, GeoPoint(it.lat, it.lon), it.pathIndex) },
+        tags = CourseTags(file.tags.themes, file.tags.moods, file.tags.times),
+        summary = file.summary,
+        attribution = file.attribution,
+        toleranceMeters = file.toleranceMeters,
+    )
 }
 
 private fun requireContinuous(sections: List<Section>, lastIndex: Int) {

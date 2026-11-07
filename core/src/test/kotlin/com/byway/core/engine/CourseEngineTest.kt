@@ -138,6 +138,18 @@ class CourseEngineTest {
     }
 
     @Test
+    fun aCourseCanSetItsOwnTolerance() {
+        val ridge = (0..10).map { GeoPoint(37.0 + 0.005 * (5 - kotlin.math.abs(it - 5)) / 5, 127.0 + it * 0.01) }
+        fun firstLegStops(tolerance: Double?): Int {
+            val own = Course("r", "능선", ridge, listOf(Section("능선", 0, 10)), toleranceMeters = tolerance)
+            val leg = CourseEngine().onEvent(DriveEvent.CourseStarted(own)).routes().single()
+            return leg.waypoints.size + 1
+        }
+        assertEquals(1, firstLegStops(null))
+        assertEquals(2, firstLegStops(100.0))
+    }
+
+    @Test
     fun locationBeforeStartIsIgnored() {
         assertTrue(engine().at(5).isEmpty())
     }

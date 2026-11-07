@@ -54,16 +54,21 @@ class CourseFidelityTest {
         )
     }
 
+    /** -e course <파일 이름> 으로 코스를 고르고 -e tolerances 800,1200 으로 값을 고른다. */
     @Test
     fun measureFirstLegAtEachTolerance() {
-        val text = context.assets.open("courses/paldang-sunset.json").bufferedReader().use { it.readText() }
+        val arguments = InstrumentationRegistry.getArguments()
+        val file = arguments.getString("course") ?: "paldang-sunset.json"
+        val text = context.assets.open("courses/$file").bufferedReader().use { it.readText() }
         val course = parseCourse(text)
+        val tolerances = arguments.getString("tolerances")?.split(",")?.map { it.toDouble() }
+            ?: listOf(100.0, 200.0, 300.0, 500.0, 800.0, 1_200.0, 2_000.0)
         val navi = NaviHelper(context)
         val connected = CountDownLatch(1)
         navi.initialize(onConnected = { connected.countDown() }, onFailed = { connected.countDown() })
         assertTrue(connected.await(15, TimeUnit.SECONDS))
         navi.addListener(listener)
-        for (tolerance in listOf(100.0, 200.0, 300.0, 500.0, 800.0, 1_200.0, 2_000.0)) {
+        for (tolerance in tolerances) {
             val stops = planStops(course, tolerance)
             val leg = planLegs(stops).first()
             val courseMeters = course.path.take(leg.destination.pathIndex + 1).zipWithNext { a, b -> a.distanceTo(b) }.sum()
@@ -76,7 +81,7 @@ class CourseFidelityTest {
             navi.getWaypointInfo()
             val first = details.poll(10, TimeUnit.SECONDS)
             val second = details.poll(5, TimeUnit.SECONDS)
-            Log.i("FIDELITY", "tol=$tolerance stops=${stops.size} legEnd=${leg.destination.pathIndex} courseM=${courseMeters.toInt()} start=$result")
+            Log.i("FIDELITY", "course=${course.id} tol=$tolerance stops=${stops.size} legEnd=${leg.destination.pathIndex} courseM=${courseMeters.toInt()} start=$result")
             Log.i("FIDELITY", "  $first")
             Log.i("FIDELITY", "  $second")
         }

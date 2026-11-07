@@ -16,7 +16,7 @@ import com.byway.core.geo.GeoPoint
 /** 핵심 ②③: 구간을 순서대로 내비에 올리고, 이탈하면 코스로 되돌린다. */
 class CourseEngine(
     private val tuning: DriveTuning = DriveTuning(),
-    private val stopsOf: (Course) -> List<Stop> = { planStops(it, tuning.simplifyToleranceMeters) },
+    private val stopsOf: (Course) -> List<Stop> = { planStops(it, it.toleranceMeters ?: tuning.simplifyToleranceMeters) },
 ) : DriveFeature {
     override val id = "course"
 

@@ -39,6 +39,48 @@ class CourseFileTest {
         assertThrows(IllegalArgumentException::class.java) { parseCourse(json(secondStart = 3)) }
     }
 
+    private fun v2(attribution: String = "OSM", spotIndex: Int = 1) = """
+        {"schemaVersion":2,"id":"t","name":"시험","attribution":"$attribution","summary":"강을 따라가는 길",
+         "toleranceMeters":800.0,
+         "tags":{"themes":["river"],"moods":["alone"],"times":["sunset"]},
+         "spots":[{"name":"전망대","kind":"view","lat":37.0,"lon":127.1,"pathIndex":$spotIndex}],
+         "path":[[37.0,127.0],[37.0,127.1]],
+         "sections":[{"name":"앞","startIndex":0,"endIndex":1}]}
+    """
+
+    @Test
+    fun v2ReadsSpots() {
+        assertEquals(Spot("전망대", "view", GeoPoint(37.0, 127.1), 1), parseCourse(v2()).spots.single())
+    }
+
+    @Test
+    fun v2ReadsTags() {
+        assertEquals(CourseTags(listOf("river"), listOf("alone"), listOf("sunset")), parseCourse(v2()).tags)
+    }
+
+    @Test
+    fun v2ReadsSummaryAttributionAndTolerance() {
+        val course = parseCourse(v2())
+        assertEquals("강을 따라가는 길", course.summary)
+        assertEquals("OSM", course.attribution)
+        assertEquals(800.0, course.toleranceMeters)
+    }
+
+    @Test
+    fun v1FilesStillReadWithoutSpots() {
+        assertEquals(emptyList<Spot>(), parseCourse(json()).spots)
+    }
+
+    @Test
+    fun rejectsASpotOutsideThePath() {
+        assertThrows(IllegalArgumentException::class.java) { parseCourse(v2(spotIndex = 9)) }
+    }
+
+    @Test
+    fun rejectsV2WithoutAttribution() {
+        assertThrows(IllegalArgumentException::class.java) { parseCourse(v2(attribution = "")) }
+    }
+
     private val demoCourse by lazy {
         parseCourse(File("../app/src/main/assets/courses/paldang-sunset.json").readText())
     }

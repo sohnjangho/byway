@@ -12,7 +12,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.byway.FeatureRegistry
-import com.byway.core.course.parseCourse
 import com.byway.core.drive.CabinScene
 import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveEvent
@@ -35,7 +34,10 @@ class DriveService : Service() {
     private val boardFeature = object : DriveFeature {
         override val id = "board"
         override fun onEvent(event: DriveEvent): List<DriveCommand> {
-            if (event is DriveEvent.CourseFinished) finishSoon()
+            if (event is DriveEvent.CourseFinished) {
+                DriveBoard.update { it.copy(finished = it.course) }
+                finishSoon()
+            }
             return emptyList()
         }
     }
@@ -62,18 +64,18 @@ class DriveService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startCourse(requireNotNull(intent.getStringExtra(EXTRA_ASSET)))
+            ACTION_START -> startCourse(requireNotNull(intent.getStringExtra(EXTRA_COURSE_ID)))
             ACTION_STOP -> stopSelf()
         }
         return START_NOT_STICKY
     }
 
-    private fun startCourse(asset: String) {
-        val course = parseCourse(assets.open(asset).bufferedReader().use { it.readText() })
+    private fun startCourse(courseId: String) {
+        val course = CourseCatalog.find(this, courseId)
         host = DriveHost(CourseEngine(), FeatureRegistry.create() + boardFeature) { id, failure ->
             Log.e(TAG, "feature off: $id", failure)
         }
-        DriveBoard.update { it.copy(running = true, course = course, line = course.name) }
+        DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", cabin = "") }
         dispatch(DriveEvent.CourseStarted(course))
     }
 
@@ -126,11 +128,11 @@ class DriveService : Service() {
         private const val FINISH_DELAY_MS = 6_000L
         private const val ACTION_START = "com.byway.START"
         private const val ACTION_STOP = "com.byway.STOP"
-        private const val EXTRA_ASSET = "asset"
+        private const val EXTRA_COURSE_ID = "courseId"
 
-        fun start(context: Context, asset: String) {
+        fun start(context: Context, courseId: String) {
             context.startForegroundService(
-                Intent(context, DriveService::class.java).setAction(ACTION_START).putExtra(EXTRA_ASSET, asset),
+                Intent(context, DriveService::class.java).setAction(ACTION_START).putExtra(EXTRA_COURSE_ID, courseId),
             )
         }
 
