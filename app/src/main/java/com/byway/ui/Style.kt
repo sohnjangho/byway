@@ -13,6 +13,7 @@ import android.os.Build
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -71,11 +72,15 @@ internal fun Context.pressedVeil(): Drawable = StateListDrawable().apply {
     addState(intArrayOf(android.R.attr.state_pressed), ColorDrawable(palette.accentSoft))
 }
 
-/** 카드 면. 주간에는 그림자로 바닥에서 띄운다. 그림자는 면 바깥에 그려지므로 부모 안쪽에 여백을 둔다. */
+/**
+ * 카드 면. 주간에는 그림자로 바닥에서 띄운다. 그림자는 면 바깥에 그려지므로 부모 안쪽 여백에 자리를 두고,
+ * 부모가 그 여백에서 자르지 않게 한다. clipChildren 은 건드리지 않는다. 풀면 옆 ScrollView 내용이 칸 밖으로 넘친다.
+ */
 internal fun View.asCard(clickable: Boolean = false) = apply {
     val face = context.palette
     background = if (clickable) context.pressable(face.bgRaised, face.bgPressed) else context.rounded(face.bgRaised)
     elevation = context.dp(if (context.night) Dimens.CARD_SHADOW_NIGHT else Dimens.CARD_SHADOW_DAY).toFloat()
+    post { (parent as? ViewGroup)?.clipToPadding = false }
 }
 
 private fun Context.button(title: String, size: Float, height: Int, onClick: () -> Unit) = Button(this).apply {
