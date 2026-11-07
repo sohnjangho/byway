@@ -86,5 +86,26 @@ class CoverTest(unittest.TestCase):
         self.assertLess(max(min(pixel) for pixel in cover.getdata()), 200)
 
 
+class NightTest(unittest.TestCase):
+    course = {"path": TALL, "sections": [{"startIndex": 0, "endIndex": 90, "mood": "river"}]}
+
+    def covers(self):
+        green = Image.new("RGB", (256, 256), (60, 110, 70))
+        with mock.patch.object(mc, "tile", return_value=green):
+            return mc.cover(self.course), mc.cover(self.course, night=True)
+
+    def test_the_night_photo_is_darker(self):
+        day, night = self.covers()
+        self.assertLess(sum(night.getpixel((20, 20))), sum(day.getpixel((20, 20))) * 0.8)
+
+    def test_the_course_line_stays_as_bright_at_night(self):
+        day, night = self.covers()
+        middle = mc.SIZE // 2
+        self.assertEqual(day.getpixel((middle, middle)), night.getpixel((middle, middle)))
+
+    def test_section_colours_come_from_the_design_tokens(self):
+        self.assertEqual(mc.section_colours()["river"], (0x4F, 0xD1, 0xE8))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,7 +11,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageStat
 
 ROOT = Path(__file__).parent.parent
 TILE = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
@@ -20,8 +20,11 @@ SCALE = 2
 FILL = 0.8
 CACHE = Path(tempfile.gettempdir()) / "byway-tiles"
 CACHE.mkdir(exist_ok=True)
-COLORS = {"forest": (124, 196, 143), "city": (214, 222, 238), "river": (95, 198, 216)}
-FALLBACK = (240, 168, 104)
+FALLBACK = (240, 164, 90)
+CASING = (13, 14, 16)
+# 야간 커버는 사진만 어둡게 한다. 코스 선까지 어두워지면 코스가 안 보인다.
+NIGHT_BRIGHTNESS = 0.62
+NIGHT_CONTRAST = 1.12
 # 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 흰 지붕이나 옅은 모래, 콘크리트도 함께 덮인다.
 CLOUD_LEVEL = 150
 
@@ -80,7 +83,19 @@ def frame(path):
     return zoom, (min(xs) + max(xs)) / 2 - window / 2, (min(ys) + max(ys)) / 2 - window / 2, window
 
 
-def cover(course):
+def section_colours():
+    """구간 색의 원본은 design/tokens.json 이다. 사진 위에서 잘 보이는 야간 값을 쓴다."""
+    tokens = json.loads((ROOT / "design/tokens.json").read_text(encoding="utf-8"))
+    colours = {token["name"]: token["value"]["night"] for token in tokens["color"]["tokens"]}
+    rgb = lambda value: tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+    return {mood: rgb(colours[f"section-{mood}"]) for mood in ("forest", "city", "river")}
+
+
+def darkened(image):
+    return ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(NIGHT_BRIGHTNESS)).enhance(NIGHT_CONTRAST)
+
+
+def cover(course, night=False):
     path = course["path"]
     zoom, left, top, window = frame(path)
     first_x, last_x = int(left // 256), int((left + window) // 256)
@@ -92,7 +107,10 @@ def cover(course):
     box = (int(left - first_x * 256), int(top - first_y * 256))
     drawn = SIZE * SCALE
     image = without_clouds(sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS))
+    if night:
+        image = darkened(image)
     ratio = drawn / window
+    colours = section_colours()
     pen = ImageDraw.Draw(image)
 
     def line(section):
@@ -100,9 +118,9 @@ def cover(course):
         return [((pixel(p, zoom)[0] - left) * ratio, (pixel(p, zoom)[1] - top) * ratio) for p in points]
 
     for section in course["sections"]:
-        pen.line(line(section), fill=(19, 20, 23), width=22, joint="curve")
+        pen.line(line(section), fill=CASING, width=22, joint="curve")
     for section in course["sections"]:
-        pen.line(line(section), fill=COLORS.get(section.get("mood"), FALLBACK), width=12, joint="curve")
+        pen.line(line(section), fill=colours.get(section.get("mood"), FALLBACK), width=12, joint="curve")
     return image.resize((SIZE, SIZE), Image.LANCZOS)
 
 
@@ -111,11 +129,12 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     for file in sorted((ROOT / "app/src/main/assets/courses").glob("*.json")):
         course = json.loads(file.read_text(encoding="utf-8"))
-        target = out / f"{course['id']}.jpg"
-        if target.exists():
-            continue
-        cover(course).save(target, quality=82)
-        print(target.name, target.stat().st_size, flush=True)
+        for suffix, night in (("", False), ("-night", True)):
+            target = out / f"{course['id']}{suffix}.jpg"
+            if target.exists():
+                continue
+            cover(course, night).save(target, quality=82)
+            print(target.name, target.stat().st_size, flush=True)
 
 
 if __name__ == "__main__":
