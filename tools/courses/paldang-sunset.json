@@ -1,0 +1,109 @@
+{
+  "id": "paldang-sunset",
+  "name": "팔당 노을",
+  "summary": "남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "river",
+      "forest"
+    ],
+    "moods": [
+      "date",
+      "alone"
+    ],
+    "times": [
+      "sunset"
+    ]
+  },
+  "waypoints": [
+    [
+      37.3947,
+      127.1112
+    ],
+    [
+      37.4789,
+      127.1822
+    ],
+    [
+      37.5475,
+      127.244
+    ],
+    [
+      37.5336,
+      127.3142
+    ]
+  ],
+  "sections": [
+    {
+      "name": "남한산성 고갯길",
+      "mood": "forest"
+    },
+    {
+      "name": "하남 팔당대교",
+      "mood": "city"
+    },
+    {
+      "name": "팔당 강변",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "남한산성 남문(지화문)",
+      "kind": "photo",
+      "lat": 37.47333,
+      "lon": 127.18117
+    },
+    {
+      "name": "남한산성행궁",
+      "kind": "view",
+      "lat": 37.47887,
+      "lon": 127.18159
+    },
+    {
+      "name": "세미원",
+      "kind": "photo",
+      "lat": 37.53874,
+      "lon": 127.32271
+    },
+    {
+      "name": "양평 두물머리",
+      "kind": "view",
+      "lat": 37.53277,
+      "lon": 127.31593
+    }
+  ],
+  "fidelity": {
+    "measuredOn": "2026-11-07",
+    "rows": [
+      {
+        "toleranceMeters": 800.0,
+        "stops": 13,
+        "legEndIndex": 467,
+        "courseMeters": 14633,
+        "naviMeters": 21000,
+        "ratio": 1.435,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 1200.0,
+        "stops": 9,
+        "legEndIndex": 904,
+        "courseMeters": 24384,
+        "naviMeters": 24000,
+        "ratio": 0.984,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 2000.0,
+        "stops": 4,
+        "legEndIndex": 1319,
+        "courseMeters": 39023,
+        "naviMeters": 36000,
+        "ratio": 0.923,
+        "firstStopTollFare": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "id": "gwanggyo-mountain",
+  "name": "광교산 자락길",
+  "summary": "수지를 지나 광교 도심을 가로지르고, 광교저수지를 끼고 산자락까지 오르는 길.",
+  "toleranceMeters": 2000.0,
+  "tags": {
+    "themes": [
+      "mountain",
+      "lake"
+    ],
+    "moods": [
+      "alone",
+      "family"
+    ],
+    "times": [
+      "day"
+    ]
+  },
+  "waypoints": [
+    [
+      37.3947,
+      127.1112
+    ],
+    [
+      37.3247,
+      127.0895
+    ],
+    [
+      37.2917,
+      127.0651
+    ],
+    [
+      37.307,
+      127.03
+    ],
+    [
+      37.3343,
+      127.0171
+    ]
+  ],
+  "sections": [
+    {
+      "name": "수지 가는 길",
+      "mood": "city"
+    },
+    {
+      "name": "광교 도심",
+      "mood": "city"
+    },
+    {
+      "name": "광교저수지 가는 길",
+      "mood": "river"
+    },
+    {
+      "name": "광교산 자락",
+      "mood": "forest"
+    }
+  ],
+  "spots": [
+    {
+      "name": "심곡서원",
+      "kind": "photo",
+      "lat": 37.30576,
+      "lon": 127.07669
+    },
+    {
+      "name": "광교저수지",
+      "kind": "view",
+      "lat": 37.30726,
+      "lon": 127.02663
+    },
+    {
+      "name": "광교쉼터",
+      "kind": "rest",
+      "lat": 37.31213,
+      "lon": 127.02132
+    }
+  ],
+  "fidelity": {
+    "measuredOn": "2026-11-07",
+    "rows": [
+      {
+        "toleranceMeters": 800.0,
+        "stops": 5,
+        "legEndIndex": 372,
+        "courseMeters": 14039,
+        "naviMeters": 16000,
+        "ratio": 1.14,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 1200.0,
+        "stops": 4,
+        "legEndIndex": 515,
+        "courseMeters": 18140,
+        "naviMeters": 21000,
+        "ratio": 1.158,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 2000.0,
+        "stops": 3,
+        "legEndIndex": 698,
+        "courseMeters": 24025,
+        "naviMeters": 26000,
+        "ratio": 1.082,
+        "firstStopTollFare": 0
+      }
+    ]
+  }
+}
