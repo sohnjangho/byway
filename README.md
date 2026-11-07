@@ -1,10 +1,12 @@
-# RoadCraft — Pleos 드라이빙 코스 앱
+# 에움길 (Byway) — Pleos 드라이빙 코스 앱
+
+> 에움길: 빙 둘러서 가는 굽은 길. 2026-11-07 RoadCraft에서 이름 변경.
 
 현대차그룹 차량용 앱 개발 공모전 출품작.
 
 ## 한 줄
 
-> 코스를 달리는 동안, 차가 함께 준비합니다.
+> 드라이빙 코스를 차의 내비에 그대로 입히는 앱. 최단 경로가 아니라, 그 길을 달리게 합니다.
 
 ## 핵심 기능
 
@@ -69,7 +71,7 @@ docs/       개발 메모
 ## 빌드
 
 ```bash
-cd ~/projects/roadcraft
+cd ~/projects/byway
 ./gradlew assembleDebug
 # → app/build/outputs/apk/debug/app-debug.apk
 ```

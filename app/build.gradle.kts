@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.roadcraft"
+    namespace = "com.byway"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.roadcraft"
+        applicationId = "com.byway"
         minSdk = 28
         targetSdk = 34
         versionCode = 1

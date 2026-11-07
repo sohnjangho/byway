@@ -6,7 +6,7 @@ set -u
 GEAR="${1:-Park}"; SPEED="${2:-0}"; VC=http://127.0.0.1:8088
 cd "$(dirname "$0")/.."
 adb forward tcp:8088 tcp:8088 >/dev/null
-( while :; do curl -s -m 2 -o /dev/null -X POST "$VC/browser/session?client=roadcraft-test"; sleep 1; done ) &
+( while :; do curl -s -m 2 -o /dev/null -X POST "$VC/browser/session?client=byway-test"; sleep 1; done ) &
 HB=$!
 # 구간 알림 시험용: 반경(37.5000, 127.0000) 안팎을 4초 간격으로 오간다.
 ( while :; do adb emu geo fix 127.0200 37.5200 >/dev/null 2>&1; sleep 4; adb emu geo fix 127.0000 37.5000 >/dev/null 2>&1; sleep 4; done ) &

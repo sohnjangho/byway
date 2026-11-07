@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RoadCraft"
+rootProject.name = "Byway"
 include(":app")
