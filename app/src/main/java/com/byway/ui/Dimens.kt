@@ -1,42 +1,45 @@
 package com.byway.ui
 
-/** 치수와 글자 크기. 토큰 값이고 화면 코드에 숫자를 흩어 놓지 않는다. 글자는 24sp 아래로 내리지 않는다. */
+/**
+ * 치수와 글자 크기. 화면 코드에 숫자를 흩어 놓지 않는다. 글자는 24sp 아래로 내리지 않는다.
+ * 토큰에 있는 값은 [Tokens]에서 받는다. 여기 숫자로 적힌 것은 앱 배치에만 쓰는 값이다.
+ */
 internal object Dimens {
-    const val DRIVE_NUMBER = 112f
+    const val DRIVE_NUMBER = Tokens.TEXT_DRIVE_NUMBER
     const val DRIVE_NUMBER_SPACING = -0.03f
-    const val DRIVE_SECTION = 40f
-    const val DRIVE_UNIT = 36f
-    const val DRIVE_LINE = 32f
+    const val DRIVE_SECTION = Tokens.TEXT_DRIVE_SECTION
+    const val DRIVE_UNIT = Tokens.TEXT_DRIVE_UNIT
+    const val DRIVE_LINE = Tokens.TEXT_DRIVE_LINE
 
-    const val TITLE = 48f
-    const val VALUE = 40f
-    const val HEADING = 36f
-    const val BODY = 28f
-    const val SMALL = 26f
-    const val LABEL = 24f
-    const val BRAND = 40f
+    const val TITLE = Tokens.TEXT_TITLE
+    const val VALUE = Tokens.TEXT_VALUE
+    const val HEADING = Tokens.TEXT_HEADING
+    const val BODY = Tokens.TEXT_BODY
+    const val SMALL = Tokens.TEXT_SMALL
+    const val LABEL = Tokens.TEXT_LABEL
+    const val BRAND = Tokens.TEXT_BRAND
 
-    const val SPACE_2 = 8
-    const val SPACE_3 = 12
-    const val SPACE_4 = 16
-    const val SPACE_6 = 24
-    const val SPACE_8 = 32
-    const val SPACE_10 = 40
+    const val SPACE_2 = Tokens.SPACE_2
+    const val SPACE_3 = Tokens.SPACE_3
+    const val SPACE_4 = Tokens.SPACE_4
+    const val SPACE_6 = Tokens.SPACE_6
+    const val SPACE_8 = Tokens.SPACE_8
+    const val SPACE_10 = Tokens.SPACE_10
 
-    const val RADIUS_SM = 16
-    const val RADIUS_MD = 24
-    const val RADIUS_LG = 32
+    const val RADIUS_SM = Tokens.RADIUS_SM
+    const val RADIUS_MD = Tokens.RADIUS_MD
+    const val RADIUS_LG = Tokens.RADIUS_LG
 
-    const val TOUCH_MIN = 76
-    const val BUTTON_LARGE = 100
-    const val BUTTON_MEDIUM = 80
-    const val BUTTON_SMALL = 64
+    const val TOUCH_MIN = Tokens.TOUCH_MIN
+    const val BUTTON_LARGE = Tokens.BUTTON_LARGE
+    const val BUTTON_MEDIUM = Tokens.BUTTON_MEDIUM
+    const val BUTTON_SMALL = Tokens.BUTTON_SMALL
     const val BUTTON_PADDING = 32
     const val HAIRLINE = 1
     const val CREDIT_PADDING = 4
 
-    const val COURSE_LINE = 6f
-    const val COURSE_LINE_THUMB = 3f
+    const val COURSE_LINE = Tokens.COURSE_LINE.toFloat()
+    const val COURSE_LINE_THUMB = Tokens.COURSE_LINE_THUMB.toFloat()
     const val COURSE_OUTLINE = 4f
     const val STOP_RADIUS = 7f
     const val CAR_RADIUS = 13f

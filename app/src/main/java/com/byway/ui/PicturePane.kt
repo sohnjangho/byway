@@ -27,7 +27,7 @@ internal class PicturePane(
     private val onPick: (Picture) -> Unit,
 ) : FrameLayout(context) {
     private val colors = context.palette
-    private val map = MapPanes.create(context)
+    private val map = MapPanes.create(context, colors.mapColors())
     private val drawing = CoursePathView(context).apply { show(course, stops) }
     private val credit = context.label("", Dimens.LABEL, colors.onPhoto).apply {
         background = context.rounded(colors.photoScrim, Dimens.SPACE_3)
@@ -48,6 +48,7 @@ internal class PicturePane(
                 credit,
                 LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.START).apply {
                     marginStart = context.dp(Dimens.SPACE_4)
+                    marginEnd = context.dp(Dimens.SPACE_4)
                     bottomMargin = context.dp(Dimens.SPACE_3)
                 },
             )
@@ -95,11 +96,11 @@ internal class PicturePane(
             Picture.DRAWING -> Unit
             Picture.STREET -> {
                 pane.show(course, MapStyle.STREET)
-                credit.text = "© OpenStreetMap contributors"
+                credit.text = MapStyle.STREET.credit
             }
             Picture.SATELLITE -> {
                 pane.show(course, MapStyle.SATELLITE)
-                credit.text = "Sentinel-2 cloudless by EOX · Copernicus data 2016"
+                credit.text = MapStyle.SATELLITE.credit
             }
         }
     }

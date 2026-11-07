@@ -13,7 +13,9 @@ import com.byway.service.CourseCatalog
 import com.byway.service.MapPane
 import com.byway.service.MapPanes
 import com.byway.service.MapStyle
+import com.byway.ui.DayPalette
 import com.byway.ui.MainActivity
+import com.byway.ui.mapColors
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -49,7 +51,7 @@ class MapPaneTest {
         activity = instrumentation.startActivitySync(
             Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
-        onMain { pane = requireNotNull(MapPanes.create(activity)) }
+        onMain { pane = requireNotNull(MapPanes.create(activity, DayPalette.mapColors())) }
     }
 
     @After

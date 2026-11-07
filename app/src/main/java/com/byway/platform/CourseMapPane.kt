@@ -1,17 +1,14 @@
 package com.byway.platform
 
 import android.content.Context
-import android.graphics.Color
 import android.util.Log
-import android.util.TypedValue
-import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.byway.core.course.Course
+import com.byway.service.MapColors
 import com.byway.service.MapPane
 import com.byway.service.MapStyle
 import okhttp3.Dispatcher
@@ -42,17 +39,10 @@ import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
 
 /** 코스 상세의 지도 칸. MapLibre 타입은 이 파일과 [courseLines] 밖으로 나가지 않는다. 뷰가 창에 붙어 있는 동안 화면 생명주기를 따른다. */
-internal class CourseMapPane(context: Context) : MapPane {
+internal class CourseMapPane(context: Context, private val colors: MapColors) : MapPane {
     private val density = context.resources.displayMetrics.density
     private val fitPadding = (FIT_PADDING_DP * density).toInt()
-    private val credit = TextView(context).apply {
-        val padding = (CREDIT_PADDING_DP * density).toInt()
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, CREDIT_TEXT_SP)
-        setTextColor(Color.WHITE)
-        setBackgroundColor(CREDIT_BACKGROUND)
-        setPadding(padding * 2, padding, padding * 2, padding)
-    }
-    private val mapView = newMapView(context)
+    private val mapView = newMapView(context, colors.blank)
     private var map: MapLibreMap? = null
     private var course: Course? = null
     private var style = MapStyle.STREET
@@ -79,16 +69,8 @@ internal class CourseMapPane(context: Context) : MapPane {
     }
 
     override val view: View = FrameLayout(context).apply {
-        setBackgroundColor(BLANK_COLOR)
+        setBackgroundColor(colors.blank)
         addView(mapView)
-        addView(
-            credit,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM or Gravity.END,
-            ),
-        )
         addOnAttachStateChangeListener(attachment)
     }
 
@@ -107,7 +89,6 @@ internal class CourseMapPane(context: Context) : MapPane {
         if (released) return
         this.course = course
         this.style = style
-        credit.text = if (style == MapStyle.SATELLITE) SATELLITE_CREDIT else STREET_CREDIT
         draw()
     }
 
@@ -142,7 +123,7 @@ internal class CourseMapPane(context: Context) : MapPane {
     private fun baseStyle(style: MapStyle): Style.Builder = when (style) {
         MapStyle.STREET -> Style.Builder().fromUri(STREET_STYLE)
         MapStyle.SATELLITE -> Style.Builder()
-            .withLayer(BackgroundLayer(BLANK_LAYER).withProperties(backgroundColor(BLANK_COLOR)))
+            .withLayer(BackgroundLayer(BLANK_LAYER).withProperties(backgroundColor(colors.blank)))
             .withSource(
                 RasterSource(
                     SATELLITE_LAYER,
@@ -154,10 +135,10 @@ internal class CourseMapPane(context: Context) : MapPane {
     }
 
     private fun withCourse(base: Style.Builder, course: Course): Style.Builder = base
-        .withSource(GeoJsonSource(COURSE_SOURCE, courseLines(course)))
+        .withSource(GeoJsonSource(COURSE_SOURCE, courseLines(course, colors)))
         .withLayer(
             LineLayer(COURSE_OUTLINE_LAYER, COURSE_SOURCE)
-                .withProperties(lineColor(OUTLINE_COLOR), lineWidth(OUTLINE_WIDTH), *ROUND_LINE),
+                .withProperties(lineColor(colors.outline), lineWidth(OUTLINE_WIDTH), *ROUND_LINE),
         )
         .withLayer(
             LineLayer(COURSE_LINE_LAYER, COURSE_SOURCE)
@@ -176,11 +157,8 @@ internal class CourseMapPane(context: Context) : MapPane {
     private companion object {
         const val TAG = "DRIVE"
         const val STREET_STYLE = "https://tiles.openfreemap.org/styles/liberty"
-        const val STREET_CREDIT = "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
         const val SATELLITE_TILES =
             "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
-        const val SATELLITE_CREDIT =
-            "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
         const val SATELLITE_TILE_SIZE = 256
         const val SATELLITE_MAX_ZOOM = 14f
         const val TILE_JSON_VERSION = "2.2.0"
@@ -191,15 +169,10 @@ internal class CourseMapPane(context: Context) : MapPane {
         const val COURSE_OUTLINE_LAYER = "course-outline"
         const val COURSE_LINE_LAYER = "course-line"
 
-        const val OUTLINE_COLOR = "#14181D"
         const val OUTLINE_WIDTH = 8f
         const val LINE_WIDTH = 5f
         const val FIT_PADDING_DP = 48
-        const val CREDIT_TEXT_SP = 12f
-        const val CREDIT_PADDING_DP = 4
         const val MAX_REQUESTS_PER_HOST = 6
-        val BLANK_COLOR = Color.parseColor("#14181D")
-        val CREDIT_BACKGROUND = Color.parseColor("#99000000")
         val ROUND_LINE = arrayOf(lineCap(Property.LINE_CAP_ROUND), lineJoin(Property.LINE_JOIN_ROUND))
 
         /** 위성 타일 서버는 요청이 몰리면 연결을 끊은 적이 있다. MapLibre 기본값은 호스트당 20개다. */
@@ -208,14 +181,14 @@ internal class CourseMapPane(context: Context) : MapPane {
             .addInterceptor(RetryDropped())
             .build()
 
-        fun newMapView(context: Context): MapView {
+        fun newMapView(context: Context, blank: Int): MapView {
             MapLibre.getInstance(context)
             HttpRequestUtil.setOkHttpClient(GENTLE_CLIENT)
             val options = MapLibreMapOptions.createFromAttributes(context)
                 .textureMode(true)
                 .logoEnabled(false)
                 .attributionEnabled(false)
-                .foregroundLoadColor(BLANK_COLOR)
+                .foregroundLoadColor(blank)
             return MapView(context, options).apply { onCreate(null) }
         }
     }

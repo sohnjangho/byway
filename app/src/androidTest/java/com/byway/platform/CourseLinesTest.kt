@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.byway.core.course.Course
 import com.byway.core.course.Section
 import com.byway.core.geo.GeoPoint
+import com.byway.service.MapColors
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,12 +15,13 @@ import org.maplibre.geojson.Point
 @RunWith(AndroidJUnit4::class)
 class CourseLinesTest {
     private val path = (0..5).map { GeoPoint(37.0 + it / 100.0, 127.0) }
+    private val COLORS = MapColors(forest = 0xFF112233.toInt(), city = 0xFF445566.toInt(), river = 0xFF778899.toInt(), outline = 0, blank = 0)
 
     private fun courseOf(vararg sections: Section) = Course("c", "코스", path, sections.toList())
 
     private fun Feature.points(): List<Point> = (geometry() as LineString).coordinates()
 
-    private fun lines(vararg sections: Section) = courseLines(courseOf(*sections)).features().orEmpty()
+    private fun lines(vararg sections: Section) = courseLines(courseOf(*sections), COLORS).features().orEmpty()
 
     @Test
     fun eachSectionIsPaintedInItsMoodColor() {
@@ -29,12 +31,12 @@ class CourseLinesTest {
             Section("강", 4, 5, "river"),
         ).map { it.getStringProperty("color") }
 
-        assertEquals(listOf("#7CC48F", "#A3B3D1", "#5FC6D8"), colors)
+        assertEquals(listOf("#112233", "#445566", "#778899"), colors)
     }
 
     @Test
     fun aSectionWithoutMoodStillGetsAColor() {
-        assertEquals("#A3B3D1", lines(Section("구간", 0, 5)).single().getStringProperty("color"))
+        assertEquals("#445566", lines(Section("구간", 0, 5)).single().getStringProperty("color"))
     }
 
     @Test
