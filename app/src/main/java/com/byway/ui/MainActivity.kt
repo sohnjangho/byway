@@ -1,30 +1,48 @@
 package com.byway.ui
 
 import android.content.pm.PackageManager
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.byway.core.course.Course
+import com.byway.core.course.RankBy
 import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import java.util.Calendar
 
-/** 상태를 받아 화면을 바꾸기만 한다. 어떤 화면인지는 [screenFor]가 정한다. */
+/**
+ * 상태를 받아 화면을 바꾸기만 한다. 어떤 화면인지는 [screenFor]가 정한다.
+ * 창 막대를 끌면 창 크기가 바뀐다. Activity 가 다시 만들어지면 [Nav]를 Bundle 에서 되살리고,
+ * 그대로 살아 있으면 root 폭이 바뀐 것을 보고 다시 그린다. 둘 다 Manifest 변경 없이 된다.
+ */
 class MainActivity : AppCompatActivity() {
-    private lateinit var courses: List<Course>
+    private lateinit var book: CourseBook
     private lateinit var root: FrameLayout
-    private var selectedCourseId: String? = null
-    private var showAbout = false
+    private var nav = Nav()
     private var current: Screen? = null
+    private var builtWidth = 0
     private val render: (DriveState) -> Unit = ::render
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        courses = CourseCatalog.all(this)
+        window.setBackgroundDrawable(ColorDrawable(Look.BACKGROUND))
+        @Suppress("DEPRECATION")
+        (savedInstanceState?.getSerializable(NAV) as? Nav)?.let { nav = it }
+        book = sharedBook ?: CourseBook(CourseCatalog.all(this)).also { sharedBook = it }
         root = FrameLayout(this).apply { setBackgroundColor(Look.BACKGROUND) }
+        root.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+            if (widthDp() != builtWidth) view.post { render(DriveBoard.state) }
+        }
         setContentView(root)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putSerializable(NAV, nav)
     }
 
     override fun onStart() {
@@ -37,10 +55,18 @@ class MainActivity : AppCompatActivity() {
         super.onStop()
     }
 
-    private fun open(courseId: String? = null, about: Boolean = false) {
-        selectedCourseId = courseId
-        showAbout = about
+    private fun go(next: Nav) {
+        nav = next
         render(DriveBoard.state)
+    }
+
+    private fun openTab(tab: Tab) {
+        leaveSummary()
+        go(nav.copy(tab = tab, courseId = null, about = false))
+    }
+
+    private fun leaveSummary() {
+        if (DriveBoard.state.finished != null) DriveBoard.update { it.copy(finished = null) }
     }
 
     private fun start(courseId: String) {
@@ -58,36 +84,73 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun widthDp(): Int =
+        if (root.width > 0) (root.width / resources.displayMetrics.density).toInt() else resources.configuration.screenWidthDp
+
     private fun render(state: DriveState) {
-        if (state.running) {
-            selectedCourseId = null
-            showAbout = false
-        }
-        val next = screenFor(state, selectedCourseId, showAbout)
-        if (next != current) {
+        if (state.running) nav = nav.copy(courseId = null, about = false)
+        val next = screenFor(state, nav)
+        val width = widthDp()
+        if (next != current || width != builtWidth) {
             current = next
+            builtWidth = width
             root.removeAllViews()
-            root.addView(build(next, state))
+            root.addView(build(next, state, BrowseKit(book, width) { open(it) }))
         }
         (root.getChildAt(0) as? DriveScreen)?.show(state)
     }
 
-    private fun build(screen: Screen, state: DriveState): View = when (screen) {
-        Screen.Home -> homeScreen(this, courses, onCourse = { open(courseId = it.id) }, onAbout = { open(about = true) })
-        is Screen.Preview -> previewScreen(
-            this,
-            courses.first { it.id == screen.courseId },
-            onBack = { open() },
-            onStart = { start(screen.courseId) },
+    private fun open(course: Course) = go(nav.copy(courseId = course.id))
+
+    private fun build(screen: Screen, state: DriveState, kit: BrowseKit): View = when (screen) {
+        is Screen.Browse -> parked(kit, browse(screen.tab, kit))
+        is Screen.Preview -> parked(
+            kit,
+            previewScreen(
+                this,
+                kit,
+                book.find(screen.courseId),
+                nav.picture,
+                onPicture = { nav = nav.copy(picture = it) },
+                onBack = { go(nav.copy(courseId = null)) },
+                onStart = { start(screen.courseId) },
+            ),
         )
-        Screen.Drive -> DriveScreen(this, state.course) { DriveService.stop(this) }
-        is Screen.Summary -> summaryScreen(this, screen.course) { DriveBoard.update { it.copy(finished = null) } }
+        Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
+        is Screen.Summary -> parked(kit, summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) })
         Screen.Waiting -> waitingScreen(this)
-        Screen.About -> aboutScreen(this, courses) { open() }
+        Screen.About -> parked(kit, aboutScreen(this, kit) { go(nav.copy(about = false)) })
+    }
+
+    private fun parked(kit: BrowseKit, content: View): View = withTabBar(nav.tab, kit.wide, ::openTab, content)
+
+    private fun browse(tab: Tab, kit: BrowseKit): View = when (tab) {
+        Tab.HOME -> homeScreen(
+            this,
+            kit,
+            hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+            region = nav.region,
+            onRegion = { nav = nav.copy(region = it) },
+            onTheme = { go(nav.copy(tab = Tab.THEME, theme = it)) },
+            onRanking = { go(nav.copy(tab = Tab.RANKING, rankBy = RankBy.CURVES)) },
+        )
+        Tab.THEME -> themeScreen(this, kit, nav.theme) { nav = nav.copy(theme = it) }
+        Tab.RANKING -> rankingScreen(this, kit, nav.rankBy) { nav = nav.copy(rankBy = it) }
+        Tab.REGION -> regionScreen(this, kit, nav.region) { nav = nav.copy(region = it) }
+        Tab.MINE -> mineScreen(
+            this,
+            kit,
+            onBrowse = { openTab(Tab.HOME) },
+            onAbout = { go(nav.copy(about = true)) },
+        )
     }
 
     private companion object {
         const val LOCATION = "pleos.car.permission.FUSED_LOCATION"
         const val LOCATION_REQUEST = 1
+        const val NAV = "nav"
+
+        /** 창 크기가 바뀌어 Activity 가 다시 만들어져도 코스 수치를 다시 계산하지 않는다. */
+        var sharedBook: CourseBook? = null
     }
 }

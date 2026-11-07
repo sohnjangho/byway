@@ -18,4 +18,13 @@ private val SPOT_KINDS = mapOf("view" to "전망", "food" to "식사", "rest" to
 fun tagLabels(tags: CourseTags): List<String> =
     tags.themes.mapNotNull(THEMES::get) + tags.times.mapNotNull(TIMES::get) + tags.moods.mapNotNull(MOODS::get)
 
+fun themeLabel(key: String): String? = THEMES[key]
+
+/** 테마 타일이 쓸 구간 색의 분위기. */
+fun themeMood(theme: String): String = when (theme) {
+    "river", "lake", "coast" -> "river"
+    "forest", "mountain" -> "forest"
+    else -> "city"
+}
+
 fun spotKindLabel(kind: String): String? = SPOT_KINDS[kind]

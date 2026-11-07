@@ -33,6 +33,32 @@ class TagLabelsTest {
     }
 
     @Test
+    fun themeHasAWord() {
+        assertEquals("호수", themeLabel("lake"))
+    }
+
+    @Test
+    fun unknownThemeHasNoWord() {
+        assertNull(themeLabel("desert"))
+    }
+
+    /** 테마 타일은 구간과 같은 색을 쓴다. 코스 파일의 구간 분위기는 forest, city, river 뿐이다. */
+    @Test
+    fun waterThemesTakeTheRiverColor() {
+        assertEquals(listOf("river", "river", "river"), listOf("river", "lake", "coast").map(::themeMood))
+    }
+
+    @Test
+    fun greenThemesTakeTheForestColor() {
+        assertEquals(listOf("forest", "forest"), listOf("forest", "mountain").map(::themeMood))
+    }
+
+    @Test
+    fun cityThemeTakesTheCityColor() {
+        assertEquals("city", themeMood("city"))
+    }
+
+    @Test
     fun spotKindHasAWord() {
         assertEquals("전망", spotKindLabel("view"))
     }

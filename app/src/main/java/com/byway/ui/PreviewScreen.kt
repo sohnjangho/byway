@@ -4,33 +4,74 @@ import android.content.Context
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Space
 import com.byway.core.course.Course
-import com.byway.core.course.Spot
+import com.byway.service.MyDrives
+
+private const val PICTURE_HEIGHT = 260
 
 /** 정차 중 코스를 살펴보고 내비에 올리는 화면. */
-fun previewScreen(context: Context, course: Course, onBack: () -> Unit, onStart: () -> Unit): View =
-    with(context) {
-        val details = column().apply {
-            addView(label(course.name, Look.TITLE, bold = true))
-            if (course.summary.isNotBlank()) addSpaced(label(course.summary, Look.BODY, Look.MUTED), 12)
-            addSpaced(label(statsText(course), Look.BODY), 24)
-            addSpaced(label(sectionsText(course), Look.BODY, Look.ACCENT), 12)
-            if (course.spots.isNotEmpty()) {
-                addSpaced(label("스팟", Look.SMALL, Look.MUTED), 32)
-                course.spots.forEach { addSpaced(label(spotLine(it), Look.BODY), 8) }
-            }
-        }
-        val left = column().apply {
-            addView(
-                quietButton("뒤로", onBack),
-                LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
-            )
-            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(32) })
-            addSpaced(label(naviPlanText(course), Look.SMALL, Look.MUTED), 24)
-            addSpaced(primaryButton("내비에 코스 입히기", onStart), 16)
-        }
-        twoColumns(left, courseMap().apply { show(course.path, naviStops(course)) })
+internal fun previewScreen(
+    context: Context,
+    kit: BrowseKit,
+    course: Course,
+    picture: Picture,
+    onPicture: (Picture) -> Unit,
+    onBack: () -> Unit,
+    onStart: () -> Unit,
+): View = with(context) {
+    val stops = kit.book.stops(course)
+    val pane = PicturePane(this, course, stops, picture, onPicture)
+    val head = row().apply {
+        addView(smallButton("← 뒤로", onBack))
+        addView(Space(context), LinearLayout.LayoutParams(0, 0, 1f))
+        addView(saveToggle(course, Context::smallButton))
     }
+    val scroll = ScrollView(this).apply { addView(details(kit, course)) }
+    val foot = column().apply {
+        addView(label(naviPlanText(course, stops), Look.LABEL, Look.MUTED).tabular())
+        addSpaced(primaryButton("내비에 코스 입히기", onStart), 12)
+        addSpaced(label("창 막대를 끌면 내비와 나란히 볼 수 있습니다", Look.LABEL, Look.MUTED), 8)
+    }
+    val edge = dp(kit.edge)
+    if (kit.wide) {
+        LinearLayout(this).apply {
+            setPadding(edge, dp(Look.GAP), edge, dp(Look.GAP))
+            val text = column().apply {
+                addView(head)
+                addView(scroll, fill().apply { topMargin = dp(12) })
+                addSpaced(foot, Look.CARD_GAP)
+            }
+            addView(text, LinearLayout.LayoutParams(dp(640), MATCH).apply { marginEnd = dp(Look.EDGE) })
+            addView(pane, LinearLayout.LayoutParams(0, MATCH, 1f))
+        }
+    } else {
+        column().apply {
+            setPadding(edge, dp(Look.CARD_GAP), edge, dp(Look.CARD_GAP))
+            addView(head)
+            addView(pane, LinearLayout.LayoutParams(MATCH, dp(PICTURE_HEIGHT)).apply { topMargin = dp(8) })
+            addView(scroll, fill().apply { topMargin = dp(Look.CARD_GAP) })
+            addSpaced(foot, Look.CARD_GAP)
+        }
+    }
+}
 
-private fun spotLine(spot: Spot): String =
-    listOfNotNull(spotKindLabel(spot.kind), spot.name).joinToString(" · ")
+private fun Context.details(kit: BrowseKit, course: Course): View = column().apply {
+    val facts = kit.book.facts(course)
+    addView(label(kit.book.character(course), Look.SMALL, Look.ACCENT))
+    addView(label(course.name, Look.TITLE, bold = true))
+    if (course.summary.isNotBlank()) addView(label(course.summary, Look.BODY, Look.MUTED))
+    val numbers = listOf(
+        Fact(kmText(facts.meters), "거리"),
+        Fact("${facts.curves}", "굽이"),
+        Fact(ratioText(facts), "에움 배율"),
+        Fact(topText(course, facts), "최고 고도"),
+    )
+    addSpaced(factRow(numbers, Look.HEADING), Look.CARD_GAP)
+    val meters = kit.book.sectionMeters(course)
+    val chart = ElevationView(context).apply { sections(course.elevation, meters, course.sections.map { it.mood }) }
+    addView(chart, LinearLayout.LayoutParams(MATCH, dp(100)).apply { topMargin = dp(Look.CARD_GAP) })
+    course.sections.forEachIndexed { i, section ->
+        addSpaced(sectionLine(section.name, section.mood, kmText(meters[i]), Look.BODY), if (i == 0) Look.CARD_GAP else 6)
+    }
+}

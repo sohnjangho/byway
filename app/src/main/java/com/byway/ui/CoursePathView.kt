@@ -2,32 +2,39 @@ package com.byway.ui
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.view.View
+import com.byway.core.course.Course
 import com.byway.core.course.Stop
 import com.byway.core.geo.GeoPoint
 import kotlin.math.cos
 
 /** 코스 모양과 내비에 올라가는 지점, 현재 위치를 그린다. 지도가 아니라 코스 그림이다. */
 class CoursePathView(context: Context) : View(context) {
-    private var path: List<GeoPoint> = emptyList()
+    private var course: Course? = null
     private var stops: List<Stop> = emptyList()
     private var position: GeoPoint? = null
+    private var thin = false
+
+    /** 코스 선은 크기가 바뀔 때만 다시 만든다. 주행 중 점이 움직일 때마다 1,000개 넘는 좌표를 다시 돌지 않는다. */
+    private var frame: Frame? = null
+    private var lines: List<Pair<Path, Int>> = emptyList()
 
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
-        color = Color.parseColor("#E8A15C")
     }
-    private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F5F1E8") }
-    private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#4FC3A1") }
+    private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Look.INK }
+    private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Look.ACCENT }
 
-    fun show(path: List<GeoPoint>, stops: List<Stop>) {
-        this.path = path
+    /** [thin]은 카드 썸네일용 가는 선이다. */
+    fun show(course: Course, stops: List<Stop>, thin: Boolean = false) {
+        this.course = course
         this.stops = stops
+        this.thin = thin
+        prepare()
         invalidate()
     }
 
@@ -36,32 +43,58 @@ class CoursePathView(context: Context) : View(context) {
         invalidate()
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) = prepare()
+
+    private fun prepare() {
+        val course = course ?: return
+        if (width == 0 || height == 0 || course.path.size < 2) return
+        val frame = Frame(course.path, width.toFloat(), height.toFloat()).also { frame = it }
+        lines = course.sections.map { section ->
+            val end = minOf(section.endIndex + 1, course.path.lastIndex)
+            val points = course.path.subList(section.startIndex, end + 1)
+            val drawn = Path().apply {
+                moveTo(frame.x(points.first()), frame.y(points.first()))
+                points.drop(1).forEach { lineTo(frame.x(it), frame.y(it)) }
+            }
+            drawn to moodColor(section.mood)
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
-        if (path.size < 2) return
-        val minLat = path.minOf { it.lat }
-        val maxLat = path.maxOf { it.lat }
-        val minLon = path.minOf { it.lon }
-        val maxLon = path.maxOf { it.lon }
+        val frame = frame ?: return
+        val density = resources.displayMetrics.density
+        val unit = density * if (thin) THIN_LINE else COURSE_LINE
+        line.strokeWidth = unit
+        lines.forEach { (drawn, color) ->
+            line.color = color
+            canvas.drawPath(drawn, line)
+        }
+        stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * STOP_RADIUS, stop) }
+        position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * CAR_RADIUS, car) }
+    }
+
+    /** 코스를 칸 안에 맞추는 좌표 변환. */
+    private class Frame(path: List<GeoPoint>, width: Float, height: Float) {
+        private val minLon = path.minOf { it.lon }
+        private val minLat = path.minOf { it.lat }
+
         // 경도 1도는 위도 1도보다 짧다. 그대로 그리면 코스가 옆으로 늘어난다.
-        val lonScale = cos(Math.toRadians((minLat + maxLat) / 2))
-        val spanX = (maxLon - minLon) * lonScale
-        val spanY = maxLat - minLat
-        val shortSide = minOf(width, height).toFloat()
-        val pad = shortSide * 0.1f
-        val scale = minOf((width - 2 * pad) / spanX, (height - 2 * pad) / spanY)
-        val left = (width - spanX * scale) / 2
-        val bottom = height - (height - spanY * scale) / 2
+        private val lonScale = cos(Math.toRadians((minLat + path.maxOf { it.lat }) / 2))
+        private val spanX = (path.maxOf { it.lon } - minLon) * lonScale
+        private val spanY = path.maxOf { it.lat } - minLat
+        private val pad = minOf(width, height) * 0.1f
+        private val scale = minOf((width - 2 * pad) / spanX, (height - 2 * pad) / spanY)
+        private val left = (width - spanX * scale) / 2
+        private val bottom = height - (height - spanY * scale) / 2
+
         fun x(p: GeoPoint) = (left + (p.lon - minLon) * lonScale * scale).toFloat()
         fun y(p: GeoPoint) = (bottom - (p.lat - minLat) * scale).toFloat()
+    }
 
-        val unit = (shortSide / 100).coerceIn(3f, 8f)
-        line.strokeWidth = unit
-        val drawn = Path().apply {
-            moveTo(x(path.first()), y(path.first()))
-            path.drop(1).forEach { lineTo(x(it), y(it)) }
-        }
-        canvas.drawPath(drawn, line)
-        stops.forEach { canvas.drawCircle(x(it.point), y(it.point), unit * 1.2f, stop) }
-        position?.let { canvas.drawCircle(x(it), y(it), unit * 2.4f, car) }
+    private companion object {
+        const val COURSE_LINE = 6f
+        const val THIN_LINE = 3f
+        const val STOP_RADIUS = 7f
+        const val CAR_RADIUS = 13f
     }
 }
