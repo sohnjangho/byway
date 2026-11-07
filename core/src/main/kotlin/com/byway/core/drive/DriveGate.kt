@@ -12,7 +12,7 @@ class DriveGate {
     }
 
     fun allows(command: DriveCommand): Boolean = when (command) {
-        is DriveCommand.ShowRoute, is DriveCommand.Say, is DriveCommand.ShowLine -> true
+        is DriveCommand.ShowRoute, is DriveCommand.Say, is DriveCommand.ShowLine, is DriveCommand.SetCabin -> true
         is DriveCommand.ShowPanel -> parked
         is DriveCommand.Publish -> false
     }

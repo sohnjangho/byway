@@ -21,7 +21,7 @@ class CourseEngineTest {
     private val sections = listOf(Section("첫 구간", 0, 49), Section("강변", 50, 100, mood = "river"))
     private val course = Course("c", "시험", path, sections)
     private val stops = listOf(20, 40, 60, 80, 100).map { Stop("지점$it", path[it], it) }
-    private fun engine() = CourseEngine(DriveTuning(lookaheadMeters = 2_000.0)) { stops }
+    private fun engine() = CourseEngine(DriveTuning(offCourseMeters = 150.0, lookaheadMeters = 2_000.0)) { stops }
     private fun started() = engine().also { it.onEvent(DriveEvent.CourseStarted(course)) }
 
     private fun CourseEngine.at(index: Int) = onEvent(DriveEvent.LocationUpdated(path[index]))
