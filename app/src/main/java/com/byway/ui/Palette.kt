@@ -26,6 +26,7 @@ data class Palette(
     val airRiver: Int,
     val photoScrim: Int,
     val onPhoto: Int,
+    val softWash: Int,
 )
 
 val NightPalette = Palette(
@@ -52,6 +53,7 @@ val NightPalette = Palette(
     airRiver = 0xFF0D1D25.toInt(),
     photoScrim = 0xCC0D0E10.toInt(),
     onPhoto = 0xFFF7F8FA.toInt(),
+    softWash = 0xB8131417.toInt(),
 )
 
 val DayPalette = Palette(
@@ -78,6 +80,7 @@ val DayPalette = Palette(
     airRiver = 0xFFE4F3F6.toInt(),
     photoScrim = 0xCC0D0E10.toInt(),
     onPhoto = 0xFFF7F8FA.toInt(),
+    softWash = 0xC7F7F8FA.toInt(),
 )
 
 /** 글자 크기(sp)와 길이(dp). */

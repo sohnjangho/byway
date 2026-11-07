@@ -15,6 +15,7 @@ import com.byway.service.MapPanes
 import com.byway.service.MapStyle
 import com.byway.ui.DayPalette
 import com.byway.ui.MainActivity
+import com.byway.ui.NightPalette
 import com.byway.ui.mapColors
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -261,7 +262,8 @@ class MapPaneTest {
         const val EMPTY_STYLE = """{"version":8,"sources":{},"layers":[]}"""
         const val OFFLINE_MS = 1_500L
         const val HIDDEN_MS = 1_000L
-        val MOODS = listOf("#7CC48F", "#A3B3D1", "#5FC6D8")
+        val MOODS = listOf(NightPalette.sectionForest, NightPalette.sectionCity, NightPalette.sectionRiver)
+            .map { String.format("#%06X", it and 0xFFFFFF) }
         const val WIDTH = 1200
         const val HEIGHT = 700
         const val MIN_PIXELS = 40

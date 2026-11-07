@@ -11,7 +11,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps, ImageStat
 
 ROOT = Path(__file__).parent.parent
 TILE = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
@@ -25,6 +25,10 @@ CASING = (13, 14, 16)
 # 야간 커버는 사진만 어둡게 한다. 코스 선까지 어두워지면 코스가 안 보인다.
 NIGHT_BRIGHTNESS = 0.62
 NIGHT_CONTRAST = 1.12
+# 설명 뒤에 까는 흐린 배경. 실시간 블러 대신 작은 파일 하나를 앱과 시안이 같이 쓴다.
+SOFT_SIZE = (320, 200)
+SOFT_BLUR = 14
+SCENERY = ROOT / "app/src/main/assets/scenery"
 # 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 흰 지붕이나 옅은 모래, 콘크리트도 함께 덮인다.
 CLOUD_LEVEL = 150
 
@@ -95,8 +99,8 @@ def darkened(image):
     return ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(NIGHT_BRIGHTNESS)).enhance(NIGHT_CONTRAST)
 
 
-def cover(course, night=False):
-    path = course["path"]
+def ground(path):
+    """코스 둘레의 위성 사진과 그 좌표계. 구름은 뺀다."""
     zoom, left, top, window = frame(path)
     first_x, last_x = int(left // 256), int((left + window) // 256)
     first_y, last_y = int(top // 256), int((top + window) // 256)
@@ -106,7 +110,20 @@ def cover(course, night=False):
             sheet.paste(tile(zoom, x, y), ((x - first_x) * 256, (y - first_y) * 256))
     box = (int(left - first_x * 256), int(top - first_y * 256))
     drawn = SIZE * SCALE
-    image = without_clouds(sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS))
+    crop = sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS)
+    return without_clouds(crop), zoom, left, top, window
+
+
+def soft(course, photo=None):
+    """풍경 사진이 있으면 그것을, 없으면 위성 사진을 흐리게 만든다."""
+    base = photo or ground(course["path"])[0]
+    return ImageOps.fit(base, SOFT_SIZE, Image.LANCZOS).filter(ImageFilter.GaussianBlur(SOFT_BLUR))
+
+
+def cover(course, night=False):
+    path = course["path"]
+    image, zoom, left, top, window = ground(path)
+    drawn = SIZE * SCALE
     if night:
         image = darkened(image)
     ratio = drawn / window
@@ -135,6 +152,15 @@ def main():
                 continue
             cover(course, night).save(target, quality=82)
             print(target.name, target.stat().st_size, flush=True)
+        write_soft(course, out / f"{course['id']}-soft.jpg")
+
+
+def write_soft(course, target):
+    photo = SCENERY / f"{course['id']}.jpg"
+    if target.exists() and (not photo.exists() or photo.stat().st_mtime <= target.stat().st_mtime):
+        return
+    soft(course, Image.open(photo).convert("RGB") if photo.exists() else None).save(target, quality=80)
+    print(target.name, target.stat().st_size, flush=True)
 
 
 if __name__ == "__main__":

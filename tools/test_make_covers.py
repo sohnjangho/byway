@@ -107,5 +107,28 @@ class NightTest(unittest.TestCase):
         self.assertEqual(mc.section_colours()["river"], (0x4F, 0xD1, 0xE8))
 
 
+class SoftTest(unittest.TestCase):
+    course = {"path": TALL}
+
+    def half_black(self):
+        image = Image.new("RGB", (640, 640), (0, 0, 0))
+        image.paste((255, 255, 255), (320, 0, 640, 640))
+        return image
+
+    def test_a_soft_background_has_no_hard_edge(self):
+        image = mc.soft(self.course, self.half_black())
+        row = [image.getpixel((x, image.height // 2))[0] for x in range(image.width)]
+        self.assertLess(max(abs(a - b) for a, b in zip(row, row[1:])), 30)
+
+    def test_a_soft_background_stays_small(self):
+        self.assertLessEqual(mc.soft(self.course, self.half_black()).width, 320)
+
+    def test_without_a_photo_it_blurs_the_satellite_ground(self):
+        green = Image.new("RGB", (256, 256), (60, 110, 70))
+        with mock.patch.object(mc, "tile", return_value=green):
+            image = mc.soft(self.course)
+        self.assertEqual(image.getpixel((10, 10)), (60, 110, 70))
+
+
 if __name__ == "__main__":
     unittest.main()
