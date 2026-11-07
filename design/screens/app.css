@@ -532,7 +532,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .places { display: flex; flex-direction: column; gap: var(--space-2); }
 .place { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
 .place-no { flex: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--bg); font-weight: 700; }
-.place-name { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
+.place-body { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.place-name, .place-line { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.place-name { font-weight: 600; }
 .strip { position: absolute; left: var(--space-8); right: 0; bottom: var(--space-6); display: flex; gap: var(--space-3); overflow-x: auto; padding-right: var(--space-8); scrollbar-width: none; }
 .strip::-webkit-scrollbar { display: none; }
 .strip-card { flex: none; display: flex; align-items: center; gap: var(--space-3); width: 284px; height: 112px; padding: var(--space-2); border-radius: var(--radius-md); background: var(--bg-raised); text-align: left; }
@@ -561,7 +563,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .stage[data-window="third"] .side { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; padding: var(--space-2) var(--space-6) var(--space-6); }
 .stage[data-window="third"] .side-kick, .stage[data-window="third"] .side p, .stage[data-window="third"] .strip, .stage[data-window="third"] .side h2 { display: none; }
 .stage[data-window="third"] .side-name { font-size: 52px; line-height: 64px; }
-.stage[data-window="third"] .place:nth-child(n + 4) { display: none; }
 
 /* 홈은 메뉴를 지도 위에 얹는다. 메뉴 바탕은 반투명이라 지도가 밑까지 이어진다 */
 .screen-over .rail { position: absolute; top: 0; left: 0; bottom: 0; z-index: 3; background: var(--soft-wash); }
@@ -577,3 +578,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 
 .drive-music { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
 .drive-music .btn-small { align-self: center; }
+.stage[data-window="third"] .place-body { flex-direction: row; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.stage[data-window="third"] .place-name { flex: none; max-width: 56%; }
+.stage[data-window="third"] .place-line { text-align: right; }

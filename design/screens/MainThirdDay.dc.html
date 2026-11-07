@@ -72,8 +72,7 @@
         <sc-for list="{{ c.list }}" as="p" hint-placeholder-count="6">
           <li class="place">
             <span class="place-no t-label num">{{ p.no }}</span>
-            <span class="place-name t-small">{{ p.name }}</span>
-            <span class="t-label ink-2 nowrap">{{ p.line }}</span>
+            <span class="place-body"><span class="place-name t-small">{{ p.name }}</span><span class="place-line t-label ink-2">{{ p.line }}</span></span>
           </li>
         </sc-for>
       </ol>
@@ -115,7 +114,7 @@ const first = () => {
   if (!FITS[MOOD]) return all.find((c) => c.id === 'paldang-sunset');
   return all.filter(FITS[MOOD]).sort((a, b) => b.curves - a.curves)[0];
 };
-const LIMIT = { view: 2, sight: 2, food: 2 };
+const LIMIT = { view: 1, sight: 1, food: 1 };
 const shown = (places) => {
   const used = { view: 0, sight: 0, food: 0 };
   return places.filter((p) => {

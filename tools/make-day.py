@@ -29,6 +29,8 @@ def day_version(text, names):
 
 def window_version(text, window, width, height):
     text = text.replace('data-window="two"', f'data-window="{window}"')
+    if window == "third":
+        text = text.replace("const LIMIT = { view: 2, sight: 2, food: 2 };", "const LIMIT = { view: 1, sight: 1, food: 1 };")
     return re.sub(r'"\$preview":\{"width":\d+,"height":\d+\}', f'"$preview":{{"width":{width},"height":{height}}}', text)
 
 

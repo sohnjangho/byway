@@ -38,6 +38,10 @@ class WindowVersionTest(unittest.TestCase):
     def test_the_stage_names_its_window(self):
         self.assertIn('data-window="third"', day.window_version(self.source, "third", 841, 1210))
 
+    def test_a_narrow_window_lists_one_place_of_each_kind(self):
+        source = self.source + "const LIMIT = { view: 2, sight: 2, food: 2 };"
+        self.assertIn("const LIMIT = { view: 1, sight: 1, food: 1 };", day.window_version(source, "third", 841, 1210))
+
     def test_the_preview_takes_the_window_size(self):
         self.assertIn('"$preview":{"width":841,"height":1210}', day.window_version(self.source, "third", 841, 1210))
 

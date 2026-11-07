@@ -1,0 +1,482 @@
+{
+ "aewol-sunset": [
+  {
+   "name": "한림민속오일시장",
+   "kind": "food",
+   "lat": 33.4200743,
+   "lon": 126.2742014,
+   "note": "4·9일 오일장",
+   "evidence": "비짓제주가 끝자리 4·9일에 열리는 한림읍 전통 오일장으로 싣고 있다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CONT_000000000500759"
+  },
+  {
+   "name": "한림매일시장",
+   "kind": "food",
+   "lat": 33.416074,
+   "lon": 126.2637922,
+   "note": "상설 전통시장",
+   "evidence": "비짓제주가 한림읍 한림로 687의 농수산물·먹거리 상설시장으로 싣고 있다.",
+   "sourceUrl": "https://visitjeju.net/kr/detail/view?contentsid=CONT_000000000500758"
+  },
+  {
+   "name": "한림공원",
+   "kind": "sight",
+   "lat": 33.3892925,
+   "lon": 126.2402863,
+   "note": "1971년 개원 공원",
+   "evidence": "비짓제주가 1971년에 문을 연 협재리의 테마공원으로 소개한다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CONT_000000000500690"
+  },
+  {
+   "name": "고내봉",
+   "kind": "sight",
+   "lat": 33.4593322,
+   "lon": 126.3414694,
+   "note": "애월읍 고내리 오름",
+   "evidence": "비짓제주가 애월읍 고내리의 오름으로 싣고 있다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CNTS_000000000021251"
+  }
+ ],
+ "baegun-lake": [
+  {
+   "name": "능라도 판교본점",
+   "kind": "food",
+   "lat": 37.3919339,
+   "lon": 127.0648296,
+   "note": "평양냉면",
+   "evidence": "미쉐린 가이드 기사가 판교에 본점을 둔 평양냉면 전문점으로 소개했다.",
+   "sourceUrl": "https://guide.michelin.com/kr/ko/article/dining-out/%EC%B4%88%EA%B0%80%EC%9D%84-%EB%8A%A6%EB%8D%94%EC%9C%84-%EB%AF%B8%EC%89%90%EB%A6%B0-%EA%B0%80%EC%9D%B4%EB%93%9C%EA%B0%80-%EC%B6%94%EC%B2%9C%ED%95%98%EB%8A%94-%EB%83%89%EB%A9%B4-%EB%A7%9B%EC%A7%91"
+  },
+  {
+   "name": "부곡도깨비시장",
+   "kind": "food",
+   "lat": 37.3190206,
+   "lon": 126.9516039,
+   "note": "의왕 전통시장",
+   "evidence": "경기일보가 2025년 11월 의왕시 유일의 전통시장으로 보도했다.",
+   "sourceUrl": "https://kyeonggi.com/article/20251123580226"
+  },
+  {
+   "name": "의왕조류생태과학관",
+   "kind": "sight",
+   "lat": 37.3108814,
+   "lon": 126.9504254,
+   "note": "담수호 테마 과학관",
+   "evidence": "의왕시 문화관광 사이트가 왕송못동로 209의 과학관으로 안내한다.",
+   "sourceUrl": "https://www.uiwang.go.kr/culture/culturalexperience01"
+  },
+  {
+   "name": "바라산자연휴양림",
+   "kind": "sight",
+   "lat": 37.3730263,
+   "lon": 127.0219356,
+   "note": "자연휴양림",
+   "evidence": "의왕시 문화관광 사이트가 바라산로 84의 자연휴양림으로 소개한다.",
+   "sourceUrl": "https://www.uiwang.go.kr/culture/UWTOURRENEW0004"
+  }
+ ],
+ "byeonsan-sunset": [
+  {
+   "name": "곰소쉼터",
+   "kind": "food",
+   "lat": 35.5958057,
+   "lon": 126.6191361,
+   "note": "젓갈 정식",
+   "evidence": "한국관광공사가 진서면의 젓갈 정식 음식점으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=a55b9148-9b26-4238-a80e-0a5532109696"
+  },
+  {
+   "name": "격포어촌계 수산물회센터",
+   "kind": "food",
+   "lat": 35.6234861,
+   "lon": 126.470377,
+   "note": "격포항 회센터",
+   "evidence": "부안군 수산물 거래장터 안내가 격포항길 24-4·24-5의 회센터로 싣고 있다.",
+   "sourceUrl": "https://www.buan.go.kr/index.buan?menuCd=DOM_000000104002002002"
+  },
+  {
+   "name": "수성당",
+   "kind": "sight",
+   "lat": 35.6347937,
+   "lon": 126.4603716,
+   "note": "해신당",
+   "evidence": "한국관광공사가 격포리 적벽강 절벽 위의 해신당으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=509c85fa-b116-479a-9b61-aa1123e7fc67"
+  },
+  {
+   "name": "곰소염전",
+   "kind": "sight",
+   "lat": 35.5969278,
+   "lon": 126.6130112,
+   "note": "천일염 염전",
+   "evidence": "한국관광공사가 진서면의 천일염 염전으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=4d88a926-a25f-4b7b-92b8-5a863f0de3a1"
+  }
+ ],
+ "cheongpung-lake": [
+  {
+   "name": "마늘석갈비막국수",
+   "kind": "food",
+   "lat": 36.9428392,
+   "lon": 128.3304382,
+   "note": "마늘 돼지 석갈비",
+   "evidence": "한국관광공사가 단양 마늘을 쓴 석갈비 음식점으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=777425e1-6300-4d15-bb50-64983146eaf9"
+  },
+  {
+   "name": "청풍호반케이블카",
+   "kind": "sight",
+   "lat": 37.0012189,
+   "lon": 128.1665685,
+   "note": "비봉산행 케이블카",
+   "evidence": "제천시 관광 사이트가 물태리에서 비봉산까지 가는 케이블카로 안내한다.",
+   "sourceUrl": "https://tour.jecheon.go.kr/tour/base/tour/contents/view?clturCntntsNo=3727&menuLevel=3&menuNo=16"
+  },
+  {
+   "name": "만천하스카이워크",
+   "kind": "sight",
+   "lat": 36.9804552,
+   "lon": 128.3397865,
+   "note": "남한강 전망대",
+   "evidence": "단양군 관광 사이트가 적성면 옷바위길 10의 전망 시설로 안내한다.",
+   "sourceUrl": "https://www.danyang.go.kr/tour/1926?action=read&action-value=91b3aa3cf33d08393bb7577c1d829dcf&chathead=%EA%B4%80%EA%B4%91%EC%A7%80"
+  }
+ ],
+ "dalmaji-coast": [
+  {
+   "name": "기장해녀촌(연화리횟촌)",
+   "kind": "food",
+   "lat": 35.217963,
+   "lon": 129.2280968,
+   "note": "해산물 포장마차촌",
+   "evidence": "한국관광공사가 연화포구의 해산물 포장마차촌으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=a4077d37-6e2a-45fe-a33a-eecc86132491"
+  },
+  {
+   "name": "기장시장",
+   "kind": "food",
+   "lat": 35.2435707,
+   "lon": 129.2152375,
+   "note": "대게·해산물 시장",
+   "evidence": "비짓부산이 1944년 오일장에서 시작한 해산물 시장으로 소개한다.",
+   "sourceUrl": "https://visitbusan.net/index.do?lang_cd=ko&menuCd=DOM_000000201003001000&uc_seq=292"
+  },
+  {
+   "name": "해동용궁사",
+   "kind": "sight",
+   "lat": 35.188401,
+   "lon": 129.223074,
+   "note": "바닷가 사찰",
+   "evidence": "비짓부산이 기장읍 용궁길 86의 바닷가 사찰로 소개한다.",
+   "sourceUrl": "https://visitbusan.net/index.do?menuCd=DOM_000000201001001000&uc_seq=261&lang_cd=ko"
+  },
+  {
+   "name": "일광해수욕장",
+   "kind": "sight",
+   "lat": 35.2610856,
+   "lon": 129.2337392,
+   "note": "소설 갯마을 배경",
+   "evidence": "비짓부산이 오영수 소설 갯마을의 배경인 해수욕장으로 소개한다.",
+   "sourceUrl": "https://visitbusan.net/index.do?menuCd=DOM_000000201001001000&uc_seq=265&lang_cd=ko"
+  }
+ ],
+ "gampo-coast": [
+  {
+   "name": "경주 문무대왕릉",
+   "kind": "sight",
+   "lat": 35.7381286,
+   "lon": 129.4868756,
+   "note": "신라 수중릉",
+   "evidence": "국가유산청이 신라 문무왕의 수중릉으로 지정한 사적이다.",
+   "sourceUrl": "https://www.heritage.go.kr/heri/cul/culSelectDetail.do?pageNo=1_1_2_0&ccbaCpno=1333701580000"
+  },
+  {
+   "name": "송대말등대",
+   "kind": "sight",
+   "lat": 35.8072778,
+   "lon": 129.5114167,
+   "note": "감포항 북쪽 등대",
+   "evidence": "한국관광공사가 감포항 북쪽의 등대로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=b482704a-646d-46c8-baab-69ad9dba8e18"
+  }
+ ],
+ "gonjiam-forest": [
+  {
+   "name": "밀토랑바지락칼국수",
+   "kind": "food",
+   "lat": 37.3892889,
+   "lon": 127.2865387,
+   "note": "바지락칼국수",
+   "evidence": "한국관광공사가 초월읍의 칼국수·왕만두 음식점으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=d00805fb-fb5a-4b27-b366-689e25f50046"
+  },
+  {
+   "name": "경기도자박물관",
+   "kind": "sight",
+   "lat": 37.3510512,
+   "lon": 127.3266215,
+   "note": "도자 전문 박물관",
+   "evidence": "광주시 문화관광 사이트가 곤지암도자공원 안의 박물관으로 안내한다.",
+   "sourceUrl": "https://www.gjcity.go.kr/tour/contents.do?mId=0101070000"
+  }
+ ],
+ "gwanggyo-mountain": [
+  {
+   "name": "형제농원",
+   "kind": "food",
+   "lat": 37.3302752,
+   "lon": 127.0143814,
+   "note": "보리밥",
+   "evidence": "한국관광공사가 광교산 초입의 보리밥 음식점으로 싣고 있다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=ebce50c5-3d75-4d09-be99-fe9ca57867e3"
+  },
+  {
+   "name": "광교호수공원",
+   "kind": "sight",
+   "lat": 37.2832882,
+   "lon": 127.0685267,
+   "note": "원천·신대호수 공원",
+   "evidence": "한국관광공사가 원천호수와 신대호수를 품은 수변 공원으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=861ac274-a21b-42c0-b6b8-5e9e7cee4822"
+  },
+  {
+   "name": "수원광교박물관",
+   "kind": "sight",
+   "lat": 37.296335,
+   "lon": 127.0514071,
+   "note": "광교 출토 유물",
+   "evidence": "수원시 관광 사이트가 광교역사공원의 박물관으로 안내한다.",
+   "sourceUrl": "https://www.suwon.go.kr/sw-www/sw-visitsuwon/sw-visitsuwon-01/sw-visitsuwon-01-04/sw-visitsuwon-01-04-03.jsp"
+  }
+ ],
+ "halla-forest": [
+  {
+   "name": "제주민속오일시장",
+   "kind": "food",
+   "lat": 33.496856,
+   "lon": 126.475181,
+   "note": "2·7일 오일장",
+   "evidence": "제주도 공식 관광포털 비짓제주가 제주시 오일장서길 26의 오일장으로 소개하고 장날을 2일과 7일이 든 날로 적는다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CONT_000000000500748"
+  },
+  {
+   "name": "흑돈가 제주본점",
+   "kind": "food",
+   "lat": 33.48006,
+   "lon": 126.473523,
+   "note": "흑돼지 근고기",
+   "evidence": "비짓제주가 제주시 한라대학로 11의 흑돼지 근고기 전문점으로 소개한다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CNTS_000000000001043"
+  },
+  {
+   "name": "제주도립미술관",
+   "kind": "sight",
+   "lat": 33.452678,
+   "lon": 126.489405,
+   "note": "1100로변 도립미술관",
+   "evidence": "비짓제주가 제주시 1100로 2894-78의 공립 미술관으로 소개한다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CONT_000000000500544&menuId=DOM_000001917003000000"
+  },
+  {
+   "name": "서귀포자연휴양림",
+   "kind": "sight",
+   "lat": 33.313143,
+   "lon": 126.4643,
+   "note": "해발 700m 휴양림",
+   "evidence": "비짓제주가 서귀포시 1100로 882의 해발 약 700m 휴양림으로 소개한다.",
+   "sourceUrl": "https://www.visitjeju.net/kr/detail/view?contentsid=CONT_000000000500327"
+  }
+ ],
+ "heonhwa-coast": [
+  {
+   "name": "머구리횟집",
+   "kind": "food",
+   "lat": 37.773926,
+   "lon": 128.944829,
+   "note": "모듬회·물회",
+   "evidence": "강릉시 관광포털 음식점 목록에 창해로 19(견소동), 주메뉴 모듬회와 물회로 실려 있다.",
+   "sourceUrl": "https://www.gn.go.kr/tour/prog/foodManage/FD03/sub03_01_03_02/list.do"
+  },
+  {
+   "name": "하슬라아트월드",
+   "kind": "sight",
+   "lat": 37.706272,
+   "lon": 129.010149,
+   "note": "복합 예술공간",
+   "evidence": "강릉시 관광포털이 율곡로 1441의 미술관으로 싣고 연중 개방으로 표기한다.",
+   "sourceUrl": "https://www.gn.go.kr/tour/prog/lod/Sights/S0205/sub02_03_06/view.do?cid=158&orderBy=B&pageIndex=1"
+  }
+ ],
+ "manhang-mountain": [
+  {
+   "name": "고한구공탄시장",
+   "kind": "food",
+   "lat": 37.2012118,
+   "lon": 128.8538479,
+   "note": "1967년 개설 시장",
+   "evidence": "정선군 관광 사이트가 고한4길 46의 전통시장으로 소개한다.",
+   "sourceUrl": "https://www.jeongseon.go.kr/tour/jeongseontour/attractions?contentSeq=254765&mode=read"
+  },
+  {
+   "name": "김서방네닭갈비",
+   "kind": "food",
+   "lat": 37.1739736,
+   "lon": 128.992255,
+   "note": "물닭갈비",
+   "evidence": "한국관광공사 대한민국 구석구석이 태백의 물닭갈비 전문점으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=87477d7f-70e5-471b-9f34-7809e660b584"
+  },
+  {
+   "name": "태백석탄박물관",
+   "kind": "sight",
+   "lat": 37.117357,
+   "lon": 128.950474,
+   "note": "석탄 전문 박물관",
+   "evidence": "태백시 공식 누리집 안의 박물관 사이트가 천제단길 195의 박물관으로 안내한다.",
+   "sourceUrl": "https://www.taebaek.go.kr/coalmuseum/contents.do?key=798"
+  },
+  {
+   "name": "함백산",
+   "kind": "sight",
+   "lat": 37.161159,
+   "lon": 128.917602,
+   "note": "1,572.9m 산",
+   "evidence": "정선군 관광 사이트가 고한읍과 태백시 경계의 높이 1,572.9m 산으로 소개한다.",
+   "sourceUrl": "https://www.jeongseon.go.kr/tour/jeongseontour/attractions?contentSeq=254371&mode=read"
+  }
+ ],
+ "mulmi-coast": [
+  {
+   "name": "우리식당",
+   "kind": "food",
+   "lat": 34.8316181,
+   "lon": 128.0003815,
+   "note": "멸치쌈밥",
+   "evidence": "한국관광공사 대한민국 구석구석이 삼동면사무소 앞 멸치쌈밥 전문점으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=81767eec-5400-40c2-8d01-db191b0de6a6"
+  },
+  {
+   "name": "시골할매 막걸리",
+   "kind": "food",
+   "lat": 34.726739,
+   "lon": 127.894607,
+   "note": "3대째 토속 음식점",
+   "evidence": "한국관광공사 대한민국 구석구석이 가천 다랭이마을의 3대째 토속 음식점으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=ff662de7-582a-4e69-a270-711fcbeaa0fd"
+  },
+  {
+   "name": "설리스카이워크",
+   "kind": "sight",
+   "lat": 34.708532,
+   "lon": 128.021809,
+   "note": "캔틸레버 스카이워크",
+   "evidence": "남해군 관광 사이트가 미조면 송정리의 비대칭형 캔틸레버 교량으로 소개한다.",
+   "sourceUrl": "https://www.namhae.go.kr/tour/00007/00024/00624.web"
+  },
+  {
+   "name": "남해 지족해협 죽방렴",
+   "kind": "sight",
+   "lat": 34.832003,
+   "lon": 128.007099,
+   "note": "명승 지정 죽방렴",
+   "evidence": "남해군 관광 사이트가 지족해협 일원의 죽방렴 23개소가 명승으로 지정되어 있다고 적는다.",
+   "sourceUrl": "https://www.namhae.go.kr/tour/00511.web?amode=view&idx=199"
+  }
+ ],
+ "paldang-sunset": [
+  {
+   "name": "낙선재",
+   "kind": "food",
+   "lat": 37.456015,
+   "lon": 127.206169,
+   "note": "한정식·닭볶음탕",
+   "evidence": "한국관광공사 대한민국 구석구석이 남한산성 인근의 한정식과 닭볶음탕 음식점으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=481dfd36-08ca-4588-9e8c-de796431547e"
+  },
+  {
+   "name": "두물머리연핫도그",
+   "kind": "food",
+   "lat": 37.534772,
+   "lon": 127.316978,
+   "note": "연잎 핫도그",
+   "evidence": "한국관광공사 영문 사이트가 양서면 두물머리길 103-8의 핫도그 가게로 소개한다.",
+   "sourceUrl": "https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?menuSn=211&vcontsId=194112"
+  },
+  {
+   "name": "남한산성 수어장대",
+   "kind": "sight",
+   "lat": 37.479828,
+   "lon": 127.17658,
+   "note": "남한산성 지휘 누각",
+   "evidence": "한국관광공사 대한민국 구석구석이 남한산성 안의 군사 지휘 누각으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=d23e3015-f2ec-4a7e-b4fd-4518ea4bf6d5"
+  },
+  {
+   "name": "다산 정약용 유적지",
+   "kind": "sight",
+   "lat": 37.516841,
+   "lon": 127.299626,
+   "note": "정약용 생가 유적",
+   "evidence": "한국관광공사 대한민국 구석구석 기사가 남양주 조안면에 정약용의 생가와 묘가 있는 유적지로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=553a4a26-3ea5-461b-825b-193ec1e7a510"
+  }
+ ],
+ "seomjin-river": [
+  {
+   "name": "구례 오산 사성암",
+   "kind": "sight",
+   "lat": 35.1798368,
+   "lon": 127.4806407,
+   "note": "명승 제111호 암자",
+   "evidence": "구례군 관광 사이트가 문척면 사성암길 303에 있고 2014년 명승 제111호로 지정되었다고 적는다.",
+   "sourceUrl": "https://www.gurye.go.kr/tour/detail.do?tourId=TOUR_0000000048&menuNo=101001009000"
+  },
+  {
+   "name": "곡성섬진강천문대",
+   "kind": "sight",
+   "lat": 35.226727,
+   "lon": 127.368933,
+   "note": "천체 관측 천문대",
+   "evidence": "곡성군 공식 누리집이 2026년 운영 공지를 올리는 천문대다.",
+   "sourceUrl": "https://www.gokseong.go.kr/star/"
+  }
+ ],
+ "yangpyeong-river": [
+  {
+   "name": "양평물맑은시장",
+   "kind": "food",
+   "lat": 37.489595,
+   "lon": 127.491997,
+   "note": "3·8일 오일장",
+   "evidence": "양평군 관광 사이트가 양평읍 양평시장길 11-1의 전통시장으로 소개하고 장날을 3일과 8일로 적는다.",
+   "sourceUrl": "https://tour.yp21.go.kr/www/contents.do?key=134"
+  },
+  {
+   "name": "양평장터집",
+   "kind": "food",
+   "lat": 37.4900124,
+   "lon": 127.4933011,
+   "note": "양평해장국",
+   "evidence": "양평군 관광 사이트가 양평읍 양평장터길 5의 해장국집으로 소개한다.",
+   "sourceUrl": "https://tour.yp21.go.kr/www/selectTourCntntsWebView.do?tourNo=415&pageUnit=6&pageIndex=3&searchCnd=all&key=541&ctgry=37&sortTy=HIT"
+  },
+  {
+   "name": "양평군립미술관",
+   "kind": "sight",
+   "lat": 37.497027,
+   "lon": 127.48391,
+   "note": "2011년 개관 미술관",
+   "evidence": "한국관광공사 대한민국 구석구석이 양평읍 양근리에 2011년 개관한 미술관으로 소개한다.",
+   "sourceUrl": "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=a9138503-03ae-4d4f-a7a7-ea9c2b65d0c4"
+  },
+  {
+   "name": "영은미술관",
+   "kind": "sight",
+   "lat": 37.412942,
+   "lon": 127.268985,
+   "note": "2000년 개관 미술관",
+   "evidence": "한국관광공사 영문 사이트가 광주시 청석로 300에 2000년 11월 세워진 현대미술관으로 소개한다.",
+   "sourceUrl": "https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=86192"
+  }
+ ]
+}
