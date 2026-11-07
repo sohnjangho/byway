@@ -17,7 +17,8 @@
 <div class="screen screen-rail">
   <nav class="rail">
     <a href="Main.dc.html" class="brand t-brand">에움길</a>
-    <a href="Main.dc.html" class="rail-item t-small is-on">둘러보기</a>
+    <a href="Main.dc.html" class="rail-item t-small">홈</a>
+    <a href="Browse.dc.html" class="rail-item t-small is-on">둘러보기</a>
     <a href="Ranking.dc.html" class="rail-item t-small">랭킹</a>
     <a href="Me.dc.html" class="rail-item t-small">내 코스</a>
     <a href="Me.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
@@ -28,16 +29,16 @@
         <div class="swipe">
           <div class="swipe-pages">
             <div id="hero-route" class="swipe-page">
-              <a href="Preview.dc.html"><img src="{{ hero.route }}" alt="코스 경로"></a>
+              <a href="Main.dc.html"><img src="{{ hero.route }}" alt="코스 경로"></a>
               <a href="#hero-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
             </div>
             <div id="hero-photo" class="swipe-page">
-              <a href="Preview.dc.html"><img src="{{ hero.photo }}" alt="코스 풍경"></a>
+              <a href="Main.dc.html"><img src="{{ hero.photo }}" alt="코스 풍경"></a>
               <a href="#hero-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
             </div>
           </div>
         </div>
-        <a href="Preview.dc.html" class="info-box soft">
+        <a href="Main.dc.html" class="info-box soft">
           <img class="soft-img" src="{{ hero.soft }}" alt="">
           <span class="t-small">오늘 저녁 달리기 좋은 길</span>
           <h1 class="t-title">{{ hero.name }}</h1>
@@ -65,7 +66,7 @@
     </div>
     <div class="browse-grid">
       <sc-for list="{{ cards }}" as="c" hint-placeholder-count="10">
-        <a href="Preview.dc.html" class="course-card">
+        <a href="Main.dc.html" class="course-card">
           <img src="{{ c.route }}" alt="">
           <span class="info-box soft">
             <img class="soft-img" src="{{ c.soft }}" alt="">

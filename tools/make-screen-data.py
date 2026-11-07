@@ -54,7 +54,7 @@ def entry(course, metrics, has_photo):
     return {
         "id": cid, "name": course["name"], "region": course["region"], "summary": course["summary"],
         "km": metrics["km"], "eum": metrics["eum"], "curves": metrics["curves"], "gain": metrics["gain"],
-        "mix": metrics["mix"], "themes": tags["themes"], "picks": picks,
+        "mix": metrics["mix"], "themes": tags["themes"], "times": tags["times"], "seasons": tags["seasons"], "picks": picks,
         "photo": f"images/scenery/{cid}.jpg" if has_photo else None,
         "credit": course.get("sceneryCredit", ""),
         "coverNight": f"images/covers/{cid}-night.jpg", "coverDay": f"images/covers/{cid}.jpg",

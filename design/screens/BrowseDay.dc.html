@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 둘러보기</title>
+<script src="./support.js"></script>
+<script src="courses.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day">
+<div class="screen screen-rail">
+  <nav class="rail">
+    <a href="MainDay.dc.html" class="brand t-brand">에움길</a>
+    <a href="MainDay.dc.html" class="rail-item t-small">홈</a>
+    <a href="BrowseDay.dc.html" class="rail-item t-small is-on">둘러보기</a>
+    <a href="RankingDay.dc.html" class="rail-item t-small">랭킹</a>
+    <a href="MeDay.dc.html" class="rail-item t-small">내 코스</a>
+    <a href="MeDay.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
+  </nav>
+  <div class="browse">
+    <div class="browse-top">
+      <div class="tile-route">
+        <div class="swipe">
+          <div class="swipe-pages">
+            <div id="hero-route" class="swipe-page">
+              <a href="MainDay.dc.html"><img src="{{ hero.route }}" alt="코스 경로"></a>
+              <a href="#hero-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
+            </div>
+            <div id="hero-photo" class="swipe-page">
+              <a href="MainDay.dc.html"><img src="{{ hero.photo }}" alt="코스 풍경"></a>
+              <a href="#hero-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
+            </div>
+          </div>
+        </div>
+        <a href="MainDay.dc.html" class="info-box soft">
+          <img class="soft-img" src="{{ hero.soft }}" alt="">
+          <span class="t-small">오늘 저녁 달리기 좋은 길</span>
+          <h1 class="t-title">{{ hero.name }}</h1>
+          <span class="picks">
+            <sc-for list="{{ hero.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
+          </span>
+          <span class="t-small ink-2">{{ hero.summary }}</span>
+        </a>
+      </div>
+      <sc-for list="{{ shelves }}" as="s" hint-placeholder-count="2">
+        <button type="button" onClick="{{ s.pick }}" class="course-card">
+          <img src="{{ s.route }}" alt="">
+          <span class="info-box soft">
+            <img class="soft-img" src="{{ s.soft }}" alt="">
+            <span class="t-heading">{{ s.label }}</span>
+            <span class="t-small ink-2">코스 {{ s.count }}개</span>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+    <div class="chips">
+      <sc-for list="{{ regions }}" as="r" hint-placeholder-count="8">
+        <button type="button" onClick="{{ r.pick }}" class="{{ r.cls }}">{{ r.label }} <span class="chip-count">{{ r.count }}</span></button>
+      </sc-for>
+    </div>
+    <div class="browse-grid">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="10">
+        <a href="MainDay.dc.html" class="course-card">
+          <img src="{{ c.route }}" alt="">
+          <span class="info-box soft">
+            <img class="soft-img" src="{{ c.soft }}" alt="">
+            <span class="t-body bold">{{ c.name }}</span>
+            <span class="t-label ink-2">{{ c.note }}</span>
+          </span>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
+const COVER = "coverDay";
+const route = (c) => c[COVER];
+const byId = (id) => window.COURSES.find((c) => c.id === id);
+const REGIONS = ['수도권', '강원', '충청', '경상', '전라', '남해안', '제주'];
+const SHELVES = [
+  { label: '바다를 끼고', theme: 'coast', cover: 'dalmaji-coast' },
+  { label: '고개를 넘어', theme: 'mountain', cover: 'cheongpung-lake' },
+];
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { region: '전체', theme: null }; }
+  renderVals() {
+    const { region, theme } = this.state;
+    const all = window.COURSES;
+    const shown = all.filter((c) => (theme ? c.themes.includes(theme) : region === '전체' || c.region === region));
+    const hero = byId('paldang-sunset');
+    const chip = (label, count) => ({
+      label, count,
+      cls: !theme && region === label ? 'chip t-small is-on' : 'chip t-small',
+      pick: () => this.setState({ region: label, theme: null }),
+    });
+    return {
+      hero: { name: hero.name, route: route(hero), photo: hero.photo, soft: hero.soft, summary: hero.summary, tags: hero.picks.map((text) => ({ text })) },
+      shelves: SHELVES.map((s) => ({
+        label: s.label, route: route(byId(s.cover)), soft: byId(s.cover).soft,
+        count: all.filter((c) => c.themes.includes(s.theme)).length,
+        pick: () => this.setState({ theme: s.theme }),
+      })),
+      regions: [chip('전체', all.length), ...REGIONS.map((r) => chip(r, all.filter((c) => c.region === r).length))],
+      cards: shown.map((c) => ({ name: c.name, route: route(c), soft: c.soft, note: c.picks[0] })),
+    };
+  }
+}
+</script>
+</body>
+</html>

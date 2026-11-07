@@ -38,6 +38,8 @@
   --window-width: 1700px;
   --window-height: 1184px;
   --window-split-width: 840px;
+  --window-full-width: 2560px;
+  --window-tall-height: 1210px;
   --touch-min: 76px;
   --button-large: 100px;
   --button-medium: 80px;

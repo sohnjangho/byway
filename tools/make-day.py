@@ -8,7 +8,13 @@ from pathlib import Path
 SCREENS = Path(__file__).parent.parent / "design/screens"
 # 메인 화면의 창 크기별 판. 원본 Main 은 2/3 창이다. 값은 에뮬레이터 실측이다.
 # 메인 화면의 분위기별 판. 앱은 날씨와 시각으로 고르고 시안은 판을 나눠 보인다.
-MOODS = {"MainRain": "rain", "MainSunset": "sunset", "MainAutumn": "autumn"}
+MOODS = {
+    "MainRain": "rain", "MainSnow": "snow", "MainFog": "fog", "MainCloudy": "cloudy",
+    "MainSunrise": "sunrise", "MainSunset": "sunset", "MainNight": "night",
+    "MainSpring": "spring", "MainSummer": "summer", "MainAutumn": "autumn", "MainWinter": "winter",
+}
+# 밤에는 시스템이 야간 테마이므로 주간판을 만들지 않는다.
+NIGHT_ONLY = {"MainNight"}
 WINDOWS = {"MainFull": ("full", 2560, 1210), "MainThird": ("third", 841, 1210)}
 
 
@@ -40,6 +46,8 @@ def main():
     sources = sorted(p for p in SCREENS.glob("*.dc.html") if not p.name.endswith("Day.dc.html"))
     names = [p.name.removesuffix(".dc.html") for p in sources]
     for source in sources:
+        if source.name.removesuffix(".dc.html") in NIGHT_ONLY:
+            continue
         target = source.with_name(source.name.replace(".dc.html", "Day.dc.html"))
         target.write_text(day_version(source.read_text(encoding="utf-8"), names), encoding="utf-8")
         print(target.name)
