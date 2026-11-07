@@ -27,7 +27,7 @@ internal fun aboutScreen(context: Context, kit: BrowseKit, onBack: () -> Unit): 
     }
 
 private fun credits(courses: List<Course>): List<String> =
-    (courses.map { it.attribution } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
+    (courses.map { it.attribution } + courses.map { it.sceneryCredit } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
 
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",

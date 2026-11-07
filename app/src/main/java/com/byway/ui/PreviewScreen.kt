@@ -53,11 +53,19 @@ internal fun previewScreen(
     }
 }
 
+/** 코스 이름과 설명. 코스 풍경을 흐리게 깐 면 위에 쓴다. */
+private fun Context.intro(kit: BrowseKit, course: Course): View = column().apply {
+    softBackground(course)
+    setPadding(dp(Dimens.SPACE_6), dp(Dimens.SPACE_4), dp(Dimens.SPACE_6), dp(Dimens.SPACE_4))
+    addView(label(kit.book.character(course), Dimens.SMALL))
+    addView(label(course.name, Dimens.TITLE, bold = true))
+    addSpaced(pickRow(course.tags), Dimens.SPACE_2)
+    if (course.summary.isNotBlank()) addSpaced(label(course.summary, Dimens.BODY), Dimens.SPACE_2)
+}
+
 private fun Context.details(kit: BrowseKit, course: Course): View = column().apply {
     val facts = kit.book.facts(course)
-    addView(label(kit.book.character(course), Dimens.SMALL, palette.accent))
-    addView(label(course.name, Dimens.TITLE, bold = true))
-    if (course.summary.isNotBlank()) addView(label(course.summary, Dimens.BODY, palette.inkSecondary))
+    addView(intro(kit, course))
     val numbers = listOf(
         Fact(kmText(facts.meters), "거리"),
         Fact("${facts.curves}", "굽이"),

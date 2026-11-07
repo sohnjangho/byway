@@ -38,6 +38,8 @@ data class Course(
     val region: String = "",
     /** 코스를 따라 고르게 뽑은 고도(m). */
     val elevation: List<Double> = emptyList(),
+    /** 풍경 사진의 출처. 비어 있으면 사진을 쓰지 않는다. */
+    val sceneryCredit: String = "",
 )
 
 /** 내비에 올리는 코스 위의 한 지점. */

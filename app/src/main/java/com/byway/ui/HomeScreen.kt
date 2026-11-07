@@ -75,10 +75,20 @@ private fun Context.heroCard(kit: BrowseKit, course: Course, line: String): View
 
 private fun Context.heroText(kit: BrowseKit, course: Course, line: String): View = column().apply {
     val facts = kit.book.facts(course)
+    softBackground(course, radius = 0)
     setPadding(dp(Dimens.SPACE_6), dp(Dimens.SPACE_4), dp(Dimens.SPACE_6), dp(Dimens.SPACE_4))
-    addView(label(line, Dimens.SMALL, palette.accent).atMostLines(1))
-    addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
-    addView(label(kit.book.character(course), Dimens.SMALL, palette.inkSecondary).atMostLines(1))
+    addView(label(line, Dimens.SMALL).atMostLines(1))
+    val name = label(course.name, Dimens.TITLE, bold = true).atMostLines(1)
+    if (kit.wide) {
+        val title = row().apply {
+            addView(name, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_4) })
+            addView(pickRow(course.tags))
+        }
+        addView(title)
+    } else {
+        addView(name)
+        addSpaced(pickRow(course.tags), Dimens.SPACE_2)
+    }
     val numbers = listOf(
         Fact("${facts.curves}", "굽이"),
         Fact(ratioText(facts), "에움 배율"),
@@ -97,7 +107,7 @@ private fun Context.moodLegend(share: Map<String, Int>): View = row().apply {
     share.forEach { (mood, percent) ->
         addView(sectionDot(mood), LinearLayout.LayoutParams(dp(Dimens.DOT), dp(Dimens.DOT)).apply { marginEnd = dp(Dimens.SPACE_2) })
         addView(
-            label("${moodWord(mood)} $percent%", Dimens.LABEL, palette.inkSecondary).tabular(),
+            label("${moodWord(mood)} $percent%", Dimens.LABEL).tabular(),
             LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_6) },
         )
     }
@@ -136,7 +146,7 @@ private fun Context.topRow(place: Int, ranked: Ranked, onClick: () -> Unit): Vie
     )
     val text = column().apply {
         addView(label(ranked.course.name, Dimens.BODY).atMostLines(1))
-        addView(label("${kmText(ranked.facts.meters)} · 에움 ${ratioText(ranked.facts)}", Dimens.LABEL, palette.inkMuted).tabular().atMostLines(1))
+        addView(label(pickLabels(ranked.course.tags).firstOrNull().orEmpty(), Dimens.LABEL, palette.inkMuted).atMostLines(1))
     }
     addView(text, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_2) })
     addView(label("${ranked.facts.curves}", Dimens.HEADING, bold = true).tabular())

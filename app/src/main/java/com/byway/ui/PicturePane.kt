@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byway.core.course.Course
@@ -15,7 +16,7 @@ import com.byway.service.MapPanes
 import com.byway.service.MapStyle
 
 /**
- * 코스 상세의 그림 칸. 코스 그림과 지도, 위성을 바꿔 본다.
+ * 코스 상세의 그림 칸. 코스 그림과 지도, 위성, 풍경 사진을 바꿔 본다.
  * 지도를 쓸 수 없으면 전환 버튼 없이 코스 그림만 둔다. 지도는 정차 화면에만 쓰고 칸이 사라질 때 놓는다.
  */
 @SuppressLint("ViewConstructor")
@@ -35,6 +36,8 @@ internal class PicturePane(
         setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
     }
     private val buttons = mutableMapOf<Picture, TextView>()
+    private val choices = picturesFor(Covers.hasScenery(context, course))
+    private val scenery = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
 
     init {
         asCard()
@@ -44,6 +47,8 @@ internal class PicturePane(
         addView(drawing, matchFrame().apply { topMargin = top })
         if (map != null) {
             addView(map.view, matchFrame())
+            addView(scenery, matchFrame())
+            Covers.loadScenery(context, course) { scenery.setImageBitmap(it) }
             addView(
                 credit,
                 LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.START).apply {
@@ -59,7 +64,7 @@ internal class PicturePane(
                     marginEnd = context.dp(Dimens.SPACE_6)
                 },
             )
-            show(picture)
+            show(picture.takeIf { it in choices } ?: Picture.SATELLITE)
         }
     }
 
@@ -67,7 +72,7 @@ internal class PicturePane(
     private fun switcher(): View = LinearLayout(context).apply {
         background = context.rounded(colors.photoScrim)
         clipToOutline = true
-        Picture.entries.forEach { picture ->
+        choices.forEach { picture ->
             val button = context.label(picture.title, Dimens.SMALL, colors.onPhoto).apply {
                 gravity = Gravity.CENTER
                 setPadding(context.dp(Dimens.SPACE_6), 0, context.dp(Dimens.SPACE_6), 0)
@@ -90,7 +95,8 @@ internal class PicturePane(
             button.typeface = if (on) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
         }
         drawing.visibility = if (picture == Picture.DRAWING) VISIBLE else GONE
-        pane.view.visibility = if (picture == Picture.DRAWING) GONE else VISIBLE
+        pane.view.visibility = if (picture == Picture.STREET || picture == Picture.SATELLITE) VISIBLE else GONE
+        scenery.visibility = if (picture == Picture.SCENERY) VISIBLE else GONE
         credit.visibility = if (picture == Picture.DRAWING) GONE else VISIBLE
         when (picture) {
             Picture.DRAWING -> Unit
@@ -102,6 +108,7 @@ internal class PicturePane(
                 pane.show(course, MapStyle.SATELLITE)
                 credit.text = MapStyle.SATELLITE.credit
             }
+            Picture.SCENERY -> credit.text = course.sceneryCredit
         }
     }
 

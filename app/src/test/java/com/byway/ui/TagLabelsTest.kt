@@ -50,6 +50,16 @@ class TagLabelsTest {
     }
 
     @Test
+    fun aCoverNoteJoinsTheDistanceAndTheMainPick() {
+        assertEquals("50.3km · 가을에 추천", coverNote("50.3km", CourseTags(seasons = listOf("autumn"))))
+    }
+
+    @Test
+    fun aCoverNoteWithoutPicksIsTheDistanceAlone() {
+        assertEquals("50.3km", coverNote("50.3km", CourseTags()))
+    }
+
+    @Test
     fun themeHasAWord() {
         assertEquals("호수", themeLabel("lake"))
     }

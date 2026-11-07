@@ -23,6 +23,9 @@ private val SPOT_KINDS = mapOf("view" to "전망", "food" to "식사", "rest" to
 fun tagLabels(tags: CourseTags): List<String> =
     tags.themes.mapNotNull(THEMES::get) + tags.times.mapNotNull(TIMES::get) + tags.moods.mapNotNull(MOODS::get)
 
+/** 추천이 사람의 판단임을 화면에서 밝히는 문구. */
+const val PICK_NOTE = "추천 표시는 에움길이 고른 것입니다"
+
 /** 코스를 고를 이유로 보이는 표시. 계절, 나이대, 분위기에서 대표값 하나씩 쓴다. */
 fun pickLabels(tags: CourseTags): List<String> = listOfNotNull(
     tags.seasons.firstOrNull()?.let(SEASONS::get)?.let { "$it $PICK_WORD" },

@@ -34,6 +34,7 @@ internal object Dimens {
     const val BUTTON_LARGE = Tokens.BUTTON_LARGE
     const val BUTTON_MEDIUM = Tokens.BUTTON_MEDIUM
     const val BUTTON_SMALL = Tokens.BUTTON_SMALL
+    const val PICK_HEIGHT = Tokens.PICK_HEIGHT
     const val BUTTON_PADDING = 32
     const val HAIRLINE = 1
     const val CREDIT_PADDING = 4

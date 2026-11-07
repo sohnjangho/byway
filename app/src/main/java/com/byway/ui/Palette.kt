@@ -102,6 +102,7 @@ object Tokens {
     const val BUTTON_LARGE = 100
     const val BUTTON_MEDIUM = 80
     const val BUTTON_SMALL = 64
+    const val PICK_HEIGHT = 44
     const val COURSE_LINE = 6
     const val COURSE_LINE_THUMB = 3
     const val TEXT_DRIVE_NUMBER = 112f

@@ -19,7 +19,11 @@ enum class Picture(val title: String) {
     DRAWING("코스 그림"),
     STREET("지도"),
     SATELLITE("위성"),
+    SCENERY("풍경"),
 }
+
+/** 풍경 사진이 있는 코스만 풍경을 고를 수 있다. */
+fun picturesFor(hasScenery: Boolean): List<Picture> = Picture.entries.filter { it != Picture.SCENERY || hasScenery }
 
 /** 운전자가 고른 것들. 창 막대를 끌어 Activity 가 다시 만들어져도 남도록 Bundle 에 담는다. */
 data class Nav(

@@ -38,7 +38,7 @@ internal fun Context.coverCard(kit: BrowseKit, course: Course, sizePx: Int): Vie
         setBackgroundColor(palette.photoScrim)
         setPadding(dp(Dimens.SPACE_4), dp(Dimens.SPACE_2), dp(Dimens.SPACE_4), dp(Dimens.SPACE_3))
         addView(label(course.name, Dimens.BODY, palette.onPhoto, bold = true).atMostLines(1))
-        addView(label(kit.book.character(course), Dimens.LABEL, palette.onPhoto).atMostLines(1))
+        addView(label(coverNote(kmText(kit.book.facts(course).meters), course.tags), Dimens.LABEL, palette.onPhoto).atMostLines(1))
         val bar = sectionBar(kit.book, course).apply { show(course.sections.map { 1f }) }
         addView(bar, LinearLayout.LayoutParams(MATCH, dp(Dimens.CARD_BAR_HEIGHT)).apply { topMargin = dp(Dimens.SPACE_2) })
     }
