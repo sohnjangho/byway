@@ -15,6 +15,12 @@
     "times": [
       "sunrise",
       "day"
+    ],
+    "seasons": [
+      "winter"
+    ],
+    "ages": [
+      "30s"
     ]
   },
   "waypoints": [

@@ -42,7 +42,7 @@ class CourseFileTest {
     private fun v2(attribution: String = "OSM", spotIndex: Int = 1) = """
         {"schemaVersion":2,"id":"t","name":"시험","attribution":"$attribution","summary":"강을 따라가는 길",
          "toleranceMeters":800.0,
-         "tags":{"themes":["river"],"moods":["alone"],"times":["sunset"]},
+         "tags":{"themes":["river"],"moods":["alone"],"times":["sunset"],"seasons":["spring"],"ages":["20s"]},
          "spots":[{"name":"전망대","kind":"view","lat":37.0,"lon":127.1,"pathIndex":$spotIndex}],
          "path":[[37.0,127.0],[37.0,127.1]],
          "sections":[{"name":"앞","startIndex":0,"endIndex":1}]}
@@ -55,7 +55,10 @@ class CourseFileTest {
 
     @Test
     fun v2ReadsTags() {
-        assertEquals(CourseTags(listOf("river"), listOf("alone"), listOf("sunset")), parseCourse(v2()).tags)
+        assertEquals(
+            CourseTags(listOf("river"), listOf("alone"), listOf("sunset"), listOf("spring"), listOf("20s")),
+            parseCourse(v2()).tags,
+        )
     }
 
     @Test
@@ -91,6 +94,14 @@ class CourseFileTest {
 
     private val allCourses by lazy {
         File("../app/src/main/assets/courses").listFiles().orEmpty().map { parseCourse(it.readText()) }
+    }
+
+    @Test
+    fun everyCourseSaysWhenAndForWhomItIsPicked() {
+        allCourses.forEach { course ->
+            assertTrue("${course.id} 계절", course.tags.seasons.isNotEmpty())
+            assertTrue("${course.id} 나이대", course.tags.ages.isNotEmpty())
+        }
     }
 
     @Test

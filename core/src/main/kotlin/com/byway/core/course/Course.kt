@@ -18,6 +18,9 @@ data class CourseTags(
     val themes: List<String> = emptyList(),
     val moods: List<String> = emptyList(),
     val times: List<String> = emptyList(),
+    /** 추천 계절과 나이대. 앞의 값이 대표다. 주행 통계가 아니라 사람이 고른 편집 추천이다. */
+    val seasons: List<String> = emptyList(),
+    val ages: List<String> = emptyList(),
 )
 
 data class Course(

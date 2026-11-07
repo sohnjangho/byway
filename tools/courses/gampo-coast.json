@@ -17,6 +17,12 @@
     "times": [
       "sunrise",
       "day"
+    ],
+    "seasons": [
+      "spring"
+    ],
+    "ages": [
+      "50s"
     ]
   },
   "waypoints": [

@@ -33,6 +33,23 @@ class TagLabelsTest {
     }
 
     @Test
+    fun picksNameTheSeasonTheAgeAndTheMood() {
+        val tags = CourseTags(moods = listOf("date"), seasons = listOf("spring"), ages = listOf("20s"))
+        assertEquals(listOf("봄에 추천", "20대 추천", "데이트"), pickLabels(tags))
+    }
+
+    @Test
+    fun onlyTheFirstPickOfEachKindIsShown() {
+        val tags = CourseTags(moods = listOf("alone", "date"), seasons = listOf("autumn", "spring"), ages = listOf("40s", "50s"))
+        assertEquals(listOf("가을에 추천", "40대 추천", "혼자"), pickLabels(tags))
+    }
+
+    @Test
+    fun aCourseWithoutPicksShowsNone() {
+        assertEquals(emptyList<String>(), pickLabels(CourseTags()))
+    }
+
+    @Test
     fun themeHasAWord() {
         assertEquals("호수", themeLabel("lake"))
     }

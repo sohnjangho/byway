@@ -35,6 +35,8 @@ private data class TagsFile(
     val themes: List<String> = emptyList(),
     val moods: List<String> = emptyList(),
     val times: List<String> = emptyList(),
+    val seasons: List<String> = emptyList(),
+    val ages: List<String> = emptyList(),
 )
 
 @Serializable
@@ -61,7 +63,7 @@ fun parseCourse(text: String): Course {
         path = file.path.map { (lat, lon) -> GeoPoint(lat, lon) },
         sections = sections,
         spots = file.spots.map { Spot(it.name, it.kind, GeoPoint(it.lat, it.lon), it.pathIndex) },
-        tags = CourseTags(file.tags.themes, file.tags.moods, file.tags.times),
+        tags = CourseTags(file.tags.themes, file.tags.moods, file.tags.times, file.tags.seasons, file.tags.ages),
         summary = file.summary,
         attribution = file.attribution,
         toleranceMeters = file.toleranceMeters,
