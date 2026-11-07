@@ -22,7 +22,7 @@ CACHE = Path(tempfile.gettempdir()) / "byway-tiles"
 CACHE.mkdir(exist_ok=True)
 COLORS = {"forest": (124, 196, 143), "city": (214, 222, 238), "river": (95, 198, 216)}
 FALLBACK = (240, 168, 104)
-# 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 밭이나 모래처럼 색이 있는 곳은 걸리지 않는다.
+# 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 흰 지붕이나 옅은 모래, 콘크리트도 함께 덮인다.
 CLOUD_LEVEL = 150
 
 
@@ -63,6 +63,8 @@ def without_clouds(image):
     darkest = ImageChops.darker(ImageChops.darker(red, green), blue)
     cloud = darkest.point(lambda v: 255 if v > CLOUD_LEVEL else 0).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
     clear = ImageChops.invert(cloud).point(lambda v: 255 if v > 250 else 0)
+    if not clear.getbbox():
+        return image
     land = tuple(int(v) for v in ImageStat.Stat(image, clear).mean)
     filled = Image.composite(Image.new("RGB", image.size, land), image, cloud)
     for radius in (48, 24, 12):

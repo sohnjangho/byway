@@ -3,7 +3,8 @@
 
 정의 파일은 tools/courses/<id>.json, 결과는 app/src/main/assets/courses/<id>.json 이다.
 좌표는 모두 [위도, 경도] 순서다. 구간은 경유지 사이마다 하나씩 둔다.
---keep-path 는 경로를 다시 받지 않고 앱 파일에 지역과 고도만 더한다. 시험이 경로 값을 쓰는 코스에 쓴다.
+--keep-path 는 경로를 다시 받지 않고 앱 파일에 지역과 고도만 더한다.
+충실도를 잰 코스(정의의 fidelity 가 있는 코스)는 측정값과 시험이 경로에 묶여 있어서 --keep-path 로만 고친다.
 """
 import json
 import math
@@ -219,6 +220,8 @@ def report(course):
 
 
 def make(definition):
+    if definition.get("fidelity"):
+        raise ValueError(f"충실도를 잰 코스는 경로를 다시 받지 않습니다. --keep-path 를 쓰세요: {definition['id']}")
     course = build_course(definition, fetch_route(definition["waypoints"]))
     return {**course, "elevation": fetch_elevation(course["path"])}
 

@@ -3,6 +3,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image
 
@@ -34,21 +35,55 @@ class FrameTest(unittest.TestCase):
 class CloudTest(unittest.TestCase):
     LAND = (40, 70, 50)
 
-    def picture_with_a_cloud(self):
+    def picture_with_a_cloud(self, cloud=(250, 250, 250)):
         picture = Image.new("RGB", (400, 400), self.LAND)
-        picture.paste((250, 250, 250), (150, 150, 250, 250))
+        picture.paste(cloud, (150, 150, 250, 250))
         return picture
 
+    def assert_land_colour(self, pixel):
+        for channel, land in zip(pixel, self.LAND):
+            self.assertAlmostEqual(land, channel, delta=8)
+
     def test_a_white_cloud_takes_the_colour_of_the_land_around_it(self):
-        middle = mc.without_clouds(self.picture_with_a_cloud()).getpixel((200, 200))
-        self.assertLess(max(middle), 100)
+        self.assert_land_colour(mc.without_clouds(self.picture_with_a_cloud()).getpixel((200, 200)))
+
+    def test_a_thin_grey_cloud_is_covered_too(self):
+        self.assert_land_colour(mc.without_clouds(self.picture_with_a_cloud((200, 200, 200))).getpixel((200, 200)))
+
+    def test_the_haze_at_the_edge_of_a_cloud_fades_more_than_halfway_to_the_land(self):
+        picture = self.picture_with_a_cloud()
+        picture.paste((120, 130, 125), (146, 150, 150, 250))
+        self.assertLess(mc.without_clouds(picture).getpixel((148, 200))[0], 80)
 
     def test_land_away_from_a_cloud_stays_as_it_was(self):
         self.assertEqual(self.LAND, mc.without_clouds(self.picture_with_a_cloud()).getpixel((10, 10)))
 
     def test_a_bright_but_coloured_field_is_not_a_cloud(self):
-        picture = Image.new("RGB", (100, 100), (200, 170, 90))
-        self.assertEqual((200, 170, 90), mc.without_clouds(picture).getpixel((50, 50)))
+        picture = self.picture_with_a_cloud((210, 180, 140))
+        self.assertEqual((210, 180, 140), mc.without_clouds(picture).getpixel((200, 200)))
+
+    def test_each_side_of_a_cloud_takes_the_colour_of_the_land_next_to_it(self):
+        picture = self.picture_with_a_cloud()
+        picture.paste((120, 110, 60), (200, 0, 400, 150))
+        picture.paste((120, 110, 60), (250, 150, 400, 400))
+        picture.paste((120, 110, 60), (200, 250, 400, 400))
+        filled = mc.without_clouds(picture)
+        self.assertLess(filled.getpixel((160, 200))[0], filled.getpixel((240, 200))[0])
+
+    def test_a_picture_that_is_all_cloud_stays_as_it_was(self):
+        picture = Image.new("RGB", (100, 100), (250, 250, 250))
+        self.assertEqual((250, 250, 250), mc.without_clouds(picture).getpixel((50, 50)))
+
+
+class CoverTest(unittest.TestCase):
+    def test_a_cover_shows_no_cloud(self):
+        # 타일마다 가운데에 구름이 있는 땅. 숲 색 코스 선은 구름보다 어둡다
+        land = Image.new("RGB", (256, 256), (40, 70, 50))
+        land.paste((250, 250, 250), (96, 96, 160, 160))
+        course = {"path": TALL, "sections": [{"startIndex": 0, "endIndex": len(TALL) - 1, "mood": "forest"}]}
+        with mock.patch.object(mc, "tile", lambda *_: land):
+            cover = mc.cover(course)
+        self.assertLess(max(min(pixel) for pixel in cover.getdata()), 200)
 
 
 if __name__ == "__main__":
