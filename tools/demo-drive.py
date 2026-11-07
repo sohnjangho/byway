@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""코스를 따라 에뮬레이터 위치를 흘려 보낸다. 사용: tools/demo-drive.py [구간 수] [간격초] [--stray]"""
+"""코스를 따라 에뮬레이터 위치를 흘려 보낸다. 사용: tools/demo-drive.py [구간 수] [간격초] [--stray] [--course <id>]"""
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
+argv = sys.argv[1:]
+course_id = "paldang-sunset"
+if "--course" in argv:
+    at = argv.index("--course")
+    course_id = argv[at + 1]
+    del argv[at:at + 2]
+args = [a for a in argv if not a.startswith("--")]
 steps = int(args[0]) if args else 120
 delay = float(args[1]) if len(args) > 1 else 1.2
-stray = "--stray" in sys.argv
+stray = "--stray" in argv
 
-course = json.loads((Path(__file__).parent.parent / "app/src/main/assets/courses/paldang-sunset.json").read_text())
+course = json.loads((Path(__file__).parent.parent / f"app/src/main/assets/courses/{course_id}.json").read_text())
 path = course["path"]
 
 
