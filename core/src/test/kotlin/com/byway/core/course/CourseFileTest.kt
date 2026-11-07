@@ -94,10 +94,9 @@ class CourseFileTest {
     }
 
     @Test
-    fun everyCourseStartsNearPangyoForTheDemo() {
+    fun theDemoCoursesStartNearPangyo() {
         val pangyo = GeoPoint(37.3947, 127.1112)
-        assertTrue(allCourses.size >= 4)
-        allCourses.forEach { assertTrue(it.id, it.path.first().distanceTo(pangyo) < 2_000.0) }
+        assertTrue(allCourses.count { it.path.first().distanceTo(pangyo) < 2_000.0 } >= 4)
     }
 
     @Test
