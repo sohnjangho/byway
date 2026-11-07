@@ -1,5 +1,6 @@
 """시안 자료를 코스 파일에서 만드는 규칙을 시험한다. 실행: python3 tools/test_make_screen_data.py"""
 import importlib.util
+import math
 import unittest
 from pathlib import Path
 
@@ -46,6 +47,22 @@ class PlacesTest(unittest.TestCase):
 
     def test_each_place_says_how_far_along_the_course_it_is(self):
         self.assertAlmostEqual(self.places()[0]["km"], 4.4, delta=0.1)
+
+    def test_pins_too_close_together_are_pushed_apart(self):
+        pins = [{"x": 100.0, "y": 100.0}, {"x": 110.0, "y": 100.0}, {"x": 104.0, "y": 108.0}]
+        data.spread(pins, 46)
+        for a, b in ((0, 1), (0, 2), (1, 2)):
+            self.assertGreaterEqual(math.hypot(pins[a]["x"] - pins[b]["x"], pins[a]["y"] - pins[b]["y"]), 45.9)
+
+    def test_pins_on_the_same_spot_are_also_pushed_apart(self):
+        pins = [{"x": 100.0, "y": 100.0}, {"x": 100.0, "y": 100.0}]
+        data.spread(pins, 46)
+        self.assertGreaterEqual(math.hypot(pins[0]["x"] - pins[1]["x"], pins[0]["y"] - pins[1]["y"]), 45.9)
+
+    def test_pins_with_room_stay_where_they_are(self):
+        pins = [{"x": 100.0, "y": 100.0}, {"x": 300.0, "y": 100.0}]
+        data.spread(pins, 46)
+        self.assertEqual(pins, [{"x": 100.0, "y": 100.0}, {"x": 300.0, "y": 100.0}])
 
     def test_kinds_get_a_word(self):
         self.assertEqual([p["label"] for p in self.places()], ["경치", "음식"])

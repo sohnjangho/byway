@@ -27,6 +27,16 @@ class CssTest(unittest.TestCase):
         self.assertIn("prefers-reduced-motion: reduce", self.css)
 
 
+class ReadableTest(unittest.TestCase):
+    def test_night_mist_stays_dim_enough_for_light_text(self):
+        for mood in ("fog", "cloudy"):
+            colour = fx.LOOKS[mood][0]
+            self.assertLess(max(int(colour[i:i + 2], 16) for i in (1, 3, 5)), 0xA0, mood)
+
+    def test_morning_glow_stays_dim_enough_for_light_text(self):
+        self.assertIn("0.16)", fx.LOOKS["sunrise"][2])
+
+
 class TileTest(unittest.TestCase):
     def test_the_same_seed_makes_the_same_tile(self):
         self.assertEqual(fx.tile("snow", "#fff", 1), fx.tile("snow", "#fff", 1))

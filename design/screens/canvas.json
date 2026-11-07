@@ -15,97 +15,482 @@
    "y": 0,
    "w": 1700,
    "h": 1184,
-   "title": "홈 · 테마 · 랭킹 · 지역",
-   "is_interactive": true,
-   "radius": 40
+   "title": "메인 · 2/3 창 (왼쪽 차량 정보, 오른쪽 앱) (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainFull.dc.html": {
+   "x": 1780,
+   "y": 0,
+   "w": 2560,
+   "h": 1210,
+   "title": "메인 · 전체 화면 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainThird.dc.html": {
+   "x": 4420,
+   "y": 0,
+   "w": 841,
+   "h": 1210,
+   "title": "메인 · 1/3 창 (왼쪽 차량 정보와 내비, 오른쪽 앱) (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainDay.dc.html": {
+   "x": 0,
+   "y": 1630,
+   "w": 1700,
+   "h": 1184,
+   "title": "메인 · 2/3 창 (왼쪽 차량 정보, 오른쪽 앱) (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainFullDay.dc.html": {
+   "x": 1780,
+   "y": 1630,
+   "w": 2560,
+   "h": 1210,
+   "title": "메인 · 전체 화면 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainThirdDay.dc.html": {
+   "x": 4420,
+   "y": 1630,
+   "w": 841,
+   "h": 1210,
+   "title": "메인 · 1/3 창 (왼쪽 차량 정보와 내비, 오른쪽 앱) (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainRain.dc.html": {
+   "x": 0,
+   "y": 3260,
+   "w": 1700,
+   "h": 1184,
+   "title": "비 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSnow.dc.html": {
+   "x": 1780,
+   "y": 3260,
+   "w": 1700,
+   "h": 1184,
+   "title": "눈 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainFog.dc.html": {
+   "x": 3560,
+   "y": 3260,
+   "w": 1700,
+   "h": 1184,
+   "title": "안개 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainCloudy.dc.html": {
+   "x": 5340,
+   "y": 3260,
+   "w": 1700,
+   "h": 1184,
+   "title": "흐림 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSunrise.dc.html": {
+   "x": 0,
+   "y": 4864,
+   "w": 1700,
+   "h": 1184,
+   "title": "해돋이 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSunset.dc.html": {
+   "x": 1780,
+   "y": 4864,
+   "w": 1700,
+   "h": 1184,
+   "title": "노을 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainNight.dc.html": {
+   "x": 3560,
+   "y": 4864,
+   "w": 1700,
+   "h": 1184,
+   "title": "밤 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSpring.dc.html": {
+   "x": 0,
+   "y": 6468,
+   "w": 1700,
+   "h": 1184,
+   "title": "봄 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSummer.dc.html": {
+   "x": 1780,
+   "y": 6468,
+   "w": 1700,
+   "h": 1184,
+   "title": "여름 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainAutumn.dc.html": {
+   "x": 3560,
+   "y": 6468,
+   "w": 1700,
+   "h": 1184,
+   "title": "가을 단풍 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainWinter.dc.html": {
+   "x": 5340,
+   "y": 6468,
+   "w": 1700,
+   "h": 1184,
+   "title": "겨울 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainRainDay.dc.html": {
+   "x": 0,
+   "y": 8072,
+   "w": 1700,
+   "h": 1184,
+   "title": "비 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSnowDay.dc.html": {
+   "x": 1780,
+   "y": 8072,
+   "w": 1700,
+   "h": 1184,
+   "title": "눈 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainFogDay.dc.html": {
+   "x": 3560,
+   "y": 8072,
+   "w": 1700,
+   "h": 1184,
+   "title": "안개 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainCloudyDay.dc.html": {
+   "x": 5340,
+   "y": 8072,
+   "w": 1700,
+   "h": 1184,
+   "title": "흐림 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSunriseDay.dc.html": {
+   "x": 0,
+   "y": 9676,
+   "w": 1700,
+   "h": 1184,
+   "title": "해돋이 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSunsetDay.dc.html": {
+   "x": 1780,
+   "y": 9676,
+   "w": 1700,
+   "h": 1184,
+   "title": "노을 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSpringDay.dc.html": {
+   "x": 0,
+   "y": 11280,
+   "w": 1700,
+   "h": 1184,
+   "title": "봄 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainSummerDay.dc.html": {
+   "x": 1780,
+   "y": 11280,
+   "w": 1700,
+   "h": 1184,
+   "title": "여름 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainAutumnDay.dc.html": {
+   "x": 3560,
+   "y": 11280,
+   "w": 1700,
+   "h": 1184,
+   "title": "가을 단풍 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MainWinterDay.dc.html": {
+   "x": 5340,
+   "y": 11280,
+   "w": 1700,
+   "h": 1184,
+   "title": "겨울 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "Browse.dc.html": {
+   "x": 0,
+   "y": 12884,
+   "w": 1700,
+   "h": 1184,
+   "title": "코스 고르기 (야간)",
+   "radius": 40,
+   "is_interactive": true
   },
   "Ranking.dc.html": {
    "x": 1780,
-   "y": 0,
+   "y": 12884,
    "w": 1700,
    "h": 1184,
-   "title": "랭킹 (코스 실측 수치 기준)",
-   "is_interactive": true,
-   "radius": 40
-  },
-  "Preview.dc.html": {
-   "x": 3560,
-   "y": 0,
-   "w": 1700,
-   "h": 1184,
-   "title": "코스 상세 · 위성 지도",
-   "is_interactive": true,
-   "radius": 40
-  },
-  "Drive.dc.html": {
-   "x": 0,
-   "y": 1304,
-   "w": 1706,
-   "h": 1210,
-   "title": "3분할: 내장 내비 옆 에움길 주행 칸",
-   "is_interactive": true,
-   "radius": 40
+   "title": "랭킹 · 계산 수치와 추천 (야간)",
+   "radius": 40,
+   "is_interactive": true
   },
   "Me.dc.html": {
-   "x": 1786,
-   "y": 1304,
+   "x": 3560,
+   "y": 12884,
    "w": 1700,
    "h": 1184,
-   "title": "내 코스 · 내 정보",
-   "is_interactive": true,
-   "radius": 40
+   "title": "내 코스 · 내 정보 (야간)",
+   "radius": 40,
+   "is_interactive": true
   },
-  "Summary.dc.html": {
-   "x": 3566,
-   "y": 1304,
-   "w": 1700,
-   "h": 1184,
-   "title": "정차 요약 (완주 후 P단)",
-   "is_interactive": true,
-   "radius": 40
-  },
-  "Waiting.dc.html": {
-   "x": 5346,
-   "y": 1304,
-   "w": 1700,
-   "h": 1184,
-   "title": "주행 중 대기",
-   "radius": 40
+  "Drive.dc.html": {
+   "x": 5340,
+   "y": 12884,
+   "w": 1706,
+   "h": 1210,
+   "title": "주행 · 내장 내비 옆 칸 (야간)",
+   "radius": 40,
+   "is_interactive": true
   },
   "DriveAuto.dc.html": {
    "x": 7126,
-   "y": 1304,
+   "y": 12884,
    "w": 1706,
    "h": 1210,
-   "title": "구상 화면: 자율주행 연동 시 주행 칸",
-   "is_interactive": true,
+   "title": "주행 · 자율주행 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "Summary.dc.html": {
+   "x": 8912,
+   "y": 12884,
+   "w": 1700,
+   "h": 1184,
+   "title": "정차 요약 (야간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "Waiting.dc.html": {
+   "x": 10692,
+   "y": 12884,
+   "w": 1700,
+   "h": 1184,
+   "title": "주행 중 대기 (야간)",
+   "radius": 40
+  },
+  "BrowseDay.dc.html": {
+   "x": 0,
+   "y": 14514,
+   "w": 1700,
+   "h": 1184,
+   "title": "코스 고르기 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "RankingDay.dc.html": {
+   "x": 1780,
+   "y": 14514,
+   "w": 1700,
+   "h": 1184,
+   "title": "랭킹 · 계산 수치와 추천 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "MeDay.dc.html": {
+   "x": 3560,
+   "y": 14514,
+   "w": 1700,
+   "h": 1184,
+   "title": "내 코스 · 내 정보 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "DriveDay.dc.html": {
+   "x": 5340,
+   "y": 14514,
+   "w": 1706,
+   "h": 1210,
+   "title": "주행 · 내장 내비 옆 칸 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "DriveAutoDay.dc.html": {
+   "x": 7126,
+   "y": 14514,
+   "w": 1706,
+   "h": 1210,
+   "title": "주행 · 자율주행 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "SummaryDay.dc.html": {
+   "x": 8912,
+   "y": 14514,
+   "w": 1700,
+   "h": 1184,
+   "title": "정차 요약 (주간)",
+   "radius": 40,
+   "is_interactive": true
+  },
+  "WaitingDay.dc.html": {
+   "x": 10692,
+   "y": 14514,
+   "w": 1700,
+   "h": 1184,
+   "title": "주행 중 대기 (주간)",
    "radius": 40
   }
  },
  "order": [
   "Main.dc.html",
+  "MainFull.dc.html",
+  "MainThird.dc.html",
+  "MainDay.dc.html",
+  "MainFullDay.dc.html",
+  "MainThirdDay.dc.html",
+  "MainRain.dc.html",
+  "MainSnow.dc.html",
+  "MainFog.dc.html",
+  "MainCloudy.dc.html",
+  "MainSunrise.dc.html",
+  "MainSunset.dc.html",
+  "MainNight.dc.html",
+  "MainSpring.dc.html",
+  "MainSummer.dc.html",
+  "MainAutumn.dc.html",
+  "MainWinter.dc.html",
+  "MainRainDay.dc.html",
+  "MainSnowDay.dc.html",
+  "MainFogDay.dc.html",
+  "MainCloudyDay.dc.html",
+  "MainSunriseDay.dc.html",
+  "MainSunsetDay.dc.html",
+  "MainSpringDay.dc.html",
+  "MainSummerDay.dc.html",
+  "MainAutumnDay.dc.html",
+  "MainWinterDay.dc.html",
+  "Browse.dc.html",
   "Ranking.dc.html",
-  "Preview.dc.html",
-  "Drive.dc.html",
   "Me.dc.html",
+  "Drive.dc.html",
+  "DriveAuto.dc.html",
   "Summary.dc.html",
   "Waiting.dc.html",
-  "DriveAuto.dc.html"
+  "BrowseDay.dc.html",
+  "RankingDay.dc.html",
+  "MeDay.dc.html",
+  "DriveDay.dc.html",
+  "DriveAutoDay.dc.html",
+  "SummaryDay.dc.html",
+  "WaitingDay.dc.html"
  ],
  "notes": {
   "row1": {
    "x": 0,
    "y": -300,
-   "text": "에움길 시안 2 · 음악 앱처럼 고르는 코스",
+   "text": "야간 · 창 크기별 메인",
    "kind": "title1",
-   "maxW": 5260
+   "maxW": 5261
   },
   "row2": {
    "x": 0,
-   "y": 1004,
-   "text": "코스를 고르면: 내장 내비 옆 칸에서 함께 달린다",
+   "y": 1330,
+   "text": "주간 · 창 크기별 메인",
    "kind": "title1",
-   "maxW": 7046
+   "maxW": 5261
+  },
+  "row3": {
+   "x": 0,
+   "y": 2960,
+   "text": "야간 · 날씨 효과 (지도와 경로에는 넣지 않음)",
+   "kind": "title1",
+   "maxW": 7040
+  },
+  "row4": {
+   "x": 0,
+   "y": 4564,
+   "text": "야간 · 시간대 효과",
+   "kind": "title1",
+   "maxW": 5260
+  },
+  "row5": {
+   "x": 0,
+   "y": 6168,
+   "text": "야간 · 계절 효과",
+   "kind": "title1",
+   "maxW": 7040
+  },
+  "row6": {
+   "x": 0,
+   "y": 7772,
+   "text": "주간 · 날씨 효과",
+   "kind": "title1",
+   "maxW": 7040
+  },
+  "row7": {
+   "x": 0,
+   "y": 9376,
+   "text": "주간 · 시간대 효과",
+   "kind": "title1",
+   "maxW": 5260
+  },
+  "row8": {
+   "x": 0,
+   "y": 10980,
+   "text": "주간 · 계절 효과",
+   "kind": "title1",
+   "maxW": 7040
+  },
+  "row9": {
+   "x": 0,
+   "y": 12584,
+   "text": "야간 · 그 밖의 화면",
+   "kind": "title1",
+   "maxW": 12392
+  },
+  "row10": {
+   "x": 0,
+   "y": 14214,
+   "text": "주간 · 그 밖의 화면",
+   "kind": "title1",
+   "maxW": 12392
   }
  },
  "designSystems": [
@@ -113,8 +498,8 @@
    "title": "에움길",
    "namespace": "eumgil",
    "artifact": "https://claude.ai/artifact/58aKfmsy4AupfUqnWHQVp6",
-   "version": "1794047643-4598",
-   "copiedAt": "2026-11-07T10:58:00Z"
+   "version": "1794065352-917d",
+   "copiedAt": "2026-11-07T15:29:25Z"
   }
  ]
 }

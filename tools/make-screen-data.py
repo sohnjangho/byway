@@ -2,6 +2,7 @@
 """앱 코스 파일에서 시안이 읽는 design/screens/courses.js 를 만든다. 만든 파일은 직접 고치지 않는다.
 사용: python3 tools/make-screen-data.py"""
 import importlib.util
+import itertools
 import json
 import math
 from pathlib import Path
@@ -13,6 +14,7 @@ METRICS = ROOT / "design/screens/images/course_metrics.json"
 OUT = ROOT / "design/screens/courses.js"
 SCENES = ROOT / "design/screens/images/scene/routes.json"
 NEARBY = ROOT / "tools/nearby.json"
+PIN_GAP = 46  # 번호 표시 지름 40에 테두리와 틈을 더한 값
 KIND_WORDS = {"view": "경치", "photo": "경치", "sight": "명소", "food": "음식"}
 spec = importlib.util.spec_from_file_location("make_scenes", Path(__file__).parent / "make-scenes.py")
 scenes = importlib.util.module_from_spec(spec)
@@ -25,6 +27,25 @@ MOODS = {"alone": "혼자", "date": "데이트", "family": "가족"}
 def metres(a, b):
     lat = math.radians((a[0] + b[0]) / 2)
     return math.hypot((a[0] - b[0]) * 111_320, (a[1] - b[1]) * 111_320 * math.cos(lat))
+
+
+def spread(pins, gap):
+    """겹치는 번호 표시를 서로 밀어 낸다. 떨어져 있는 표시는 그대로 둔다."""
+    for _ in range(200):
+        moved = False
+        for a, b in itertools.combinations(pins, 2):
+            dx, dy = b["x"] - a["x"], b["y"] - a["y"]
+            distance = math.hypot(dx, dy)
+            if distance >= gap:
+                continue
+            if distance == 0:
+                dx, dy, distance = 1.0, 0.0, 1.0
+            push = (gap - distance) / 2 + 0.01
+            a["x"], a["y"] = a["x"] - dx / distance * push, a["y"] - dy / distance * push
+            b["x"], b["y"] = b["x"] + dx / distance * push, b["y"] + dy / distance * push
+            moved = True
+        if not moved:
+            return
 
 
 def places(path, spots, nearby, view):
@@ -44,7 +65,8 @@ def places(path, spots, nearby, view):
             "km": round(along[index] / 1000, 1), "x": round(x, 1), "y": round(y, 1), "at": index,
         })
     items.sort(key=lambda item: item["at"])
-    return [{**item, "no": number} for number, item in enumerate(items, 1)]
+    spread(items, PIN_GAP)
+    return [{**item, "x": round(item["x"], 1), "y": round(item["y"], 1), "no": number} for number, item in enumerate(items, 1)]
 
 
 def entry(course, metrics, has_photo):

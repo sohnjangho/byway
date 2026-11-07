@@ -524,6 +524,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .scene-credit { position: absolute; right: var(--space-8); bottom: 176px; margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--photo-scrim); color: var(--on-photo); }
 .side-soft { position: absolute; top: 0; left: 0; width: 760px; height: 640px; object-fit: cover; opacity: 0.4; pointer-events: none; -webkit-mask-image: linear-gradient(to right, #000 45%, transparent), linear-gradient(to top, transparent 0, #000 45%); -webkit-mask-composite: source-in; mask-composite: intersect; }
 .side { position: absolute; top: 0; left: 0; bottom: 152px; display: flex; flex-direction: column; gap: var(--space-3); width: 620px; padding: var(--space-8) var(--space-8) var(--space-4); }
+.side .ink-2 { color: var(--ink); }
 .side-kick { color: var(--accent); }
 .side-name { font-size: 68px; line-height: 80px; font-weight: 700; letter-spacing: -0.02em; }
 .side-info, .side-near { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
