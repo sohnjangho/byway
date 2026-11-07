@@ -20,18 +20,24 @@ import com.byway.core.drive.DriveHost
 import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.feature.ambience.AmbienceFeature
+import com.byway.feature.music.MusicFeature
+import com.byway.platform.ConnectedMusic
 import com.byway.platform.PleosCabin
 import com.byway.platform.PleosLocation
 import com.byway.platform.PleosNavi
 import com.byway.platform.PleosVoice
+import com.byway.platform.musicQuery
 
 /** 이번 코스에 넣을 부가 기능. 차 안 연출 설정은 코스 시작 때 읽는다. */
 internal fun courseFeatures(): List<DriveFeature> =
-    FeatureRegistry.create().filter { MyDrives.ambienceOn || it !is AmbienceFeature }
+    FeatureRegistry.create()
+        .filter { MyDrives.ambienceOn || it !is AmbienceFeature }
+        .filter { MyDrives.musicOn || it !is MusicFeature }
 
 /** 코스 주행을 소유한다. 내비가 앞에 있어도 코스가 끊기지 않게 하는 곳이다. */
 class DriveService : Service() {
     private lateinit var navi: PleosNavi
+    private val music by lazy { ConnectedMusic(this) }
 
     /** 코스를 따라갈 쪽. 자율주행 구현이 생기면 여기서 고른다(제작가이드 14장). */
     private val route: RouteFollower get() = navi
@@ -88,7 +94,7 @@ class DriveService : Service() {
         host = DriveHost(CourseEngine(ability = route.ability), courseFeatures() + boardFeature + FinishRecorder(this)) { id, failure ->
             Log.e(TAG, "feature off: $id", failure)
         }
-        DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", sectionIndex = 0, remainingMeters = null, cabin = "") }
+        DriveBoard.update { it.copy(running = true, finished = null, course = course, line = course.name, spoken = "", sectionIndex = 0, remainingMeters = null, music = "", cabin = "") }
         sendParked(DriveBoard.state.parked)
         dispatch(DriveEvent.CourseStarted(course))
     }
@@ -115,6 +121,14 @@ class DriveService : Service() {
                 DriveBoard.update { it.copy(cabin = describe(command.scene)) }
             }
             is DriveCommand.ShowLine -> DriveBoard.update { it.copy(line = command.text) }
+            is DriveCommand.PlayMusic -> {
+                music.play(musicQuery(command.track))
+                DriveBoard.update { it.copy(music = command.track) }
+            }
+            DriveCommand.StopMusic -> {
+                music.pause()
+                DriveBoard.update { it.copy(music = "") }
+            }
             is DriveCommand.ShowProgress -> DriveBoard.update {
                 it.copy(sectionIndex = command.sectionIndex, remainingMeters = command.remainingMeters)
             }
@@ -130,6 +144,7 @@ class DriveService : Service() {
         location.release()
         cabin.release()
         navi.release()
+        music.release()
         voice.release()
         DriveBoard.update { it.copy(running = false) }
         super.onDestroy()

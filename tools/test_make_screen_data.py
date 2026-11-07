@@ -28,6 +28,29 @@ class EntryTest(unittest.TestCase):
         self.assertEqual(data.entry(COURSE, METRICS, True)["curves"], 26)
 
 
+class PlacesTest(unittest.TestCase):
+    view = {"zoom": 12, "scale": 1.0, "left": 0.0, "top": 0.0}
+    path = [[37.0, 127.0 + i * 0.01] for i in range(11)]
+
+    def places(self):
+        spots = [{"name": "전망대", "kind": "view", "lat": 37.0, "lon": 127.05, "pathIndex": 5},
+                 {"name": "쉼터", "kind": "rest", "lat": 37.0, "lon": 127.02, "pathIndex": 2}]
+        nearby = [{"name": "국수집", "kind": "food", "lat": 37.0, "lon": 127.08, "note": "막국수"}]
+        return data.places(self.path, spots, nearby, self.view)
+
+    def test_rest_stops_are_left_out(self):
+        self.assertEqual([p["name"] for p in self.places()], ["전망대", "국수집"])
+
+    def test_places_are_numbered_in_driving_order(self):
+        self.assertEqual([p["no"] for p in self.places()], [1, 2])
+
+    def test_each_place_says_how_far_along_the_course_it_is(self):
+        self.assertAlmostEqual(self.places()[0]["km"], 4.4, delta=0.1)
+
+    def test_kinds_get_a_word(self):
+        self.assertEqual([p["label"] for p in self.places()], ["경치", "음식"])
+
+
 class ScriptTest(unittest.TestCase):
     def test_the_file_sets_one_global_list(self):
         self.assertTrue(data.script([{"id": "c"}]).startswith("window.COURSES = ["))

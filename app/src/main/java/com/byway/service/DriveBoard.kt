@@ -20,6 +20,8 @@ data class DriveState(
     /** 첫 위치가 오기 전에는 null 이다. */
     val remainingMeters: Double? = null,
     val cabin: String = "",
+    /** 지금 분위기 곡. 없으면 빈 값이다. 연결된 음악 앱이 재생한다. */
+    val music: String = "",
     val position: GeoPoint? = null,
 )
 

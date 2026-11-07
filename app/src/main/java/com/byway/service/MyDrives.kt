@@ -15,6 +15,7 @@ object MyDrives {
     private const val SAVED = "saved"
     private const val AMBIENCE = "ambience_on"
     private const val VOICE = "voice_on"
+    private const val MUSIC = "music_on"
     private const val RECENT_LIMIT = 10
     private const val SEPARATOR = "\n"
 
@@ -53,12 +54,13 @@ object MyDrives {
             .apply()
     }
 
-    /** 앱 시작 때 한 번 부른다. 아래 두 설정은 Context 없이 읽으므로 저장된 값을 여기서 되돌린다. */
+    /** 앱 시작 때 한 번 부른다. 아래 설정은 Context 없이 읽으므로 저장된 값을 여기서 되돌린다. */
     fun restore(context: Context) {
         val stored = prefs(context)
         settings = stored
         ambienceOn = stored.getBoolean(AMBIENCE, true)
         voiceOn = stored.getBoolean(VOICE, true)
+        musicOn = stored.getBoolean(MUSIC, true)
     }
 
     var ambienceOn: Boolean = true
@@ -71,5 +73,11 @@ object MyDrives {
         set(value) {
             field = value
             settings?.edit()?.putBoolean(VOICE, value)?.apply()
+        }
+
+    var musicOn: Boolean = true
+        set(value) {
+            field = value
+            settings?.edit()?.putBoolean(MUSIC, value)?.apply()
         }
 }

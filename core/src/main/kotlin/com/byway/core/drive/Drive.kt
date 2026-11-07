@@ -53,6 +53,10 @@ sealed interface DriveCommand {
     /** 차 안 상태를 바꾼다. 값이 null 인 항목은 건드리지 않는다. */
     data class SetCabin(val scene: CabinScene) : DriveCommand
 
+    /** 구간 분위기에 맞는 배경음악을 튼다. track 은 forest, city, river 중 하나다. */
+    data class PlayMusic(val track: String) : DriveCommand
+    data object StopMusic : DriveCommand
+
     /** 정차 중에만 여는 화면. */
     data class ShowPanel(val panelId: String) : DriveCommand
 

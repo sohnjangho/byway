@@ -32,5 +32,25 @@ class DayVersionTest(unittest.TestCase):
             day.day_version(SOURCE + SOURCE, ["Main"])
 
 
+class WindowVersionTest(unittest.TestCase):
+    source = '<div class="stage" data-theme="night" data-window="two"></div><script data-props=\'{"$preview":{"width":1700,"height":1184}}\'></script>'
+
+    def test_the_stage_names_its_window(self):
+        self.assertIn('data-window="third"', day.window_version(self.source, "third", 841, 1210))
+
+    def test_the_preview_takes_the_window_size(self):
+        self.assertIn('"$preview":{"width":841,"height":1210}', day.window_version(self.source, "third", 841, 1210))
+
+
+class MoodVersionTest(unittest.TestCase):
+    source = '<div data-mood="plain"></div><script>const MOOD = "plain";</script>'
+
+    def test_the_stage_names_its_mood(self):
+        self.assertIn('data-mood="rain"', day.mood_version(self.source, "rain"))
+
+    def test_the_script_knows_its_mood(self):
+        self.assertIn('const MOOD = "rain";', day.mood_version(self.source, "rain"))
+
+
 if __name__ == "__main__":
     unittest.main()

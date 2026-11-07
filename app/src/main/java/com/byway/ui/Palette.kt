@@ -98,6 +98,8 @@ object Tokens {
     const val WINDOW_WIDTH = 1700
     const val WINDOW_HEIGHT = 1184
     const val WINDOW_SPLIT_WIDTH = 840
+    const val WINDOW_FULL_WIDTH = 2560
+    const val WINDOW_TALL_HEIGHT = 1210
     const val TOUCH_MIN = 76
     const val BUTTON_LARGE = 100
     const val BUTTON_MEDIUM = 80
