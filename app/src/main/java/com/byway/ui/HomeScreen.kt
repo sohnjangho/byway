@@ -49,6 +49,14 @@ internal fun homeScreen(
         }
         addView(soft, softSize)
 
+        val effect = MoodEffectView(context, third)
+        effect.show(mood, night)
+        val effectSize = when {
+            third -> FrameLayout.LayoutParams(MATCH, dp(Dimens.THIRD_EFFECT_HEIGHT), Gravity.BOTTOM)
+            else -> FrameLayout.LayoutParams(dp(if (full) Dimens.EFFECT_WIDTH_FULL else Dimens.EFFECT_WIDTH), MATCH)
+        }
+        addView(effect, effectSize)
+
         val info = infoColumn(kit, course, kickFor(mood))
         val near = nearColumn(kit, course, places, onStart, onBrowse)
         val side = when {

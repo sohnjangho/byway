@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.byway.BuildConfig
 import com.byway.core.course.Course
 import com.byway.core.course.Weather
 import com.byway.service.CourseCatalog
@@ -131,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             this,
             kit,
             courseId = nav.courseId,
-            weather = Weather.UNKNOWN,
+            weather = demoWeather(),
             onPick = ::open,
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
@@ -144,6 +145,13 @@ class MainActivity : AppCompatActivity() {
             onBrowse = { openTab(Tab.HOME) },
             onAbout = { go(nav.copy(about = true)) },
         )
+    }
+
+    /** 날씨 입력이 아직 없다. 시연용 debug 빌드에서만 --es weather rain 으로 분위기를 고른다. */
+    private fun demoWeather(): Weather = if (!BuildConfig.DEBUG) {
+        Weather.UNKNOWN
+    } else {
+        Weather.entries.firstOrNull { it.name.equals(intent.getStringExtra("weather"), ignoreCase = true) } ?: Weather.UNKNOWN
     }
 
     private companion object {

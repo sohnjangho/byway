@@ -65,6 +65,9 @@ internal object Dimens {
     const val THIRD_SCENE_HEIGHT = 732
     const val SCENE_CREDIT_BOTTOM = 176
     const val SCENE_CREDIT_WIDTH = 760
+    const val EFFECT_WIDTH = 920
+    const val EFFECT_WIDTH_FULL = 1340
+    const val THIRD_EFFECT_HEIGHT = 480
     const val THIRD_SOFT_HEIGHT = 520
     const val STRIP_CARD_WIDTH = 284
     const val STRIP_CARD_HEIGHT = 112
