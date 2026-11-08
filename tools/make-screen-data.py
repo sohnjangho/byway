@@ -92,7 +92,8 @@ def script(entries, korea=None):
     return text
 
 
-def main():
+def build_entries():
+    """코스별 시안 값과 한국 지도 값을 만든다. 앱용 자료 도구도 이 결과를 쓴다."""
     metrics = json.loads(METRICS.read_text(encoding="utf-8"))
     routes = json.loads(SCENES.read_text(encoding="utf-8"))
     nearby = json.loads(NEARBY.read_text(encoding="utf-8")) if NEARBY.exists() else {}
@@ -109,6 +110,11 @@ def main():
         item["atlas"] = atlas["courses"][cid]
         entries.append(item)
     korea = {"size": atlas["size"], "labels": atlas["labels"], "night": "images/atlas/korea-night.jpg", "day": "images/atlas/korea.jpg"}
+    return entries, korea
+
+
+def main():
+    entries, korea = build_entries()
     OUT.write_text(script(entries, korea), encoding="utf-8")
     print(OUT.relative_to(ROOT), len(entries))
 
