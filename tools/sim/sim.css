@@ -1,0 +1,33 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: "Asta Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+#css, #gl { position: fixed; inset: 0; width: 100%; height: 100%; }
+#gl { z-index: 1; display: block; }
+#css { z-index: 0; }
+body.screen-mode #gl { pointer-events: none; }
+.hud { position: fixed; left: 16px; top: 16px; z-index: 5; display: flex; flex-direction: column; gap: 8px; max-width: 560px; color: #fff; pointer-events: none; }
+.hud > * { background: rgba(10, 11, 13, 0.72); border-radius: 10px; padding: 8px 12px; }
+.hud-title { font-size: 18px; font-weight: 700; }
+.hud-title span { font-weight: 400; font-size: 13px; color: #c9ced6; margin-left: 8px; }
+.hud-keys { font-size: 13px; line-height: 20px; color: #d6dae0; }
+.hud-keys b { color: #f0a45a; }
+.hud-state { display: flex; gap: 16px; font-size: 14px; }
+.hud-jump { display: flex; gap: 6px; pointer-events: auto; background: none; padding: 0; }
+.hud-jump button { border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.loading { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; background: #0b0c0e; }
+/* 센터 화면: Pleos 실제 크기 2560×1440 */
+.pleos { position: relative; width: 2560px; height: 1440px; overflow: hidden; background: #f6f8fc; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+.pleos > img.base { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pleos .shift { position: absolute; left: 0; top: 0; width: 853px; height: 1440px; }
+.pleos .cover { position: absolute; display: flex; align-items: center; justify-content: center; }
+.pleos .spd { left: 300px; top: 78px; width: 260px; height: 118px; background: #fefefe; font-size: 132px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.pleos .clk { left: 2392px; top: 22px; width: 160px; height: 46px; background: #f7f7f7; justify-content: flex-end; font-size: 31px; color: #1a1a1a; }
+.pleos .apparea { position: absolute; left: 853px; top: 90px; width: 1680px; height: 1210px; background: #f6f8fc; }
+.pleos .appfull { position: absolute; left: 0; top: 90px; width: 2560px; height: 1210px; background: #f6f8fc; }
+.pleos .appfull img, .pleos .apparea img { width: 100%; height: 100%; object-fit: cover; }
+.slim { width: 960px; height: 216px; box-sizing: border-box; background: #050607; color: #eef0f3; display: flex; align-items: center; justify-content: space-between; padding: 0 44px; font-variant-numeric: tabular-nums; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+.slim .spd { display: flex; align-items: baseline; gap: 10px; }
+.slim .spd b { font-size: 120px; font-weight: 600; }
+.slim .spd span { font-size: 30px; color: #8d939c; }
+.slim .gear { font-size: 46px; font-weight: 700; color: #4b4f57; letter-spacing: 12px; }
+.slim .gear .on { color: #fff; }
+.slim .meta { text-align: right; font-size: 32px; line-height: 46px; color: #a6acb5; }
+.slim .meta b { color: #eef0f3; }
