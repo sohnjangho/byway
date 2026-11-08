@@ -31,6 +31,8 @@ fun sceneryFile(courseId: String, credit: String, files: Set<String>): String? =
 internal object Covers {
     private const val FOLDER = "covers"
     private const val SCENERY_FOLDER = "scenery"
+    private const val SCENE_FOLDER = "scene"
+    private const val ATLAS_FOLDER = "atlas"
     private const val FULL_SIZE = 1024
     private const val CACHE_BYTES = 48 * 1024 * 1024
 
@@ -58,6 +60,16 @@ internal object Covers {
     fun loadScenery(context: Context, course: Course, onLoaded: (Bitmap) -> Unit) {
         val file = sceneryFile(course.id, course.sceneryCredit, files(context, SCENERY_FOLDER)) ?: return
         read(context, SCENERY_FOLDER, file, FULL_SIZE, onLoaded)
+    }
+
+    fun loadScene(context: Context, courseId: String, night: Boolean, onLoaded: (Bitmap) -> Unit) {
+        val file = if (night) "$courseId-night.jpg" else "$courseId.jpg"
+        if (file in files(context, SCENE_FOLDER)) read(context, SCENE_FOLDER, file, FULL_SIZE, onLoaded)
+    }
+
+    fun loadAtlas(context: Context, night: Boolean, onLoaded: (Bitmap) -> Unit) {
+        val file = if (night) "korea-night.jpg" else "korea.jpg"
+        if (file in files(context, ATLAS_FOLDER)) read(context, ATLAS_FOLDER, file, FULL_SIZE, onLoaded)
     }
 
     private fun read(context: Context, folder: String, file: String, sizePx: Int, onLoaded: (Bitmap) -> Unit) {
