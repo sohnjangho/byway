@@ -56,7 +56,7 @@ internal fun Context.rounded(color: Int, radius: Int = Dimens.RADIUS_MD, stroke:
         stroke?.let { setStroke(dp(Dimens.HAIRLINE), it) }
     }
 
-/** 누름 표시는 페이드나 물결 없이 색만 바꾼다. 주행 화면에 움직임을 만들지 않기 위해서다. */
+/** 누름 표시는 페이드나 물결 없이 색만 바꾼다. */
 internal fun Context.pressable(
     normal: Int,
     pressed: Int,
