@@ -46,7 +46,7 @@
 
 **Interfaces:**
 - Produces: `index.json` 형식
-  `{"sceneSize":[2404,1210],"koreaSize":[w,h],"labels":[{"name","kind","x","y"}],"courses":{id:{"lines":[{"mood","name","points":[[x,y],…]}],"places":[{"no","name","kind","label","note","km","x","y"}],"atlas":{"x","y","box":{x,y,w,h},"frame":{x,y,w,h},"lines":[{"mood","points"}]}}}}`
+  `{"sceneSize":[2404,1210],"koreaSize":[w,h],"labels":[{"name","kind","x","y"}],"moods":{"rain":{"shape":"streak","count":46,"night":"#b9d2ec","day":"#5c7f9f","wash":"rgba(…)","dx":-140,"dy":640,"near":0.8,"far":1.3},…},"courses":{id:{"lines":[{"mood","name","points":[[x,y],…]}],"places":[{"no","name","kind","label","note","km","x","y"}],"atlas":{"x","y","box":{x,y,w,h},"frame":{x,y,w,h},"lines":[{"mood","points"}]}}}}` — `moods`는 `tools/make-effects.py`의 `SHAPES`, `LOOKS`에서 옮긴다
 
 - [ ] **Step 1: 제작가이드를 먼저 고치고 커밋한다** (`docs: 새 화면 구조와 주행 규제 어댑터를 가이드에 반영`)
 - [ ] **Step 2: 실패하는 시험을 쓴다**
@@ -205,7 +205,7 @@ def test_index_has_every_course_with_points_and_no_evidence():
 
 - [ ] **Step 1: 시험을 쓴다**: `kickFor(SUNSET) == "노을이 지는 시간에 어울리는 길"`; 경치 3개·명소 3개·음식 3개 입력 → `shownPlaces` 6개, 번호 1..6, 사진은 경치로 셈; `placeLine` 쪽 없는 값 제외; `canSwipeToScenery("", true)==false`, `canSwipeToScenery("사진: x", false)==false`, `canSwipeToScenery("사진: x", true)==true`; `suggested`가 같은 입력에 캐시된 값
 - [ ] **Step 2:** 시험 → FAIL
-- [ ] **Step 3: 구현.** 배치는 `Main.dc.html`과 `app.css`의 `.side`, `.side-near`, `.facts`, `.strip`을 따른다: 폭 620dp(FULL은 가로 2칸 1120dp, THIRD는 장면 아래 칸이고 `side-kick`·요약·코스 띠를 시안대로 숨기는 대신 **코스 고르기 버튼**으로 같은 기능을 제공). 수치 4개는 거리·굽이·에움 배율·오르막. 밀면 풍경 사진(`canSwipeToScenery`일 때만), 사진 출처 표시. 분위기별 정적 색 얹기(`softWash`)와 `kickFor` 문구만 넣고, 비·눈 움직임 효과는 이 계획에서 넣지 않는다.
+- [ ] **Step 3: 구현.** 배치는 `Main.dc.html`과 `app.css`의 `.side`, `.side-near`, `.facts`, `.strip`을 따른다: 폭 620dp(FULL은 가로 2칸 1120dp, THIRD는 장면 아래 칸이고 `side-kick`·요약·코스 띠를 시안대로 숨기는 대신 **코스 고르기 버튼**으로 같은 기능을 제공). 수치 4개는 거리·굽이·에움 배율·오르막. 밀면 풍경 사진(`canSwipeToScenery`일 때만), 사진 출처 표시. `kickFor` 문구를 넣는다. 움직임 효과는 Task 13이 얹는다.
 - [ ] **Step 4:** 시험 PASS, `assembleDebug` 성공
 - [ ] **Step 5: 맥 에뮬레이터 캡처**: 창 3종 × 주야간 6장을 시안과 눈으로 비교한다.
 - [ ] **Step 6: 커밋** `feat: 홈을 위성 장면과 정보 칸 구조로 바꾼다`
@@ -298,6 +298,23 @@ def test_index_has_every_course_with_points_and_no_evidence():
 - [ ] **Step 3:** 앱을 뒤로 보냈다가 복귀, 창 막대 끌기, `cmd uimode night yes/no`에서 상태 유지 확인
 - [ ] **Step 4:** 격리 확인: `grep -rln 'ai\.pleos\.\|android\.car\.' app/src/main/java core feature | grep -v /platform/` 0건, `grep -rn 'serviceKey\|apiKey' app core feature` 0건
 - [ ] **Step 5:** PR 보고서 `~/reports/pr_YYYYMMDD_HHMM.md`(요약, diff, 호출처 grep, 시험·에뮬레이터 로그, 검토 요청), 태그 `submit-20261115`
+
+### Task 13: 분위기 움직임 효과 (Task 6 다음, Task 7 전에 실행)
+
+**Files:**
+- Modify: `core/.../course/SceneIndex.kt`(`moods`), `SceneIndexTest.kt`
+- Create: `app/src/main/java/com/byway/ui/MoodEffectView.kt`, `MoodMotion.kt`
+- Modify: `HomeScreen.kt`, `app/build.gradle.kts`(`buildConfig = true`), `MainActivity.kt`
+- Test: `app/src/test/java/com/byway/ui/MoodMotionTest.kt`
+
+**Interfaces:**
+- Produces: `data class MoodLook(val shape: String, val count: Int, val night: String, val day: String, val wash: String, val dx: Float, val dy: Float, val near: Float, val far: Float)`, `SceneIndex.moods: Map<String, MoodLook>`, `fun moodKey(mood: SceneMood): String?`(PLAIN은 null), `fun tileShift(look: MoodLook, seconds: Float, layer: Int): Px`, `fun parseRgba(text: String): Int`, `class MoodEffectView(context) : View { fun show(mood: SceneMood, night: Boolean) }`
+
+- [ ] **Step 1: 시험**: `moodKey(SceneMood.RAIN)=="rain"`, `moodKey(SceneMood.PLAIN)==null`; 비는 앞 층 0.4초에 `dx=-70, dy=320`(0.8초 주기의 절반); 주기가 지나면 시작 위치로 돌아감; `night`는 움직임 값이 0이라 이동 없음; `parseRgba("rgba(80, 110, 145, 0.26)")`
+- [ ] **Step 2:** FAIL 확인 후 구현. 480×640 타일을 시드 고정 난수로 두 층 그려(모양 8종은 `make-effects.py`와 같은 규칙) 층마다 옮긴다. `night`는 깜빡임, 나머지는 흐름. 정보 칸(폭 920dp, FULL 1340dp, THIRD 아래 480dp)에만 놓고 가장자리를 흐린다. 화면을 떠나면 애니메이터를 멈춘다. `Settings.Global.ANIMATOR_DURATION_SCALE == 0`이면 정지 그림만 그린다.
+- [ ] **Step 3:** 날씨 입력은 없으므로 비·눈·안개·흐림은 날씨가 연결되어야 나온다. 시연을 위해 **debug 빌드에서만** `adb shell am start -n com.byway/.ui.MainActivity --es weather rain`을 받는다. release에는 넣지 않는다.
+- [ ] **Step 4:** 시험 PASS, 맥 에뮬레이터에서 비·눈·벚꽃·단풍 캡처와 프레임 확인
+- [ ] **Step 5: 커밋** `feat: 정보 칸에 분위기 움직임 효과를 넣는다`
 
 ## 다음 계획
 
