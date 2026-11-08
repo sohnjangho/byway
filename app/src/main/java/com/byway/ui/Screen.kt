@@ -50,6 +50,8 @@ data class Nav(
     val rankBy: RankBy = RankBy.CURVES,
     /** 사용자가 움직인 한국 지도 자리. 없으면 화면이 정한다. */
     val atlas: AtlasCamera? = null,
+    /** 둘러보기에서 고른 코스. 지도가 이 코스로 확대되어 있다. */
+    val picked: String? = null,
 ) : Serializable
 
 /** 한 Activity 안에서 바뀌는 화면들. */

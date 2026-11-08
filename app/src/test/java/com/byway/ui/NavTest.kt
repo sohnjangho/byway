@@ -22,6 +22,7 @@ class NavTest {
             region = "강원",
             rankBy = RankBy.CLIMB,
             atlas = AtlasCamera(1f, 2f, 3f),
+            picked = "c2",
         )
         val bytes = ByteArrayOutputStream().also { out -> ObjectOutputStream(out).use { it.writeObject(nav) } }
         val restored = ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() }

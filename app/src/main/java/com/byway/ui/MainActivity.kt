@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
         )
-        Tab.BROWSE -> themeScreen(this, kit, nav.theme) { nav = nav.copy(theme = it) }
+        Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav.rankBy) { nav = nav.copy(rankBy = it) }
         Tab.MINE -> mineScreen(
             this,

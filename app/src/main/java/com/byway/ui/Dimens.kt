@@ -66,6 +66,12 @@ internal object Dimens {
     const val SCENE_CREDIT_BOTTOM = 176
     const val SCENE_CREDIT_WIDTH = 760
     const val EFFECT_WIDTH = 920
+    const val PANEL_WIDTH = 720
+    const val PANEL_WIDTH_FULL = 1000
+    const val THIRD_ATLAS_HEIGHT = 620
+    const val MAP_CARD_TEXT = 96
+    const val ATLAS_TOOLS_BOTTOM = 56
+    const val ATLAS_CREDIT_WIDTH = 660
     const val EFFECT_WIDTH_FULL = 1340
     const val THIRD_EFFECT_HEIGHT = 480
     const val THIRD_SOFT_HEIGHT = 520
