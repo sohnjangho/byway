@@ -6,7 +6,8 @@ out="${1:?출력 파일이 필요합니다}"
 shots="${2:?캡처 폴더가 필요합니다}"
 cd "$(dirname "$0")/.."
 VC=http://127.0.0.1:8088
-COURSE_CARD="1400 780"; START_BUTTON="1290 1184"
+# 2/3 창(시작 때 기본) 기준 좌표. 랭킹 3위가 판교 출발 코스인 팔당 노을이다.
+MENU_BROWSE="931 353"; MENU_RANKING="931 449"; BROWSE_CARD="2007 500"; RANK_ROW="1300 552"; RANK_DETAIL="1320 1244"; START_BUTTON="1150 1082"
 
 shot() { adb exec-out screencap -p > "$shots/$1.png"; }
 gear() { curl -s -m 5 -o /dev/null -X PUT "$VC/vehicle/gear?gear=$1"; }
@@ -33,11 +34,20 @@ shot 5_주행중대기                       # 주행 중에는 코스를 고를
 gear Park
 sleep 4
 shot 1_홈
-adb shell input swipe 1700 1150 1700 500 400
-sleep 2
-adb shell input tap $COURSE_CARD
-sleep 5
-shot 2_코스미리보기
+adb shell input tap $MENU_BROWSE
+sleep 3
+shot 2_둘러보기
+adb shell input tap $BROWSE_CARD
+sleep 4
+shot 2_둘러보기_확대
+adb shell input tap $MENU_RANKING
+sleep 3
+adb shell input tap $RANK_ROW
+sleep 3
+shot 2_랭킹
+adb shell input tap $RANK_DETAIL
+sleep 4
+shot 2_코스선택
 adb shell input tap $START_BUTTON      # 코스를 내비에 입힌다
 sleep 13                               # 내장 내비가 안내를 시작하는 장면
 show_app

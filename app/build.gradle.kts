@@ -1,6 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// 서명 키는 저장소 밖에 둔다. 파일이 없으면 release 빌드를 만들지 않는다.
+val releaseKeyFile = File(System.getProperty("user.home"), ".byway/release.properties")
+
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.name == "assembleRelease" } && !releaseKeyFile.exists()) {
+        throw GradleException("서명 설정이 없습니다: $releaseKeyFile")
+    }
 }
 
 android {
@@ -17,9 +28,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseKeyFile.exists()) {
+            val key = Properties().apply { releaseKeyFile.inputStream().use { load(it) } }
+            create("release") {
+                storeFile = File(key.getProperty("storeFile"))
+                storePassword = key.getProperty("storePassword")
+                keyAlias = key.getProperty("keyAlias")
+                keyPassword = key.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
