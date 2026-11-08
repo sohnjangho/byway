@@ -76,7 +76,7 @@ docs/       제작 가이드
 
 ## 실행 방법
 
-APK 위치: `apk/` 폴더의 `팀명_앱이름_release.apk`
+APK 위치: `apk/byway_에움길_release.apk`
 
 ```bash
 adb install -r apk/*_release.apk
