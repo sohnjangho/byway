@@ -53,9 +53,36 @@ internal class SceneView(context: Context, private val window: WindowClass) : Fr
         addView(canvasView, matchFrame())
         addView(photo, matchFrame())
         val edge = context.dp(Dimens.SPACE_8)
-        addView(hint, LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.TOP or Gravity.END).apply { topMargin = edge; marginEnd = edge })
-        addView(photoCredit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = context.dp(Dimens.SPACE_3); marginEnd = edge })
-        addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = context.dp(Dimens.SPACE_3); marginEnd = edge })
+        val third = window == WindowClass.THIRD
+        // 1/3 창은 위쪽에 메뉴가 얹히므로 풍경 단추는 아래로, 출처는 메뉴 바로 아래로 옮긴다.
+        val hintSize = if (third) {
+            LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.BOTTOM or Gravity.END).apply {
+                bottomMargin = context.dp(Dimens.SPACE_3)
+                marginEnd = context.dp(Dimens.SPACE_6)
+            }
+        } else {
+            LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.TOP or Gravity.END).apply { topMargin = edge; marginEnd = edge }
+        }
+        addView(hint, hintSize)
+        credit.maxWidth = context.dp(if (window == WindowClass.TWO) Dimens.SCENE_CREDIT_WIDTH else Int.MAX_VALUE / 4)
+        photoCredit.maxWidth = credit.maxWidth
+        val creditSize = {
+            if (third) {
+                LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
+                    topMargin = context.dp(Dimens.RAIL_TOP_HEIGHT + Dimens.SPACE_2)
+                    marginStart = context.dp(Dimens.SPACE_3)
+                    marginEnd = context.dp(Dimens.SPACE_3)
+                }
+            } else {
+                // 전체·2/3 창은 아래에 코스 띠가 있어 그 위에 둔다.
+                LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
+                    bottomMargin = context.dp(Dimens.SCENE_CREDIT_BOTTOM)
+                    marginEnd = edge
+                }
+            }
+        }
+        addView(photoCredit, creditSize())
+        addView(credit, creditSize())
         hint.setOnClickListener { togglePhoto() }
     }
 
@@ -201,7 +228,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass) : V
         val line = context.dp(Dimens.COURSE_LINE.toInt()).toFloat()
         val paths = scene.lines.map { it.mood to pathOf(it.points.map { p -> Pair(p.x, p.y) }, out, scale) }
         paths.forEach { (mood, path) ->
-            stroke.color = colors.moodColor(mood)
+            stroke.color = NightPalette.moodColor(mood)
             stroke.alpha = (GLOW_ALPHA * 255).toInt()
             stroke.strokeWidth = line * 3
             canvas.drawPath(path, stroke)
@@ -212,7 +239,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass) : V
             canvas.drawPath(path, stroke)
         }
         paths.forEach { (mood, path) ->
-            stroke.color = colors.moodColor(mood)
+            stroke.color = NightPalette.moodColor(mood)
             stroke.alpha = 255
             stroke.strokeWidth = line
             canvas.drawPath(path, stroke)

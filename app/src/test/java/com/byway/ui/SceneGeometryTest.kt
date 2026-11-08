@@ -18,7 +18,7 @@ class SceneGeometryTest {
 
     @Test
     fun thirdWindowIsScaled() {
-        assertEquals(SceneRect(841f - 1683f, -66f, 1683f, 847f), sceneRect(WindowClass.THIRD, 841f, 1210f))
+        assertEquals(SceneRect(841f - 1683f, 26f, 1683f, 847f), sceneRect(WindowClass.THIRD, 841f, 1210f))
     }
 
     @Test

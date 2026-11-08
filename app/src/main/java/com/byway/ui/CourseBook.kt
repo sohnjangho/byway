@@ -4,6 +4,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.CourseFacts
 import com.byway.core.course.RankBy
 import com.byway.core.course.Ranked
+import com.byway.core.course.SceneMood
 import com.byway.core.course.Shelf
 import com.byway.core.course.Stop
 import com.byway.core.course.characterOf
@@ -19,6 +20,7 @@ class CourseBook(val courses: List<Course>) {
     private val measured by lazy { ranked(RankBy.CURVES).associate { it.course.id to it.facts } }
     private val characters = mutableMapOf<String, String>()
     private val suggestions = mutableMapOf<Int, Course>()
+    private val moodSuggestions = mutableMapOf<Pair<SceneMood, Int>, Course>()
     private val lengths = mutableMapOf<String, List<Double>>()
     private val stops = mutableMapOf<String, List<Stop>>()
 
@@ -48,6 +50,8 @@ class CourseBook(val courses: List<Course>) {
     }
 
     fun suggested(hour: Int): Course = suggestions.getOrPut(hour) { suggestFor(courses, hour) }
+
+    fun suggested(mood: SceneMood, hour: Int): Course = moodSuggestions.getOrPut(mood to hour) { suggestFor(courses, mood, hour) }
 
     fun sectionMeters(course: Course): List<Double> = lengths.getOrPut(course.id) { sectionLengths(course) }
 

@@ -52,6 +52,24 @@ internal object Dimens {
     const val RAIL_WIDTH = 156
     const val RAIL_ITEM_HEIGHT = 88
     const val RAIL_TOP_HEIGHT = 92
+
+    const val SIDE_WIDTH = 620
+    const val SIDE_WIDTH_FULL = 1120
+    const val SIDE_INFO_WIDTH = 540
+    const val SIDE_BOTTOM = 152
+    const val SIDE_NAME = 68f
+    const val SIDE_NAME_THIRD = 52f
+    const val SOFT_WIDTH = 760
+    const val SOFT_WIDTH_FULL = 1240
+    const val SOFT_HEIGHT = 640
+    const val THIRD_SCENE_HEIGHT = 732
+    const val SCENE_CREDIT_BOTTOM = 176
+    const val SCENE_CREDIT_WIDTH = 760
+    const val THIRD_SOFT_HEIGHT = 520
+    const val STRIP_CARD_WIDTH = 284
+    const val STRIP_CARD_HEIGHT = 112
+    const val STRIP_THUMB = 96
+    const val PLACE_NUMBER = 36
     const val AVATAR_SMALL = 60
     const val AVATAR_LARGE = 104
 

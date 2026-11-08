@@ -6,197 +6,150 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Space
 import com.byway.core.course.Course
-import com.byway.core.course.RankBy
-import com.byway.core.course.Ranked
-import com.byway.core.course.Shelf
-import com.byway.core.course.inRegion
+import com.byway.core.course.ScenePlace
+import com.byway.core.course.Weather
+import com.byway.core.course.moodFor
+import com.byway.service.SceneCatalog
+import java.util.Calendar
 
-private const val TOP_COUNT = 3
-
-/** 정차 중 첫 화면. 음악 앱처럼 시간대 추천, 랭킹, 테마, 지역을 한눈에 둘러본다. */
+/** 정차 중 첫 화면. 왼쪽은 코스 이름과 설명, 주변 정보이고 오른쪽은 위성 장면과 경로다. */
 internal fun homeScreen(
     context: Context,
     kit: BrowseKit,
-    hour: Int,
-    region: String?,
-    onRegion: (String) -> Unit,
-    onTheme: (String) -> Unit,
-    onRanking: () -> Unit,
+    courseId: String?,
+    weather: Weather,
+    onPick: (Course) -> Unit,
+    onStart: (String) -> Unit,
+    onBrowse: () -> Unit,
 ): View = with(context) {
-    val hero = heroCard(kit, kit.book.suggested(hour), suggestionLine(hour))
-    val top = topCurves(kit, onRanking)
-    val edge = dp(kit.edge)
-    val body = column().apply {
-        setPadding(0, 0, 0, dp(Dimens.SPACE_8))
-        // 카드 그림자가 나올 자리를 두려고 첫 줄은 폭 전체를 쓰고 여백을 안쪽에 둔다.
-        val first = if (kit.wide) {
-            LinearLayout(context).apply {
-                addView(hero, LinearLayout.LayoutParams(0, dp(Dimens.HERO_HEIGHT), Dimens.HERO_WEIGHT).apply { marginEnd = dp(Dimens.SPACE_6) })
-                addView(top, LinearLayout.LayoutParams(0, dp(Dimens.HERO_HEIGHT), Dimens.TOP_LIST_WEIGHT))
-            }
-        } else {
-            column().apply {
-                addView(hero)
-                addSpaced(top, Dimens.SPACE_6)
+    val now = Calendar.getInstance()
+    val hour = now.get(Calendar.HOUR_OF_DAY)
+    val mood = moodFor(weather, hour, now.get(Calendar.MONTH) + 1)
+    val course = kit.book.courses.firstOrNull { it.id == courseId } ?: kit.book.suggested(mood, hour)
+    val scene = SceneCatalog.of(this, course.id)
+    val places = shownPlaces(scene?.places.orEmpty())
+    val third = kit.window == WindowClass.THIRD
+    val full = kit.window == WindowClass.FULL
+
+    FrameLayout(this).apply {
+        setBackgroundColor(palette.bg)
+        val sceneView = SceneView(context, kit.window)
+        sceneView.show(course, scene, places, night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)))
+        addView(sceneView, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_SCENE_HEIGHT) else MATCH))
+
+        val soft = SoftPatch(context, third)
+        Covers.loadSoft(context, course.id) { soft.setPicture(it) }
+        val softSize = when {
+            third -> FrameLayout.LayoutParams(MATCH, dp(Dimens.THIRD_SOFT_HEIGHT), Gravity.BOTTOM)
+            else -> FrameLayout.LayoutParams(dp(if (full) Dimens.SOFT_WIDTH_FULL else Dimens.SOFT_WIDTH), dp(Dimens.SOFT_HEIGHT)).apply {
+                leftMargin = dp(Dimens.RAIL_WIDTH)
             }
         }
-        addView(first.apply { setPadding(edge, dp(Dimens.SPACE_6), edge, dp(Dimens.SPACE_6)) })
-        val rest = column().apply {
-            setPadding(edge, 0, edge, 0)
-            addView(themeShelf(kit, onTheme))
-            regionShelf(kit, region, onRegion)?.let { addSpaced(it, Dimens.SPACE_6) }
+        addView(soft, softSize)
+
+        val info = infoColumn(kit, course, kickFor(mood))
+        val near = nearColumn(kit, course, places, onStart, onBrowse)
+        val side = when {
+            full -> LinearLayout(context).apply {
+                addView(info, LinearLayout.LayoutParams(dp(Dimens.SIDE_INFO_WIDTH), MATCH).apply { marginEnd = dp(Dimens.SPACE_10) })
+                addView(near, LinearLayout.LayoutParams(0, MATCH, 1f))
+            }
+            else -> column().apply {
+                addView(info)
+                addView(near, fill().apply { topMargin = dp(Dimens.SPACE_3) })
+            }
         }
-        addView(rest)
+        val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
+        side.setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else dp(Dimens.SPACE_4))
+        val sideSize = when {
+            third -> FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = dp(Dimens.THIRD_SCENE_HEIGHT) }
+            else -> FrameLayout.LayoutParams(dp(if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH), MATCH).apply {
+                leftMargin = dp(Dimens.RAIL_WIDTH)
+                bottomMargin = dp(Dimens.SIDE_BOTTOM)
+            }
+        }
+        addView(side, sideSize)
+
+        if (!third) {
+            val strip = courseStrip(kit, course, onPick)
+            addView(
+                strip,
+                FrameLayout.LayoutParams(MATCH, dp(Dimens.STRIP_CARD_HEIGHT), Gravity.BOTTOM).apply {
+                    leftMargin = dp(Dimens.RAIL_WIDTH + Dimens.SPACE_8)
+                    bottomMargin = dp(Dimens.SPACE_6)
+                },
+            )
+        }
     }
-    ScrollView(context).apply { addView(body) }
 }
 
-private fun Context.heading(text: String) = label(text, Dimens.HEADING, bold = true)
-
-private fun Context.heroCard(kit: BrowseKit, course: Course, line: String): View {
-    val text = heroText(kit, course, line)
-    val card = if (kit.wide) {
-        LinearLayout(this).apply {
-            addView(cover(course, dp(Dimens.HERO_HEIGHT)), LinearLayout.LayoutParams(dp(Dimens.HERO_HEIGHT), MATCH))
-            addView(text, LinearLayout.LayoutParams(0, MATCH, 1f))
-        }
-    } else {
-        column().apply {
-            addView(cover(course, dp(Dimens.SHELF_HEIGHT)), LinearLayout.LayoutParams(MATCH, dp(Dimens.SHELF_HEIGHT)))
-            addView(text)
-        }
-    }
-    return card.asCard(clickable = true).apply {
-        clipToOutline = true
-        setOnClickListener { kit.onCourse(course) }
-    }
-}
-
-private fun Context.heroText(kit: BrowseKit, course: Course, line: String): View = column().apply {
+private fun Context.infoColumn(kit: BrowseKit, course: Course, kick: String): View = column().apply {
+    val third = kit.window == WindowClass.THIRD
     val facts = kit.book.facts(course)
-    softBackground(course, radius = 0)
-    setPadding(dp(Dimens.SPACE_6), dp(Dimens.SPACE_4), dp(Dimens.SPACE_6), dp(Dimens.SPACE_4))
-    addView(label(line, Dimens.SMALL).atMostLines(1))
-    val name = label(course.name, Dimens.TITLE, bold = true).atMostLines(1)
-    if (kit.wide) {
-        val title = row().apply {
-            addView(name, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_4) })
-            addView(pickRow(course.tags, limit = 2))
-        }
-        addView(title)
-    } else {
-        addView(name)
-        addSpaced(pickRow(course.tags), Dimens.SPACE_2)
-    }
-    val numbers = listOf(
-        Fact("${facts.curves}", "굽이"),
+    if (!third) addView(label(kick, Dimens.SMALL, palette.accent).atMostLines(1))
+    addView(label(course.name, if (third) Dimens.SIDE_NAME_THIRD else Dimens.SIDE_NAME, bold = true).atMostLines(1))
+    addSpaced(pickRow(course.tags), Dimens.SPACE_2)
+    if (!third) addSpaced(label(course.summary, Dimens.BODY).atMostLines(3), Dimens.SPACE_3)
+    val cells = listOf(
+        Fact(kmText(facts.meters), "거리"),
+        Fact("${facts.curves}개", "굽이"),
         Fact(ratioText(facts), "에움 배율"),
         Fact(climbText(course, facts), "오르막"),
     )
-    addSpaced(factRow(numbers, Dimens.VALUE), Dimens.SPACE_2)
-    elevationChart(course, kit.book.sectionMeters(course))?.let { chart ->
-        addSpaced(moodLegend(facts.moodShare), Dimens.SPACE_2)
-        val size = if (kit.wide) fill() else LinearLayout.LayoutParams(MATCH, dp(Dimens.HERO_WELL_HEIGHT))
-        addView(chart, size.apply { topMargin = dp(Dimens.SPACE_2) })
-    }
+    addSpaced(plainFacts(cells), Dimens.SPACE_3)
 }
 
-/** 고도 그래프의 색 범례. 구간이 많아도 줄이 넘치지 않도록 구간이 아니라 분위기별로 묶는다. */
-private fun Context.moodLegend(share: Map<String, Int>): View = row().apply {
-    share.forEach { (mood, percent) ->
-        addView(sectionDot(mood), LinearLayout.LayoutParams(dp(Dimens.DOT), dp(Dimens.DOT)).apply { marginEnd = dp(Dimens.SPACE_2) })
-        addView(
-            label("${moodWord(mood)} $percent%", Dimens.LABEL).tabular(),
-            LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_6) },
-        )
-    }
-}
-
-private fun Context.topCurves(kit: BrowseKit, onRanking: () -> Unit): View = column().apply {
-    asCard()
-    // 터치 76dp 를 지키는 제목 줄과 88dp 썸네일 세 줄이 카드 높이에 들어가도록 위아래를 줄인다.
-    setPadding(dp(Dimens.SPACE_6), dp(Dimens.SPACE_3), dp(Dimens.SPACE_6), dp(Dimens.SPACE_3))
-    val title = row().apply {
-        addView(heading("굽이 많은 길"), LinearLayout.LayoutParams(0, WRAP, 1f))
-        val all = label("랭킹 전체", Dimens.SMALL, palette.accent).apply {
-            gravity = Gravity.CENTER
-            minHeight = dp(Dimens.TOUCH_MIN)
-            setOnClickListener { onRanking() }
+/** 시안처럼 칸 없이 값과 이름만 놓는다. */
+private fun Context.plainFacts(facts: List<Fact>): View = LinearLayout(this).apply {
+    facts.forEach { fact ->
+        val cell = column().apply {
+            addView(label(withSmallUnit(fact.value), Dimens.VALUE, bold = true).tabular().atMostLines(1))
+            addView(label(fact.name, Dimens.LABEL, palette.ink).atMostLines(1))
         }
-        addView(all, LinearLayout.LayoutParams(WRAP, dp(Dimens.TOUCH_MIN)))
-    }
-    addView(title)
-    kit.book.ranked(RankBy.CURVES).take(TOP_COUNT).forEachIndexed { i, ranked ->
-        addView(topRow(i + 1, ranked) { kit.onCourse(ranked.course) }, fill().apply { topMargin = dp(Dimens.SPACE_2) })
+        addView(cell, LinearLayout.LayoutParams(0, WRAP, 1f))
     }
 }
 
-private fun Context.topRow(place: Int, ranked: Ranked, onClick: () -> Unit): View = row().apply {
-    minimumHeight = dp(Dimens.THUMB)
-    background = pressable(palette.bgRaised, palette.bgPressed, Dimens.RADIUS_SM)
-    setOnClickListener { onClick() }
-    addView(
-        label("$place", Dimens.HEADING, if (place == 1) palette.accent else palette.ink, bold = true).tabular(),
-        LinearLayout.LayoutParams(dp(Dimens.SPACE_10), WRAP),
-    )
-    addView(
-        cover(ranked.course, dp(Dimens.THUMB)),
-        LinearLayout.LayoutParams(dp(Dimens.THUMB), dp(Dimens.THUMB)).apply { marginEnd = dp(Dimens.SPACE_4) },
-    )
+private fun Context.nearColumn(
+    kit: BrowseKit,
+    course: Course,
+    places: List<ScenePlace>,
+    onStart: (String) -> Unit,
+    onBrowse: () -> Unit,
+): View = column().apply {
+    val third = kit.window == WindowClass.THIRD
+    if (!third && places.isNotEmpty()) addView(label("코스 주변", Dimens.SMALL, bold = true))
+    val list = column()
+    places.forEachIndexed { i, place -> list.addSpaced(placeRow(place), if (i == 0) 0 else Dimens.SPACE_2) }
+    val scroll = ScrollView(context).apply {
+        isVerticalScrollBarEnabled = false
+        addView(list)
+    }
+    addView(scroll, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = dp(Dimens.SPACE_2) })
+    addSpaced(Space(context), Dimens.SPACE_2)
+    val start = primaryButton("내비에 코스 입히기") { onStart(course.id) }
+    if (third) {
+        val buttons = LinearLayout(context).apply {
+            addView(start, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
+            addView(quietButton("코스 바꾸기", onBrowse), LinearLayout.LayoutParams(WRAP, MATCH))
+        }
+        addView(buttons)
+    } else {
+        addView(start)
+    }
+}
+
+private fun Context.placeRow(place: ScenePlace): View = row().apply {
+    val number = label("${place.no}", Dimens.LABEL, palette.bg, bold = true).tabular().apply {
+        gravity = Gravity.CENTER
+        background = rounded(palette.ink, Dimens.PLACE_NUMBER / 2)
+    }
+    addView(number, LinearLayout.LayoutParams(dp(Dimens.PLACE_NUMBER), dp(Dimens.PLACE_NUMBER)).apply { marginEnd = dp(Dimens.SPACE_3) })
     val text = column().apply {
-        addView(label(ranked.course.name, Dimens.BODY).atMostLines(1))
-        addView(label(pickLabels(ranked.course.tags).firstOrNull().orEmpty(), Dimens.LABEL, palette.inkMuted).atMostLines(1))
+        addView(label(place.name, Dimens.SMALL, bold = true).atMostLines(1))
+        addView(label(placeLine(place), Dimens.LABEL, palette.ink).atMostLines(1))
     }
-    addView(text, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_2) })
-    addView(label("${ranked.facts.curves}", Dimens.HEADING, bold = true).tabular())
-}
-
-private fun Context.themeShelf(kit: BrowseKit, onTheme: (String) -> Unit): View = column().apply {
-    addView(heading("테마로 고르기"))
-    val tiles = kit.book.themes.map { themeTile(it) { onTheme(it.key) } }
-    addSpaced(grid(tiles, columns = if (kit.wide) 6 else 3, rowHeight = dp(Dimens.THEME_TILE_HEIGHT)), Dimens.SPACE_3)
-}
-
-private fun Context.themeTile(shelf: Shelf, onClick: () -> Unit): View = row().apply {
-    val mood = themeMood(shelf.key)
-    background = pressable(palette.airColor(mood), palette.bgPressed)
-    setPadding(dp(Dimens.SPACE_6), 0, dp(Dimens.SPACE_6), 0)
-    setOnClickListener { onClick() }
-    addView(
-        label(themeLabel(shelf.key).orEmpty(), Dimens.BODY, palette.moodColor(mood), bold = true).atMostLines(1),
-        LinearLayout.LayoutParams(0, WRAP, 1f),
-    )
-    addView(label("${shelf.count}", Dimens.SMALL, palette.inkSecondary).tabular())
-}
-
-/** 지역이 정해진 코스가 없으면 묶음을 두지 않는다. */
-private fun Context.regionShelf(kit: BrowseKit, selected: String?, onRegion: (String) -> Unit): View? {
-    val regions = kit.book.regions
-    if (regions.isEmpty()) return null
-    val chosen = selected?.takeIf { key -> regions.any { it.key == key } } ?: regions.first().key
-    val covers = FrameLayout(this)
-    fun show(region: String) {
-        val cells = inRegion(kit.book.courses, region).map { coverCard(kit, it, dp(Dimens.SHELF_HEIGHT)) }
-        covers.removeAllViews()
-        covers.addView(coverRow(cells, dp(kit.cellWidth(if (kit.wide) 5 else 2)), dp(Dimens.SHELF_HEIGHT)))
-    }
-    show(chosen)
-    val chips = chipRow(regions.map { Choice(it.key, it.key) }, chosen, Dimens.SMALL) { region ->
-        onRegion(region)
-        show(region)
-    }
-    return column().apply {
-        if (kit.wide) {
-            val top = row().apply {
-                addView(heading("지역별 추천"), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_6) })
-                addView(chips, LinearLayout.LayoutParams(0, WRAP, 1f))
-            }
-            addView(top)
-        } else {
-            addView(heading("지역별 추천"))
-            addSpaced(chips, Dimens.SPACE_3)
-        }
-        addSpaced(covers, Dimens.SPACE_3)
-    }
+    addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
 }

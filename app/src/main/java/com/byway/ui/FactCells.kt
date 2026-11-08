@@ -17,7 +17,7 @@ internal fun Context.factCell(fact: Fact, size: Float): View = column().apply {
     addView(label(withSmallUnit(fact.value), size, bold = true).tabular().atMostLines(1))
 }
 
-private fun withSmallUnit(value: String): CharSequence {
+internal fun withSmallUnit(value: String): CharSequence {
     val start = unitStart(value)
     if (start == value.length) return value
     return SpannableString(value).apply {

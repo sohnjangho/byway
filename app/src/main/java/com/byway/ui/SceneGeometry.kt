@@ -10,7 +10,7 @@ private const val SCENE_WIDTH = 2404f
 private const val SCENE_HEIGHT = 1210f
 private const val THIRD_WIDTH = 1683f
 private const val THIRD_HEIGHT = 847f
-private const val THIRD_TOP = -66f
+private const val THIRD_TOP = 26f
 
 fun sceneRect(window: WindowClass, viewW: Float, viewH: Float): SceneRect = when (window) {
     WindowClass.THIRD -> SceneRect(viewW - THIRD_WIDTH, THIRD_TOP, THIRD_WIDTH, THIRD_HEIGHT)

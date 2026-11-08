@@ -8,12 +8,11 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.byway.core.course.Course
-import com.byway.core.course.RankBy
+import com.byway.core.course.Weather
 import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
-import java.util.Calendar
 
 /**
  * 상태를 받아 화면을 바꾸기만 한다. 어떤 화면인지는 [screenFor]가 정한다.
@@ -25,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var root: FrameLayout
     private var nav = Nav()
     private var pendingStart: String? = null
+    private var stale = false
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun go(next: Nav) {
         nav = next
+        stale = true
         render(DriveBoard.state)
     }
 
@@ -99,7 +100,8 @@ class MainActivity : AppCompatActivity() {
         if (state.running) nav = nav.copy(about = false)
         val next = screenFor(state, nav)
         val width = widthDp()
-        if (next != current || width != builtWidth || palette != builtPalette) {
+        if (next != current || width != builtWidth || palette != builtPalette || stale) {
+            stale = false
             current = next
             builtWidth = width
             builtPalette = palette
@@ -128,11 +130,11 @@ class MainActivity : AppCompatActivity() {
         Tab.HOME -> homeScreen(
             this,
             kit,
-            hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
-            region = nav.region,
-            onRegion = { nav = nav.copy(region = it) },
-            onTheme = { go(nav.copy(tab = Tab.BROWSE, theme = it)) },
-            onRanking = { go(nav.copy(tab = Tab.RANKING, rankBy = RankBy.CURVES)) },
+            courseId = nav.courseId,
+            weather = Weather.UNKNOWN,
+            onPick = ::open,
+            onStart = ::start,
+            onBrowse = { openTab(Tab.BROWSE) },
         )
         Tab.BROWSE -> themeScreen(this, kit, nav.theme) { nav = nav.copy(theme = it) }
         Tab.RANKING -> rankingScreen(this, kit, nav.rankBy) { nav = nav.copy(rankBy = it) }
