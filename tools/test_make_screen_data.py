@@ -72,6 +72,11 @@ class ScriptTest(unittest.TestCase):
     def test_the_file_sets_one_global_list(self):
         self.assertTrue(data.script([{"id": "c"}]).startswith("window.COURSES = ["))
 
+    def test_the_korea_map_follows_the_courses(self):
+        text = data.script([{"id": "c"}], {"size": [10, 20], "labels": []})
+        self.assertIn("\nwindow.KOREA = {", text)
+        self.assertLess(text.index("window.COURSES"), text.index("window.KOREA"))
+
 
 if __name__ == "__main__":
     unittest.main()

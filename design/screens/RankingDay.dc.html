@@ -13,8 +13,8 @@
 <helmet>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 </helmet>
-<div class="stage" data-theme="day">
-<div class="screen screen-rail">
+<div class="stage" data-theme="day" data-window="two">
+<div class="screen screen-rail screen-over">
   <nav class="rail">
     <a href="MainDay.dc.html" class="brand t-brand">에움길</a>
     <a href="MainDay.dc.html" class="rail-item t-small">홈</a>
@@ -23,52 +23,49 @@
     <a href="MeDay.dc.html" class="rail-item t-small">내 코스</a>
     <a href="MeDay.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
   </nav>
-  <div class="ranked">
-    <div class="ranked-list">
+  <div class="scene scene-list">
+    <div class="swipe scene-swipe">
+      <div class="swipe-pages">
+        <div id="scene-route" class="swipe-page">
+          <img class="scene-img" src="{{ c.ground }}" alt="코스 둘레 위성 지도">
+          <svg class="scene-line" viewBox="0 0 2404 1210" role="img" aria-label="{{ c.name }} 경로">
+            <sc-for list="{{ c.lines }}" as="s"><path class="route route-glow sec-{{ s.mood }}" d="{{ s.d }}"/></sc-for>
+            <sc-for list="{{ c.lines }}" as="s"><path class="route route-case" d="{{ s.d }}"/></sc-for>
+            <sc-for list="{{ c.lines }}" as="s"><path class="route route-line sec-{{ s.mood }}" d="{{ s.d }}"/></sc-for>
+          </svg>
+          <a href="#scene-photo" class="swipe-hint t-label">밀어서 풍경 보기</a>
+        </div>
+        <div id="scene-photo" class="swipe-page">
+          <img class="scene-photo" src="{{ c.photo }}" alt="코스 풍경">
+          <a href="#scene-route" class="swipe-hint t-label">경로로 돌아가기</a>
+          <p class="scene-credit t-label">{{ c.credit }}</p>
+        </div>
+      </div>
+    </div>
+    <img class="side-soft" src="{{ c.soft }}" alt="">
+    <div class="side side-list">
+      <span class="side-kick t-small">랭킹 · 코스 선에서 잰 값</span>
+      <h1 class="side-head">{{ head }}</h1>
       <div class="ranking-tabs">
         <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
           <button type="button" onClick="{{ tab.pick }}" class="{{ tab.cls }}">{{ tab.label }}</button>
         </sc-for>
       </div>
-      <div class="ranked-rows">
-        <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
-          <button type="button" onClick="{{ row.pick }}" class="{{ row.cls }}">
-            <span class="ranked-no t-heading num">{{ row.rank }}</span>
-            <img class="thumb" src="{{ row.route }}" alt="">
-            <span class="ranked-name"><span class="t-body bold">{{ row.name }}</span><span class="t-label ink-2">{{ row.note }}</span></span>
-            <span class="t-heading num nowrap">{{ row.value }}</span>
+      <div class="pick-rows">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+          <button type="button" onClick="{{ r.pick }}" class="{{ r.cls }}">
+            <span class="rank-no t-heading num">{{ r.rank }}</span>
+            <img class="thumb" src="{{ r.route }}" alt="">
+            <span class="pick-body"><span class="t-small bold">{{ r.name }}</span><span class="t-label ink-2">{{ r.line }}</span></span>
+            <span class="rank-value t-heading num">{{ r.value }}</span>
           </button>
         </sc-for>
       </div>
-      <p class="t-label ink-2">추천 표시는 에움길이 고른 것입니다</p>
-    </div>
-    <div class="ranked-view">
-      <div class="swipe ranked-swipe">
-        <div class="swipe-pages">
-          <div id="view-route" class="swipe-page">
-            <img src="{{ view.route }}" alt="코스 경로">
-            <sc-if value="{{ view.photo }}" hint-placeholder-val="{{ true }}">
-              <a href="#view-photo" class="swipe-hint swipe-next t-label">밀어서 풍경 보기</a>
-            </sc-if>
-          </div>
-          <sc-if value="{{ view.photo }}" hint-placeholder-val="{{ true }}">
-            <div id="view-photo" class="swipe-page">
-              <img src="{{ view.photo }}" alt="코스 풍경">
-              <a href="#view-route" class="swipe-hint swipe-back t-label">경로로 돌아가기</a>
-              <p class="map-credit">{{ view.credit }}</p>
-            </div>
-          </sc-if>
-        </div>
+      <div class="locator">
+        <span class="locator-map"><img src="{{ where.map }}" alt="한국 지도에서 코스 위치"><span class="locator-dot" style="{{ where.dot }}"></span></span>
+        <span class="pick-body"><span class="t-small bold">{{ where.region }}</span><span class="t-label ink-2">{{ where.line }}</span><span class="t-label ink-2">추천 표시는 에움길이 고른 것입니다</span></span>
       </div>
-      <div class="ranked-info soft">
-        <img class="soft-img" src="{{ view.soft }}" alt="">
-        <h1 class="t-title">{{ view.name }}</h1>
-        <div class="picks">
-          <sc-for list="{{ view.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for>
-        </div>
-        <p class="t-body ink-2">{{ view.summary }}</p>
-        <a href="MainDay.dc.html" class="btn-quiet t-body">코스 자세히 보기</a>
-      </div>
+      <a href="MainDay.dc.html" class="btn-quiet t-body">{{ c.name }} 자세히 보기</a>
     </div>
   </div>
 </div>
@@ -76,28 +73,37 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1184}}'>
 const COVER = "coverDay";
-const route = (c) => c[COVER];
+const NIGHT = COVER === 'coverNight';
+/* 오른쪽 장면에 그릴 코스 */
+const scene = (course) => ({
+  name: course.name, soft: course.soft, photo: course.photo, credit: course.credit,
+  ground: NIGHT ? course.scene.night : course.scene.day, lines: course.scene.sections,
+});
 const KINDS = [
-  { id: 'curves', label: '굽이', show: (c) => c.curves + '개' },
-  { id: 'eum', label: '에움 배율', show: (c) => c.eum.toFixed(1) + '배' },
-  { id: 'gain', label: '오르막', show: (c) => c.gain + 'm' },
-  { id: 'km', label: '거리', show: (c) => c.km.toFixed(1) + 'km' },
+  { id: 'curves', label: '굽이', head: '굽이가 가장 많은 길', show: (c) => c.curves + '개' },
+  { id: 'eum', label: '에움 배율', head: '가장 크게 돌아가는 길', show: (c) => c.eum.toFixed(1) + '배' },
+  { id: 'gain', label: '오르막', head: '가장 많이 오르는 길', show: (c) => c.gain + 'm' },
+  { id: 'km', label: '거리', head: '가장 긴 길', show: (c) => c.km.toFixed(1) + 'km' },
 ];
 class Component extends DCLogic {
   constructor(props) { super(props); this.state = { kind: 'curves', chosen: null }; }
   renderVals() {
     const kind = KINDS.find((k) => k.id === this.state.kind);
     const sorted = [...window.COURSES].sort((a, b) => b[kind.id] - a[kind.id]);
-    const view = sorted.find((c) => c.id === this.state.chosen) || sorted[0];
+    const course = sorted.find((c) => c.id === this.state.chosen) || sorted[0];
     return {
+      head: kind.head,
+      where: {
+        map: NIGHT ? window.KOREA.night : window.KOREA.day, region: course.region, line: course.km.toFixed(1) + 'km · 굽이 ' + course.curves + '개',
+        dot: 'left: ' + (course.atlas.x / window.KOREA.size[0] * 100).toFixed(1) + '%; top: ' + (course.atlas.y / window.KOREA.size[1] * 100).toFixed(1) + '%',
+      },
+      c: scene(course),
       tabs: KINDS.map((k) => ({ label: k.label, cls: k.id === kind.id ? 'tab t-small is-on' : 'tab t-small', pick: () => this.setState({ kind: k.id, chosen: null }) })),
       rows: sorted.map((c, i) => ({
-        rank: i + 1, name: c.name, route: route(c), value: kind.show(c),
-        note: c.picks[0] + ' · ' + c.picks[1],
-        cls: c.id === view.id ? 'ranked-row is-on' : 'ranked-row',
+        rank: i + 1, name: c.name, route: c[COVER], value: kind.show(c), line: [c.region, c.picks[0], c.picks[1]].join(' · '),
+        cls: c.id === course.id ? 'pick-row rank-row is-on' : 'pick-row rank-row',
         pick: () => this.setState({ chosen: c.id }),
       })),
-      view: { name: view.name, route: route(view), photo: view.photo, credit: view.credit, soft: view.soft, summary: view.summary, tags: view.picks.map((text) => ({ text })) },
     };
   }
 }

@@ -45,6 +45,28 @@ class WindowVersionTest(unittest.TestCase):
     def test_the_preview_takes_the_window_size(self):
         self.assertIn('"$preview":{"width":841,"height":1210}', day.window_version(self.source, "third", 841, 1210))
 
+    def test_menu_links_stay_in_the_same_window(self):
+        source = self.source + '<a href="Browse.dc.html"></a><a href="Me.dc.html"></a>'
+        page = day.window_version(source, "full", 2560, 1210)
+        self.assertIn('href="BrowseFull.dc.html"', page)
+        self.assertIn('href="MeFull.dc.html"', page)
+
+    def test_the_script_knows_its_window(self):
+        page = day.window_version(self.source + 'const WINDOW = "two";', "full", 2560, 1210)
+        self.assertIn('const WINDOW = "full";', page)
+
+    def test_screens_without_window_versions_keep_their_links(self):
+        page = day.window_version(self.source + '<a href="Drive.dc.html"></a>', "third", 841, 1210)
+        self.assertIn('href="Drive.dc.html"', page)
+
+
+class WindowScreensTest(unittest.TestCase):
+    def test_every_menu_screen_gets_full_and_third_windows(self):
+        names = set(day.window_screens())
+        for screen in ("Main", "Browse", "Ranking", "Me"):
+            self.assertIn(f"{screen}Full", names)
+            self.assertIn(f"{screen}Third", names)
+
 
 class MoodVersionTest(unittest.TestCase):
     source = '<div data-mood="plain"></div><script>const MOOD = "plain";</script>'

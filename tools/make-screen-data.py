@@ -14,6 +14,7 @@ METRICS = ROOT / "design/screens/images/course_metrics.json"
 OUT = ROOT / "design/screens/courses.js"
 SCENES = ROOT / "design/screens/images/scene/routes.json"
 NEARBY = ROOT / "tools/nearby.json"
+ATLAS = ROOT / "design/screens/images/atlas/atlas.json"
 PIN_GAP = 46  # 번호 표시 지름 40에 테두리와 틈을 더한 값
 KIND_WORDS = {"view": "경치", "photo": "경치", "sight": "명소", "food": "음식"}
 spec = importlib.util.spec_from_file_location("make_scenes", Path(__file__).parent / "make-scenes.py")
@@ -84,14 +85,19 @@ def entry(course, metrics, has_photo):
     }
 
 
-def script(entries):
-    return "window.COURSES = " + json.dumps(entries, ensure_ascii=False, indent=1) + ";\n"
+def script(entries, korea=None):
+    text = "window.COURSES = " + json.dumps(entries, ensure_ascii=False, indent=1) + ";\n"
+    if korea is not None:
+        text += "window.KOREA = " + json.dumps(korea, ensure_ascii=False) + ";\n"
+    return text
 
 
 def main():
     metrics = json.loads(METRICS.read_text(encoding="utf-8"))
     routes = json.loads(SCENES.read_text(encoding="utf-8"))
     nearby = json.loads(NEARBY.read_text(encoding="utf-8")) if NEARBY.exists() else {}
+    # 한국 전체 지도. tools/make-atlas.py 가 만든다. 코스마다 지도 위 자리를 붙이고 지도 크기와 지명은 따로 둔다.
+    atlas = json.loads(ATLAS.read_text(encoding="utf-8"))
     entries = []
     for file in sorted(COURSES.glob("*.json")):
         course = json.loads(file.read_text(encoding="utf-8"))
@@ -100,8 +106,10 @@ def main():
         item = entry(course, metrics[cid], (SCENERY / f"{cid}.jpg").exists())
         item["scene"] = {"night": f"images/scene/{cid}-night.jpg", "day": f"images/scene/{cid}.jpg", "sections": scene["sections"]}
         item["places"] = places(course["path"], course["spots"], nearby.get(cid, []), scene["view"])
+        item["atlas"] = atlas["courses"][cid]
         entries.append(item)
-    OUT.write_text(script(entries), encoding="utf-8")
+    korea = {"size": atlas["size"], "labels": atlas["labels"], "night": "images/atlas/korea-night.jpg", "day": "images/atlas/korea.jpg"}
+    OUT.write_text(script(entries, korea), encoding="utf-8")
     print(OUT.relative_to(ROOT), len(entries))
 
 
