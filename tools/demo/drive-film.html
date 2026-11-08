@@ -4,43 +4,40 @@
 <meta charset="utf-8">
 <title>에움길 주행 재현</title>
 <!-- 시안으로 만든 주행 재현 화면. render(t) 가 t초 순간을 그린다. tools/demo/record-film.mjs 가 프레임을 찍는다.
-     계기판, 앞 유리 풍경, 차량 정보 칸은 연출이다. 문구는 앱의 Messages.kt, 차 안 연출 값은 AmbienceFeature 를 따른다. -->
+     센터 화면 바탕은 Pleos 에뮬레이터 실제 화면(pleos/drive.png, park.png)이고 속도·기어·시각만 덮어 움직인다.
+     실내 배치는 Pleos 커넥트 첫 적용 차량(더 뉴 그랜저)의 공개 설명을 따른다: 운전석 슬림 디스플레이 + 16:9 센터 디스플레이.
+     앞 유리 밖은 road3d.js 가 코스 파일의 실제 경로·고도로 그린 3D 도로다. 문구는 앱의 Messages.kt, 차 안 연출 값은 AmbienceFeature 를 따른다. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="../../design/screens/tokens.css">
 <link rel="stylesheet" href="../../design/screens/app.css">
 <script src="../../design/screens/courses.js"></script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 <style>
   html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #050506; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
   #view { position: absolute; inset: 0; overflow: hidden; }
   #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
-  /* 앞 유리 */
-  .glass { position: absolute; left: 0; top: 0; width: 1920px; height: 720px; overflow: hidden; background: #8fb3d9; }
-  .glass img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 62%; }
-  .glass::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.35), transparent 22%, transparent 70%, rgba(0,0,0,0.25)); }
+  #road { position: absolute; left: 0; top: 0; width: 1920px; height: 720px; }
   .frame { position: absolute; inset: 0; pointer-events: none; }
-  /* 계기판 */
-  .cluster { position: absolute; left: 270px; top: 640px; width: 560px; height: 180px; border-radius: 28px; background: #08090b; box-shadow: inset 0 0 0 2px #23252a; color: #f2f3f5; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; box-sizing: border-box; }
-  .cluster > div { flex: 1 1 0; }
-  .cluster .speed { text-align: center; font-variant-numeric: tabular-nums; }
-  .cluster .speed b { display: block; font-size: 84px; line-height: 88px; font-weight: 700; letter-spacing: -0.03em; }
-  .cluster .speed span { font-size: 18px; color: #9aa0a8; }
-  .gears { display: flex; gap: 10px; justify-content: center; font-size: 26px; font-weight: 700; color: #4a4e56; }
-  .gears .on { color: #f2f3f5; }
-  .cluster .side { font-size: 18px; line-height: 28px; color: #9aa0a8; }
-  .cluster .side b { color: #f2f3f5; font-size: 24px; }
-  /* 센터 화면: 안쪽은 실제 크기 2560×1210 으로 그리고 줄여서 얹는다 */
-  .display { position: absolute; left: 980px; top: 640px; width: 880px; height: 416px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 0 0 6px #0b0c0e, 0 0 0 7px #2a2c31, 0 20px 40px rgba(0,0,0,0.6); }
-  .screen-in { position: absolute; left: 0; top: 0; width: 2560px; height: 1210px; transform: scale(0.34375); transform-origin: 0 0; background: var(--bg); color: var(--ink); }
-  .vehicle { position: absolute; left: 0; top: 0; width: 853px; height: 1210px; box-sizing: border-box; padding: 64px 56px; display: flex; flex-direction: column; gap: 36px; background: #eef0f3; color: #131417; }
-  .vehicle .clock { font-size: 88px; font-weight: 700; letter-spacing: -0.02em; }
-  .vehicle .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 34px; border-top: 1px solid #d5d8de; padding-top: 28px; }
-  .vehicle .row b { font-size: 52px; }
-  .vehicle .tag { color: #5d636d; font-size: 28px; }
-  .app-main { position: absolute; left: 853px; top: 13px; width: 1700px; height: 1184px; border-radius: 40px; }
-  .nav { position: absolute; left: 853px; top: 0; width: 841px; height: 1210px; }
-  .nav img { width: 100%; height: 100%; object-fit: cover; }
-  .pane { position: absolute; left: 1718px; top: 0; width: 841px; height: 1210px; display: flex; }
-  .pane .drive { border-radius: 0; padding: 48px 44px; gap: 22px; }
+  /* 운전석 슬림 디스플레이 */
+  .slim { position: absolute; left: 250px; top: 618px; width: 600px; height: 96px; border-radius: 18px; background: #050607; box-shadow: 0 0 0 3px #1c1e22, 0 8px 18px rgba(0,0,0,0.5); color: #eef0f3; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+  .slim .spd { display: flex; align-items: baseline; gap: 6px; }
+  .slim .spd b { font-size: 54px; font-weight: 600; letter-spacing: -0.02em; }
+  .slim .spd span { font-size: 15px; color: #8d939c; }
+  .slim .gear { font-size: 22px; font-weight: 700; color: #4b4f57; letter-spacing: 6px; }
+  .slim .gear .on { color: #fff; }
+  .slim .meta { text-align: right; font-size: 15px; line-height: 22px; color: #a6acb5; }
+  .slim .meta b { color: #eef0f3; font-weight: 600; }
+  /* 센터 디스플레이: 안쪽은 Pleos 실제 크기 2560×1440 으로 그리고 줄여서 얹는다 */
+  .display { position: absolute; left: 990px; top: 582px; width: 880px; height: 495px; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 0 0 6px #0b0c0e, 0 0 0 7px #2a2c31, 0 20px 40px rgba(0,0,0,0.6); }
+  .screen-in { position: absolute; left: 0; top: 0; width: 2560px; height: 1440px; transform: scale(0.34375); transform-origin: 0 0; color: var(--ink); }
+  .base { position: absolute; inset: 0; width: 2560px; height: 1440px; }
+  .cover { position: absolute; background: #fefefe; display: flex; align-items: center; justify-content: center; }
+  #spd { left: 300px; top: 78px; width: 260px; height: 118px; font-size: 132px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #000; }
+  #clk { left: 2392px; top: 22px; width: 160px; height: 46px; background: #f7f7f7; justify-content: flex-end; font-size: 31px; color: #1a1a1a; }
+  .app { position: absolute; left: 853px; top: 90px; width: 1680px; height: 1210px; background: #f6f8fc; overflow: hidden; }
+  .app img { width: 100%; height: 100%; object-fit: contain; }
+  .pane { position: absolute; left: 1693px; top: 90px; width: 840px; height: 1210px; display: flex; box-shadow: -2px 0 0 #e3e6ea; }
+  .pane .drive { border-radius: 0; padding: 44px 40px; gap: 20px; }
   .pane .drive > .glow { position: absolute; inset: 0; background: radial-gradient(circle at 80% 8%, rgba(255,150,70,0.55), rgba(255,120,80,0.18) 45%, transparent 70%); pointer-events: none; }
   .mini { position: relative; flex: 1 1 auto; min-height: 0; border-radius: 24px; overflow: hidden; background: #cfd6dd; }
   .mini img { position: absolute; max-width: none; }
@@ -48,13 +45,13 @@
   .info-line { display: flex; flex-direction: column; gap: 4px; padding: 14px 20px; border-radius: 16px; background: var(--bg-raised); }
   .info-line b { font-size: 30px; }
   .info-line span { font-size: 26px; color: var(--ink-secondary); }
-  .tap { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 10px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 6px rgba(0,0,0,0.25); }
+  .tap { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 10px solid rgba(255,255,255,0.95); box-shadow: 0 0 0 6px rgba(0,0,0,0.3); }
   /* 화면 위 글 */
   .step { position: absolute; left: 48px; top: 40px; max-width: 1200px; padding: 14px 24px; border-radius: 14px; background: rgba(10,11,13,0.78); color: #fff; font-size: 30px; line-height: 40px; font-weight: 600; }
   .step small { display: block; font-size: 22px; line-height: 30px; font-weight: 400; color: #c9ced6; }
-  .voice { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 16px 30px; border-radius: 40px; background: rgba(10,11,13,0.86); color: #fff; font-size: 34px; font-weight: 600; white-space: nowrap; display: flex; gap: 16px; align-items: center; }
+  .voice { position: absolute; left: 48px; bottom: 48px; padding: 16px 30px; border-radius: 40px; background: rgba(10,11,13,0.86); color: #fff; font-size: 34px; font-weight: 600; white-space: nowrap; display: flex; gap: 16px; align-items: center; }
   .voice i { font-style: normal; color: #f0a45a; font-size: 24px; }
-  .note { position: absolute; right: 24px; top: 18px; padding: 6px 14px; border-radius: 10px; background: rgba(10,11,13,0.7); color: rgba(255,255,255,0.8); font-size: 18px; }
+  .note { position: absolute; right: 24px; top: 18px; padding: 6px 14px; border-radius: 10px; background: rgba(10,11,13,0.7); color: rgba(255,255,255,0.85); font-size: 18px; }
   .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #0b0c0e; color: #f2f3f5; text-align: center; }
   .card h1 { margin: 0; font-family: "Gowun Batang", serif; font-size: 96px; color: #f0a45a; }
   .card p { margin: 0; font-size: 30px; line-height: 44px; }
@@ -64,43 +61,44 @@
 <body>
 <div id="view">
   <div id="world">
-    <div class="glass"><img id="g0" alt=""><img id="g1" alt=""><img id="g2" alt=""></div>
+    <canvas id="road" width="1920" height="720"></canvas>
     <svg class="frame" viewBox="0 0 1920 1080" aria-hidden="true">
-      <!-- 지붕과 기둥 -->
-      <path d="M0 0 H1920 V46 Q960 96 0 46 Z" fill="#0b0c0e"/>
-      <path d="M0 0 L190 0 L40 700 L0 700 Z" fill="#0d0e10"/>
-      <path d="M1920 0 L1730 0 L1880 700 L1920 700 Z" fill="#0d0e10"/>
-      <!-- 대시보드 -->
-      <path d="M0 640 Q960 560 1920 640 V1080 H0 Z" fill="url(#dash)"/>
-      <path d="M0 640 Q960 560 1920 640" stroke="#2c2e33" stroke-width="3" fill="none"/>
-      <defs><linearGradient id="dash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1f23"/><stop offset="1" stop-color="#0a0b0d"/></linearGradient></defs>
+      <defs>
+        <linearGradient id="dash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26282c"/><stop offset="0.25" stop-color="#17181b"/><stop offset="1" stop-color="#0a0b0d"/></linearGradient>
+        <linearGradient id="pillar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0c0d0f"/><stop offset="1" stop-color="#16171a"/></linearGradient>
+      </defs>
+      <!-- 지붕, 기둥, 룸미러 -->
+      <path d="M0 0 H1920 V34 Q960 74 0 34 Z" fill="#0d0e10"/>
+      <path d="M0 0 L210 0 L60 640 L0 640 Z" fill="url(#pillar)"/>
+      <path d="M1920 0 L1710 0 L1860 640 L1920 640 Z" fill="url(#pillar)"/>
+      <rect x="880" y="40" width="190" height="56" rx="14" fill="#101114"/><rect x="965" y="20" width="20" height="30" fill="#101114"/>
+      <!-- 가로로 긴 대시보드와 앰비언트 라이트 -->
+      <path d="M0 610 Q960 585 1920 610 V1080 H0 Z" fill="url(#dash)"/>
+      <path d="M0 610 Q960 585 1920 610" stroke="#34363b" stroke-width="2" fill="none"/>
+      <rect x="0" y="742" width="1920" height="10" fill="#0a0b0d"/>
+      <rect id="ambient" x="0" y="752" width="1920" height="4" fill="#ffd9a0" opacity="0.5"/>
+      <rect x="40" y="770" width="200" height="16" rx="8" fill="#08090a"/><rect x="1880" y="770" width="0" height="0"/>
     </svg>
-    <div class="cluster">
-      <div class="side"><b id="range">312</b> km<br>주행 가능</div>
-      <div class="speed"><b id="speed">0</b><span>km/h</span><div class="gears" id="gears"><span>P</span><span>R</span><span>N</span><span>D</span></div></div>
-      <div class="side" style="text-align:right"><b id="clock2">17:42</b><br>바깥 18°</div>
+    <div class="slim">
+      <div class="spd"><b id="sSpeed">0</b><span>km/h</span></div>
+      <div class="gear" id="sGear"><span>P</span><span>R</span><span>N</span><span>D</span></div>
+      <div class="meta"><b id="sDest">두물머리까지 50.3km</b><br><span id="sMedia">미디어 없음</span></div>
     </div>
     <svg class="frame" viewBox="0 0 1920 1080" aria-hidden="true">
-      <!-- 운전대 -->
-      <circle cx="550" cy="1270" r="400" fill="none" stroke="#141518" stroke-width="64"/>
-      <circle cx="550" cy="1270" r="400" fill="none" stroke="#2a2c31" stroke-width="2"/>
-      <path d="M190 1080 Q550 940 910 1080 Z" fill="#141518"/>
-      <circle cx="550" cy="1180" r="110" fill="#17181b" stroke="#2a2c31" stroke-width="2"/>
+      <!-- 운전대: 슬림 디스플레이 아래로 림이 지나간다 -->
+      <circle cx="550" cy="1185" r="360" fill="none" stroke="#141518" stroke-width="58"/>
+      <circle cx="550" cy="1185" r="389" fill="none" stroke="#24262a" stroke-width="2"/>
+      <path d="M215 1080 Q380 1020 470 1060 L630 1060 Q720 1020 885 1080 Z" fill="#141518"/>
+      <rect x="455" y="1030" width="190" height="60" rx="24" fill="#191a1d" stroke="#2a2c31" stroke-width="2"/>
     </svg>
     <div class="display">
       <div class="screen-in stage" data-theme="day" id="screen">
-        <div class="vehicle">
-          <div class="clock" id="clock">17:42</div>
-          <div class="tag">차량 정보 (연출)</div>
-          <div class="row"><span>기어</span><b id="vgear">P</b></div>
-          <div class="row"><span>배터리</span><b>78%</b></div>
-          <div class="row"><span>실내</span><b>22.0°</b></div>
-          <div class="row"><span>창문</span><b id="vwin">닫힘</b></div>
-          <div class="row"><span>풍량</span><b id="vfan">2단</b></div>
-        </div>
-        <img class="app-main" id="main" src="stills/MainDay.png" alt="">
-        <img class="app-main" id="summary" src="stills/SummaryDay.png" alt="">
-        <div class="nav" id="nav"><img src="../../design/screens/images/nav_pane.jpg" alt=""></div>
+        <img class="base" id="basePark" src="pleos/park.png" alt="">
+        <img class="base" id="baseDrive" src="pleos/drive.png" alt="">
+        <div class="cover" id="spd">0</div>
+        <div class="cover" id="clk">05:42 오후</div>
+        <div class="app" id="mainApp"><img src="stills/MainDay.png" alt=""></div>
+        <div class="app" id="sumApp"><img src="stills/SummaryDay.png" alt=""></div>
         <div class="pane" id="pane">
           <section class="drive" id="drive" style="flex: 1 1 auto;">
             <div class="glow" id="glow"></div>
@@ -120,24 +118,24 @@
   </div>
   <div class="step" id="step"></div>
   <div class="voice" id="voice"><i>에움길 음성</i><span id="voiceText"></span></div>
-  <div class="note">시안으로 만든 재현 영상 · 계기판·차량 정보·앞 유리 풍경은 연출</div>
+  <div class="note">시안으로 만든 재현 영상 · 센터 화면 바탕은 Pleos 에뮬레이터, 실내·도로는 연출 · 거리는 시간을 줄여 표시</div>
   <div class="card" id="card">
     <h1>에움길</h1>
     <p>내비는 길을 안내하고, 에움길은 그 길을 달리는 시간을 안내합니다.</p>
-    <p class="credits">시안으로 만든 재현 영상입니다. 실제 앱 화면이 아닙니다. 계기판·차량 정보·앞 유리 풍경은 연출입니다.<br>
-    앞 유리 풍경: S h y numis (CC BY-SA 4.0), Masterhatch (CC BY-SA 4.0), Jpbarrass (Public domain) · Wikimedia Commons<br>
-    위성 사진: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)<br>
-    내비 화면: Pleos 에뮬레이터 캡처 · 음성: macOS 음성 합성</p>
+    <p class="credits">시안으로 만든 재현 영상입니다. 실제 앱 화면이 아닙니다.<br>
+    센터 화면 바탕: Pleos 에뮬레이터 캡처 · 실내와 3D 도로: 연출(도로 굽이와 고도는 코스 파일의 실제 경로)<br>
+    위성 사진: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016) · 3D: three.js · 음성: macOS 음성 합성</p>
   </div>
 </div>
-<script>
+<script type="module">
+import { createRoad } from "./road3d.js";
 /* ---- 자료 ---- */
 const COURSE = window.COURSES.find((c) => c.id === 'paldang-sunset');
 const TOTAL = COURSE.km;
 const SECTIONS = [
-  { name: '남한산성 고갯길', mood: 'forest', end: 17.6, glass: 'paldang-sunset', cabin: '창문 2단 · 풍량 3단 · 조명 40%', win: '2단', fan: '3단', music: "'숲길 드라이브 음악'" },
-  { name: '하남 팔당대교', mood: 'city', end: 39.5, glass: 'yangpyeong-river', cabin: '창문 닫음 · 풍량 3단 · 조명 30%', win: '닫힘', fan: '3단', music: "'도심 드라이브 음악'" },
-  { name: '팔당 강변', mood: 'river', end: TOTAL, glass: 'gwanggyo-mountain', cabin: '창문 2단 · 풍량 2단 · 조명 70%', win: '2단', fan: '2단', music: "'바닷가 드라이브 음악'" },
+  { name: '남한산성 고갯길', mood: 'forest', end: 17.6, light: '#9fe0a8', cabin: '창문 2단 · 풍량 3단 · 조명 40%', win: '2단', fan: '3단', music: "'숲길 드라이브 음악'" },
+  { name: '하남 팔당대교', mood: 'city', end: 39.5, light: '#9fb6ff', cabin: '창문 닫음 · 풍량 3단 · 조명 30%', win: '닫힘', fan: '3단', music: "'도심 드라이브 음악'" },
+  { name: '팔당 강변', mood: 'river', end: TOTAL, light: '#ffc27a', cabin: '창문 2단 · 풍량 2단 · 조명 70%', win: '2단', fan: '2단', music: "'바닷가 드라이브 음악'" },
 ];
 /* 앱 문구(core/engine/Messages.kt, feature/guide)와 같다 */
 const VOICE = [
@@ -154,7 +152,7 @@ const STEPS = [
 ];
 const END = 62;
 /* 카메라: [시각, 배율, 화면 중심 x, y] */
-const WIDE = [1, 960, 540], DISPLAY = [2.0, 1420, 848], PANE = [2.45, 1715, 848];
+const WIDE = [1, 960, 540], DISPLAY = [2.0, 1430, 829], PANE = [2.45, 1716, 819];
 const CAM = [[0, WIDE], [4, WIDE], [6, DISPLAY], [9.6, DISPLAY], [11.6, WIDE], [21.5, WIDE], [23.5, PANE], [30, PANE], [32, WIDE], [35.5, WIDE], [37.5, PANE], [42, PANE], [44, WIDE], [51, WIDE], [53, DISPLAY], [END, DISPLAY]];
 const KM = [[0, 0], [13, 0], [26, 17.6], [38, 39.5], [49, TOTAL], [END, TOTAL]];
 
@@ -206,7 +204,13 @@ function setupMini() {
   window.MINI = { s, ox, oy };
 }
 document.getElementById('bar').innerHTML = SECTIONS.map((s, i) => `<i class="sec-${s.mood}" style="flex: ${(s.end - (i ? SECTIONS[i - 1].end : 0)).toFixed(1)}"><b></b></i>`).join('');
-['g0', 'g1', 'g2'].forEach((id, i) => { document.getElementById(id).src = '../../design/screens/images/scenery/' + SECTIONS[i].glass + '.jpg'; });
+/* 구간마다 3D 도로에서 달린 거리(m). 실제 속도로 적분하고 구간이 바뀌면 그 구간 도로의 처음부터 달린다 */
+const SEC_START = [0, 26, 38], FPS_STEP = 1 / 60;
+const roadDist = (t) => {
+  const si = t < 26 ? 0 : t < 38 ? 1 : 2; let d = 0;
+  for (let x = SEC_START[si]; x < t; x += FPS_STEP) d += (speedAt(x) / 3.6) * FPS_STEP;
+  return [si, d];
+};
 
 /* ---- 그리기 ---- */
 function render(t) {
@@ -216,34 +220,33 @@ function render(t) {
   const driving = t >= 8.6 && t < 51.2;
   /* 기어와 속도 */
   const gear = t >= 12.5 && t < 50.8 ? 'D' : 'P';
-  document.querySelectorAll('#gears span').forEach((g) => g.className = g.textContent === gear ? 'on' : '');
-  document.getElementById('vgear').textContent = gear;
-  document.getElementById('speed').textContent = v;
-  document.getElementById('range').textContent = Math.round(312 - km);
+  document.querySelectorAll('#sGear span').forEach((g) => g.className = g.textContent === gear ? 'on' : '');
+  document.getElementById('sSpeed').textContent = v;
+  document.getElementById('spd').textContent = v;
+  const parked = gear === 'P';
+  document.getElementById('basePark').style.opacity = parked ? 1 : 0;
+  document.getElementById('baseDrive').style.opacity = parked ? 0 : 1;
+  document.getElementById('spd').style.display = parked ? 'none' : 'flex';
+  document.getElementById('sDest').textContent = t < 8.6 ? '목적지 없음' : '두물머리까지 ' + (TOTAL - km).toFixed(1) + 'km';
+  document.getElementById('sMedia').textContent = t < 9.4 ? '미디어 없음' : '♪ ' + sec.music.replace(/'/g, '');
   const minute = 42 + Math.floor(km * 1.3);
-  const clock = `${17 + Math.floor(minute / 60)}:${String(minute % 60).padStart(2, '0')}`;
-  document.getElementById('clock').textContent = clock; document.getElementById('clock2').textContent = clock;
-  /* 앞 유리: 구간 사진이 천천히 다가오고 구간이 바뀌면 겹쳐 바뀐다 */
-  SECTIONS.forEach((x, i) => {
-    const el = document.getElementById('g' + i);
-    const start = i ? SECTIONS[i - 1].end : 0, f = Math.min(1, Math.max(0, (km - start) / (x.end - start)));
-    const show = i === 0 ? 1 : Math.min(1, Math.max(0, (km - start) / 1.6));
-    el.style.opacity = show;
-    el.style.transform = `scale(${1.04 + 0.12 * f}) translateX(${Math.sin(t * 0.9) * 6 * (v / 60)}px)`;
-  });
+  const hh = 5 + Math.floor(minute / 60), mm = String(minute % 60).padStart(2, '0');
+  document.getElementById('clk').textContent = `${String(hh).padStart(2, '0')}:${mm} 오후`;
+  /* 앞 유리: 3D 도로 */
+  if (window.ROAD) { const [ri, rd] = roadDist(t); ROAD.draw(ri, rd); }
+  document.getElementById('ambient').setAttribute('fill', sec.light);
+  document.getElementById('ambient').setAttribute('opacity', t < 9.4 ? 0.25 : 0.7);
   /* 센터 화면 */
   const sw = span(t, 8, 9.2);
-  const main = document.getElementById('main'), nav = document.getElementById('nav'), pane = document.getElementById('pane'), sum = document.getElementById('summary');
+  const main = document.getElementById('mainApp'), pane = document.getElementById('pane'), sum = document.getElementById('sumApp');
   main.style.opacity = t < 51.2 ? 1 - sw : 0;
-  main.style.transform = `scale(${1 - 0.06 * sw})`;
   const shown = t < 51.2 ? sw : 1 - span(t, 51.2, 52.2);
-  nav.style.opacity = shown;
   pane.style.opacity = shown;
   pane.style.transform = `translateX(${(1 - sw) * 300}px)`;
   sum.style.opacity = span(t, 51.4, 52.4);
   const tp = (t - 6.4) / 1.0, tap = document.getElementById('tap');
   tap.style.opacity = tp > 0 && tp < 1 ? 1 - tp : 0;
-  Object.assign(tap.style, { left: 853 + 467 + 'px', top: 13 + 965 + 'px', transform: `scale(${0.5 + tp})` });
+  Object.assign(tap.style, { left: 853 + 467 * 0.988 + 'px', top: 90 + 18 + 965 * 0.988 + 'px', transform: `scale(${0.5 + tp})` });
   /* 주행 칸 */
   const prev = Math.max(0, si - 1), mix = si === 0 ? 1 : Math.min(1, Math.max(0, (km - SECTIONS[prev].end) / 1.2));
   const air = AIR[si].map((c, k) => Math.round(lerp(AIR[prev][k], c, mix)));
@@ -264,8 +267,6 @@ function render(t) {
   document.getElementById('lineBox').style.borderLeftColor = SEC[si];
   document.getElementById('cabin').textContent = sec.cabin;
   document.getElementById('music').textContent = sec.music;
-  document.getElementById('vwin').textContent = t < 9.4 ? '닫힘' : sec.win;
-  document.getElementById('vfan').textContent = t < 9.4 ? '2단' : sec.fan;
   if (window.MINI) {
     const [x, y] = along(km / TOTAL), here = document.getElementById('here');
     here.setAttribute('cx', MINI.ox + x * MINI.s); here.setAttribute('cy', MINI.oy + y * MINI.s);
@@ -280,7 +281,13 @@ function render(t) {
   document.getElementById('card').style.opacity = span(t, END - 4, END - 3);
 }
 window.VOICE = VOICE; window.END = END;
-window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((im) => im.decode().catch(() => null))]).then(() => { setupMini(); render(0); return true; });
+window.render = render;
+window.ready = (async () => {
+  const course = await (await fetch('../../app/src/main/assets/courses/paldang-sunset.json')).json();
+  window.ROAD = createRoad(document.getElementById('road'), course, SECTIONS.map((x) => x.mood));
+  await Promise.all([document.fonts.ready, ...[...document.images].map((im) => im.decode().catch(() => null))]);
+  setupMini(); render(0); return true;
+})();
 </script>
 </body>
 </html>

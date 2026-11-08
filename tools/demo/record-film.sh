@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 시안으로 만든 주행 재현 영상(차 안 시점)을 만든다. 사용: tools/demo/record-film.sh <출력.mp4> [fps]
-# 필요: Google Chrome, node 22 이상, ffmpeg, macOS say(한국어 음성 Yuna). 실제 앱 화면이 아니라 시안과 연출이다.
+# 필요: Google Chrome(WebGL, macOS Metal), node 22 이상, ffmpeg, macOS say(한국어 음성 Yuna), 인터넷(three.js 를 jsdelivr 에서 받음).
+# 실제 앱 화면이 아니라 시안과 연출이다. 센터 화면 바탕은 pleos/ 의 에뮬레이터 캡처다.
 set -eu
 out="${1:?출력 파일이 필요합니다}"
 fps="${2:-30}"

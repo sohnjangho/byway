@@ -10,7 +10,7 @@ const fps = Number(fpsArg || 30);
 const chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const port = 9341;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'film-chrome-'));
-const proc = spawn(chrome, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
+const proc = spawn(chrome, ['--headless=new', '--use-angle=metal', '--ignore-gpu-blocklist', '--hide-scrollbars', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < 50; i++) { try { await fetch(`http://127.0.0.1:${port}/json/version`); break; } catch { await wait(200); } }
 
@@ -46,7 +46,7 @@ try {
   // 2. 재현 화면을 시각마다 그려 찍는다
   const film = await open(1920, 1080);
   await film.go(`${base}/tools/demo/drive-film.html`);
-  await film.run('window.ready');
+  await film.run('new Promise((r) => { const w = () => (window.ready ? r(window.ready) : setTimeout(w, 100)); w(); })');
   await wait(800);
   const end = await film.run('window.END');
   fs.writeFileSync(path.join(out, 'voice.json'), JSON.stringify(await film.run('window.VOICE')));

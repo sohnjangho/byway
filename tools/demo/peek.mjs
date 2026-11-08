@@ -7,7 +7,7 @@ const c = (method, params = {}) => new Promise((r) => { const i = ++id; p[i] = r
 const fs = await import('fs'); fs.mkdirSync(out, { recursive: true });
 await c('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await c('Page.enable'); await c('Page.navigate', { url }); await new Promise((r) => setTimeout(r, 3000));
-const r0 = await c('Runtime.evaluate', { expression: 'window.ready', awaitPromise: true, returnByValue: true });
+const r0 = await c('Runtime.evaluate', { expression: 'new Promise((r) => { const w = () => (window.ready ? r(window.ready) : setTimeout(w, 100)); w(); })', awaitPromise: true, returnByValue: true });
 if (r0.exceptionDetails) console.log('ERR', JSON.stringify(r0.exceptionDetails).slice(0, 400));
 await new Promise((r) => setTimeout(r, 800));
 for (const t of times) {
