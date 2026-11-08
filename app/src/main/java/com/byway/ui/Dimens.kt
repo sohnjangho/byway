@@ -49,8 +49,9 @@ internal object Dimens {
     const val CARD_SHADOW_DAY = 6
     const val CARD_SHADOW_NIGHT = 2
 
-    const val TAB_BAR_HEIGHT = 104
-    const val TAB_PILL_HEIGHT = 76
+    const val RAIL_WIDTH = 156
+    const val RAIL_ITEM_HEIGHT = 88
+    const val RAIL_TOP_HEIGHT = 92
     const val AVATAR_SMALL = 60
     const val AVATAR_LARGE = 104
 

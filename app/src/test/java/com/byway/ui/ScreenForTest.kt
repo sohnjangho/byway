@@ -28,14 +28,15 @@ class ScreenForTest {
         Tab.entries.forEach { assertEquals(Screen.Browse(it), screenFor(parked, Nav(tab = it))) }
     }
 
+    /** 코스를 고르면 홈에 올라갈 뿐 화면 종류는 바뀌지 않는다. */
     @Test
-    fun parkedWithChosenCourseIsPreview() {
-        assertEquals(Screen.Preview("c1"), screenFor(parked, Nav(courseId = "c1")))
+    fun parkedWithChosenCourseStaysOnTab() {
+        assertEquals(Screen.Browse(Tab.HOME), screenFor(parked, Nav(tab = Tab.HOME, courseId = "c1")))
     }
 
     @Test
-    fun chosenCourseBeatsTheTabUnderIt() {
-        assertEquals(Screen.Preview("c1"), screenFor(parked, Nav(tab = Tab.RANKING, courseId = "c1")))
+    fun menuHasFourEntries() {
+        assertEquals(listOf(Tab.HOME, Tab.BROWSE, Tab.RANKING, Tab.MINE), Tab.entries)
     }
 
     @Test

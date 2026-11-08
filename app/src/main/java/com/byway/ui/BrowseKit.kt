@@ -8,6 +8,7 @@ import com.byway.service.MyDrives
 /** 정차 화면들이 함께 받는 것. 지금 창 폭과 코스 수치, 코스를 고를 때 할 일을 담는다. */
 internal class BrowseKit(val book: CourseBook, val widthDp: Int, val onCourse: (Course) -> Unit) {
     val wide = isWide(widthDp)
+    val window = windowClassOf(widthDp)
     val edge = if (wide) Dimens.SPACE_10 else Dimens.SPACE_6
 
     /** 한 줄에 [count]장이 들어가는 카드 폭(dp). [used]는 옆에 다른 칸이 차지한 폭이다. */

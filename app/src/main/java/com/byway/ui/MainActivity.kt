@@ -24,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var book: CourseBook
     private lateinit var root: FrameLayout
     private var nav = Nav()
+    private var pendingStart: String? = null
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
@@ -79,6 +80,7 @@ class MainActivity : AppCompatActivity() {
         if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
             DriveService.start(this, courseId)
         } else {
+            pendingStart = courseId
             requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
         }
     }
@@ -86,7 +88,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, results: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            (current as? Screen.Preview)?.let { DriveService.start(this, it.courseId) }
+            pendingStart?.let { DriveService.start(this, it) }
         }
     }
 
@@ -94,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         if (root.width > 0) (root.width / resources.displayMetrics.density).toInt() else resources.configuration.screenWidthDp
 
     private fun render(state: DriveState) {
-        if (state.running) nav = nav.copy(courseId = null, about = false)
+        if (state.running) nav = nav.copy(about = false)
         val next = screenFor(state, nav)
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette) {
@@ -109,29 +111,18 @@ class MainActivity : AppCompatActivity() {
         (root.getChildAt(0) as? DriveScreen)?.show(state)
     }
 
-    private fun open(course: Course) = go(nav.copy(courseId = course.id))
+    private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
 
     private fun build(screen: Screen, state: DriveState, kit: BrowseKit): View = when (screen) {
         is Screen.Browse -> parked(kit, browse(screen.tab, kit))
-        is Screen.Preview -> parked(
-            kit,
-            previewScreen(
-                this,
-                kit,
-                book.find(screen.courseId),
-                nav.picture,
-                onPicture = { nav = nav.copy(picture = it) },
-                onBack = { go(nav.copy(courseId = null)) },
-                onStart = { start(screen.courseId) },
-            ),
-        )
         Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
-        is Screen.Summary -> parked(kit, summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) })
+        is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
         Screen.Waiting -> waitingScreen(this)
-        Screen.About -> parked(kit, aboutScreen(this, kit) { go(nav.copy(about = false)) })
+        Screen.About -> parked(kit, aboutScreen(this, kit) { go(nav.copy(about = false)) }, over = false)
     }
 
-    private fun parked(kit: BrowseKit, content: View): View = withTabBar(nav.tab, kit.wide, ::openTab, content)
+    private fun parked(kit: BrowseKit, content: View, over: Boolean = true): View =
+        withRail(nav.tab, kit.window, ::openTab, content, over)
 
     private fun browse(tab: Tab, kit: BrowseKit): View = when (tab) {
         Tab.HOME -> homeScreen(
@@ -140,12 +131,11 @@ class MainActivity : AppCompatActivity() {
             hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
             region = nav.region,
             onRegion = { nav = nav.copy(region = it) },
-            onTheme = { go(nav.copy(tab = Tab.THEME, theme = it)) },
+            onTheme = { go(nav.copy(tab = Tab.BROWSE, theme = it)) },
             onRanking = { go(nav.copy(tab = Tab.RANKING, rankBy = RankBy.CURVES)) },
         )
-        Tab.THEME -> themeScreen(this, kit, nav.theme) { nav = nav.copy(theme = it) }
+        Tab.BROWSE -> themeScreen(this, kit, nav.theme) { nav = nav.copy(theme = it) }
         Tab.RANKING -> rankingScreen(this, kit, nav.rankBy) { nav = nav.copy(rankBy = it) }
-        Tab.REGION -> regionScreen(this, kit, nav.region) { nav = nav.copy(region = it) }
         Tab.MINE -> mineScreen(
             this,
             kit,

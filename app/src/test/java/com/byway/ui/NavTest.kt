@@ -21,11 +21,18 @@ class NavTest {
             theme = "river",
             region = "강원",
             rankBy = RankBy.CLIMB,
-            picture = Picture.STREET,
+            atlas = AtlasCamera(1f, 2f, 3f),
         )
         val bytes = ByteArrayOutputStream().also { out -> ObjectOutputStream(out).use { it.writeObject(nav) } }
         val restored = ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() }
         assertEquals(nav, restored)
+    }
+
+    @Test
+    fun windowClassFollowsWidth() {
+        assertEquals(WindowClass.THIRD, windowClassOf(841))
+        assertEquals(WindowClass.TWO, windowClassOf(1700))
+        assertEquals(WindowClass.FULL, windowClassOf(2560))
     }
 
     @Test

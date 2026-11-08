@@ -5,14 +5,28 @@ import com.byway.core.course.RankBy
 import com.byway.service.DriveState
 import java.io.Serializable
 
-/** 상단에 고정되는 메뉴. */
+/** 레일 메뉴. */
 enum class Tab(val title: String) {
     HOME("홈"),
-    THEME("테마"),
+    BROWSE("둘러보기"),
     RANKING("랭킹"),
-    REGION("지역"),
     MINE("내 코스"),
 }
+
+/** 앱 창 크기. 전체 2560, 2/3 1700, 1/3 841 폭이다. */
+enum class WindowClass { FULL, TWO, THIRD }
+
+private const val THIRD_MAX_DP = 1200
+private const val TWO_MAX_DP = 2100
+
+fun windowClassOf(widthDp: Int): WindowClass = when {
+    widthDp < THIRD_MAX_DP -> WindowClass.THIRD
+    widthDp < TWO_MAX_DP -> WindowClass.TWO
+    else -> WindowClass.FULL
+}
+
+/** 한국 지도를 보는 자리. 창이 바뀌어도 남도록 Nav 에 담는다. */
+data class AtlasCamera(val cx: Float, val cy: Float, val scale: Float) : Serializable
 
 /** 코스 상세 오른쪽 칸에 보여 줄 그림. */
 enum class Picture(val title: String) {
@@ -28,18 +42,19 @@ fun picturesFor(hasScenery: Boolean): List<Picture> = Picture.entries.filter { i
 /** 운전자가 고른 것들. 창 막대를 끌어 Activity 가 다시 만들어져도 남도록 Bundle 에 담는다. */
 data class Nav(
     val tab: Tab = Tab.HOME,
+    /** 홈에 올린 코스. 없으면 지금 시간과 계절에 맞는 코스를 올린다. */
     val courseId: String? = null,
     val about: Boolean = false,
     val theme: String? = null,
     val region: String? = null,
     val rankBy: RankBy = RankBy.CURVES,
-    val picture: Picture = Picture.SATELLITE,
+    /** 사용자가 움직인 한국 지도 자리. 없으면 화면이 정한다. */
+    val atlas: AtlasCamera? = null,
 ) : Serializable
 
 /** 한 Activity 안에서 바뀌는 화면들. */
 sealed interface Screen {
     data class Browse(val tab: Tab) : Screen
-    data class Preview(val courseId: String) : Screen
     data object Drive : Screen
     data class Summary(val course: Course) : Screen
     data object Waiting : Screen
@@ -55,7 +70,7 @@ fun screenFor(state: DriveState, nav: Nav): Screen {
     if (!state.parked) return Screen.Waiting
     state.finished?.let { return Screen.Summary(it) }
     if (nav.about) return Screen.About
-    return nav.courseId?.let(Screen::Preview) ?: Screen.Browse(nav.tab)
+    return Screen.Browse(nav.tab)
 }
 
 private const val WIDE_MIN_DP = 1200
