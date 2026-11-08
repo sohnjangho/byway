@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { buildWorld, loadTrees, zoneAt, LANE } from './world.js';
 import { createEnv } from './env.js';
+import { createApp, SECTION_INFO } from './app.js';
 
 const DEMO = '../demo/';
 const MAX_FWD = 60 / 3.6, MAX_REV = 12 / 3.6;          // 최고 속도(m/s)
@@ -25,8 +26,9 @@ addEventListener('resize', resize); resize();
 
 /* ---------- 자료 ---------- */
 const tex = (url) => new THREE.TextureLoader().loadAsync(url).then((t) => { t.colorSpace = THREE.SRGBColorSpace; return t; });
-const [course, trees, cabinGltf, skyDay, skyDusk] = await Promise.all([
+const [course, navmap, trees, cabinGltf, skyDay, skyDusk] = await Promise.all([
   fetch('../../app/src/main/assets/courses/paldang-sunset.json').then((r) => r.json()),
+  fetch(DEMO + 'osm/navmap.json').then((r) => r.json()),
   loadTrees(DEMO + 'models/trees.glb'),
   new GLTFLoader().loadAsync('models/cabin.glb'),
   tex(DEMO + 'sky/city.jpg'), tex(DEMO + 'sky/river.jpg'),
@@ -75,19 +77,37 @@ function mountDom(mesh, el, pxW) {
   return { obj, local, center: car.worldToLocal(center.clone()), normal };
 }
 const screenEl = document.createElement('div');
-screenEl.className = 'pleos';
+screenEl.className = 'pleos stage'; screenEl.dataset.theme = 'day';
 screenEl.innerHTML = `<img class="base" id="basePark" src="${DEMO}pleos/park.png"><img class="base" id="baseDrive" src="${DEMO}pleos/drive.png">
-  <img class="shift" id="shift"><div class="cover spd" id="spd">0</div><div class="cover clk" id="clk"></div>
-  <div class="appfull" id="appFull"><img src="${DEMO}stills/steps/main.jpg"></div>`;
+  <img class="shift" id="shift"><div class="cover spd" id="spd">0</div><div class="cover clk" id="clk"></div>`;
 const slimEl = document.createElement('div');
 slimEl.className = 'slim';
 slimEl.innerHTML = '<div class="spd"><b id="sSpeed">0</b><span>km/h</span></div><div class="gear" id="sGear"><span>P</span><span>R</span><span>N</span><span>D</span></div><div class="meta"><b id="sDest">목적지 없음</b><br><span id="sMedia">미디어 없음</span></div>';
 const screens = [mountDom(named.screen, screenEl, 2560), mountDom(named.slim, slimEl, 960)];
 const $ = (id) => screenEl.querySelector('#' + id) || slimEl.querySelector('#' + id);
+/* 음성: 브라우저 한국어 음성 합성. 화면 아래에 자막도 띄운다 */
+const voiceEl = document.createElement('div'); voiceEl.className = 'voice'; document.body.append(voiceEl);
+const cabinNote = document.createElement('div'); cabinNote.className = 'cabin-note'; cabinNote.style.display = 'none'; document.body.append(cabinNote);
+let voiceTimer = 0;
+function say(text) {
+  voiceEl.innerHTML = `<i>에움길 음성</i>${text}`; voiceEl.style.display = 'flex'; clearTimeout(voiceTimer); voiceTimer = setTimeout(() => (voiceEl.style.display = 'none'), 3500);
+  try { const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; speechSynthesis.speak(u); } catch (e) { /* 음성 합성이 없으면 자막만 */ }
+}
+/* 차 안 연출: 창문 높이와 앰비언트 조명 색이 구간마다 바뀐다 */
+const cabinFx = { window: 0, light: new THREE.Color('#ffd9a0') };
+const windowBase = {};
+['window_fl', 'window_fr'].forEach((n) => { if (named[n]) windowBase[n] = named[n].position.y; });
+const app = createApp(screenEl, { course, navmap, onSay: say, onApply: () => { cabinNote.style.display = 'block'; cabinNote.innerHTML = '<b>내비에 코스를 입혔습니다</b><br>D 를 눌러 출발하세요'; } });
+app.onSection = (si) => {
+  const info = SECTION_INFO[si];
+  cabinFx.window = info.window; cabinFx.light.set(info.light);
+  cabinNote.style.display = 'block';
+  cabinNote.innerHTML = `<b>차 안 연출</b> ${info.cabin}<br><b>음악</b> 연결된 음악 앱에 '${info.music}' 재생 요청`;
+};
 const shiftImgs = Array.from({ length: SHIFT_FRAMES }, (_, i) => { const im = new Image(); im.src = `${DEMO}pleos/shift/${String(i).padStart(3, '0')}.jpg`; return im; });
 
 /* ---------- 상태 ---------- */
-const state = { d: 4, v: 0, gear: 'P', shiftAt: -1, yaw: 0, pitch: -0.06, targetYaw: 0, screenMode: false, t: 0 };
+const state = { d: 4, v: 0, gear: 'P', shiftAt: -1, ambient: new THREE.Color('#ffd9a0'), yaw: 0, pitch: -0.06, targetYaw: 0, screenMode: false, t: 0 };
 const keys = new Set();
 addEventListener('keydown', (e) => {
   keys.add(e.key.toLowerCase());
@@ -163,7 +183,16 @@ function step(dt) {
   $('shift').style.display = shifting && state.gear === 'D' ? 'block' : 'none';
   if (shifting) $('shift').src = shiftImgs[Math.min(SHIFT_FRAMES - 1, Math.floor((state.t - state.shiftAt) * SHIFT_FPS))].src;
   $('spd').style.display = state.gear !== 'P' && !shifting ? 'flex' : 'none'; $('spd').textContent = kmh;
-  $('appFull').style.display = state.gear === 'P' && state.shiftAt < 0 ? 'block' : 'none';
+  /* 에움길: 구간 진행률과 실제 코스 경로 위 위치 */
+  const zi = world.zones.indexOf(here.zone), zf = Math.min(1, Math.max(0, (state.d - here.zone.from) / (here.zone.to - here.zone.from)));
+  const src = world.sources[zi - 1], navS = src ? app.cumAt(src.start) + (state.d - src.at) : Math.max(0, state.d - 120);
+  app.update({ gear: state.gear, routeS: navS, zoneIndex: zi, zoneFrac: zf, kmh });
+  if (state.d >= world.length - 25 && Math.abs(state.v) < 0.3 && app.applied) app.finish();
+  $('sDest').textContent = app.applied ? (app.finished ? '도착 · 양평 두물머리' : '두물머리까지 ' + $('remain').textContent + 'km') : '목적지 없음';
+  $('sMedia').textContent = app.section >= 0 ? '♪ ' + SECTION_INFO[app.section].music : '미디어 없음';
+  /* 차 안 연출 */
+  Object.entries(windowBase).forEach(([n, y]) => { const o = named[n]; o.position.y += (y - cabinFx.window * 0.38 - o.position.y) * Math.min(1, dt * 1.5); });
+  state.ambient.lerp(cabinFx.light, Math.min(1, dt * 1.2)); named.ambient.material.color.copy(state.ambient);
   const now = new Date(); $('clk').textContent = `${String(now.getHours() % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() < 12 ? '오전' : '오후'}`;
   $('sSpeed').textContent = kmh;
   slimEl.querySelectorAll('#sGear span').forEach((g) => (g.className = g.textContent === gearShown ? 'on' : ''));
@@ -180,4 +209,4 @@ function frame() {
 document.getElementById('loading').remove();
 frame();
 /* 시험용: 상태를 밖에서 정할 수 있다 */
-window.sim = { state, world, step, setView: (yaw) => { state.targetYaw = state.yaw = yaw; }, enterScreen, leaveScreen };
+window.sim = { state, world, step, app, say, setView: (yaw) => { state.targetYaw = state.yaw = yaw; }, enterScreen, leaveScreen };

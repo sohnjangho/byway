@@ -31,3 +31,47 @@ body.screen-mode #gl { pointer-events: none; }
 .slim .gear .on { color: #fff; }
 .slim .meta { text-align: right; font-size: 32px; line-height: 46px; color: #a6acb5; }
 .slim .meta b { color: #eef0f3; }
+
+/* 센터 화면 속 내비와 에움길 주행 칸(영상 도구와 같은 모양) */
+.pleos .nav { position: absolute; left: 853px; top: 90px; width: 840px; height: 1210px; overflow: hidden; background: #eceef1; perspective: 1000px; perspective-origin: 420px 700px; font-family: "Noto Sans KR", sans-serif; }
+.pleos .navmap { position: absolute; left: -420px; top: -1180px; width: 1680px; height: 2400px; transform: rotateX(50deg); transform-origin: 840px 1900px; }
+.pleos .navcar { position: absolute; left: 420px; top: 720px; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 7px #1f6fe5, 0 6px 16px rgba(0,0,0,0.3); }
+.pleos .navcar::after { content: ""; position: absolute; left: 24px; top: 16px; border-left: 22px solid transparent; border-right: 22px solid transparent; border-bottom: 52px solid #1f6fe5; }
+.pleos .tbt { position: absolute; left: 24px; top: 24px; width: 580px; background: #000; color: #fff; }
+.pleos .tbt .main { display: flex; align-items: center; gap: 26px; height: 150px; padding: 0 30px; }
+.pleos .tbt .main svg { flex: none; width: 76px; height: 96px; }
+.pleos .tbt .dist { font-size: 74px; line-height: 80px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+.pleos .tbt .dir { font-size: 30px; color: #b8bcc2; }
+.pleos .tbt .lanes { height: 86px; border-top: 1px solid #2c2d30; display: flex; align-items: center; justify-content: center; gap: 40px; }
+.pleos .tbt .lanes svg { width: 34px; height: 46px; }
+.pleos .next { position: absolute; left: 24px; width: 292px; height: 80px; background: #333; color: #fff; display: flex; align-items: center; gap: 30px; padding: 0 30px; box-sizing: border-box; font-size: 40px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+.pleos .next svg { width: 40px; height: 52px; }
+.pleos .eta { position: absolute; left: 24px; top: 870px; width: 580px; height: 316px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; }
+.pleos .eta .dots { text-align: center; font-size: 30px; line-height: 20px; letter-spacing: 4px; }
+.pleos .eta .row { display: flex; justify-content: space-between; align-items: baseline; padding: 0 24px; }
+.pleos .eta .time { font-size: 34px; font-weight: 700; }
+.pleos .eta .left { font-size: 28px; color: #6b7078; }
+.pleos .eta .road { font-size: 28px; color: #6b7078; }
+.pleos .eta .bar { position: relative; margin: 22px 30px 0; height: 6px; background: linear-gradient(90deg, #2f7cf6 0 30%, #f5a623 30% 45%, #2f7cf6 45% 70%, #f5a623 70% 100%); }
+.pleos .eta .bar i { position: absolute; top: -9px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: #fff; border: 4px solid #6b7078; box-sizing: border-box; }
+.pleos .eta .bar b { position: absolute; top: -12px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: #1f6fe5; }
+.pleos .eta .end { position: absolute; left: 0; right: 0; bottom: 0; height: 100px; border-top: 1px solid #d9dce1; display: flex; align-items: center; }
+.pleos .eta .end span { flex: none; width: 98px; height: 100%; border-right: 1px solid #d9dce1; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.pleos .eta .end strong { flex: 1; text-align: center; font-size: 32px; background: #f6f7f8; height: 100%; display: flex; align-items: center; justify-content: center; }
+.pleos .navbtn { position: absolute; width: 100px; height: 100px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; }
+.pleos .toast { position: absolute; left: 40px; right: 40px; top: 30px; padding: 26px 30px; border-radius: 22px; background: #131417; color: #fff; font-size: 30px; line-height: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+.pleos .toast b { display: block; font-size: 34px; }
+.pleos .pane { position: absolute; left: 1693px; top: 90px; width: 840px; height: 1210px; display: flex; box-shadow: -2px 0 0 #e3e6ea; overflow: hidden; }
+.pleos .pane .drive { border-radius: 0; padding: 44px 40px; gap: 20px; }
+.pleos .pane .drive > .glow { position: absolute; inset: 0; background: radial-gradient(circle at 80% 8%, rgba(255,150,70,0.55), rgba(255,120,80,0.18) 45%, transparent 70%); pointer-events: none; }
+.pleos .info-line { display: flex; flex-direction: column; gap: 4px; padding: 14px 20px; border-radius: 16px; background: var(--bg-raised); }
+.pleos .info-line b { font-size: 30px; }
+.pleos .info-line span { font-size: 26px; color: var(--ink-secondary); }
+.pleos .next { top: 260px; }
+.pleos iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.pleos .pane .drive { flex: 1 1 auto; }
+.pleos .toast { transition: opacity 0.4s; }
+.voice { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 6; padding: 12px 22px; border-radius: 30px; background: rgba(10,11,13,0.86); color: #fff; font-size: 22px; font-weight: 600; display: none; gap: 12px; align-items: center; }
+.voice i { font-style: normal; color: #f0a45a; font-size: 16px; }
+.cabin-note { position: fixed; right: 16px; top: 16px; z-index: 6; padding: 10px 14px; border-radius: 10px; background: rgba(10,11,13,0.72); color: #fff; font-size: 14px; line-height: 20px; max-width: 320px; }
+.cabin-note b { color: #f0a45a; }
