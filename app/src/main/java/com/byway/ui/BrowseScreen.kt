@@ -79,7 +79,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             val scroll = ScrollView(context).apply {
                 isVerticalScrollBarEnabled = false
                 addView(grid)
-            }
+            }.bounceAtEnds(vertical = true)
             addView(scroll, fill().apply { topMargin = dp(Dimens.SPACE_3) })
             addView(detail, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(Dimens.SPACE_3) })
         }
@@ -123,6 +123,7 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
         column().apply {
             clipToOutline = true
             cards[course.id] = this
+            pressMotion()
             setOnClickListener { onPick(course.id) }
             addView(cover(course, dp(width)), LinearLayout.LayoutParams(MATCH, dp(picture)))
             val text = column().apply {

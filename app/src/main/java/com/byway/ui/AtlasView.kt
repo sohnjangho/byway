@@ -20,7 +20,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.byway.core.course.AtlasSpot
@@ -31,7 +30,7 @@ import com.byway.service.SceneCatalog
 private const val MIN_SCALE = 0.3f
 private const val MAX_SCALE = 24f
 private const val ZOOM_STEP = 1.6f
-private const val MOVE_MS = 900L
+private const val MOVE_MS = MotionSpec.LONG2
 private const val REGION_LABEL_MAX = 1.6f
 private const val CITY_LABEL_MAX = 14f
 private const val NAMED_MIN = 2.4f
@@ -103,6 +102,7 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
         minWidth = context.dp(Dimens.TOUCH_MIN)
         minHeight = context.dp(Dimens.TOUCH_MIN)
         background = context.rounded(colors.photoScrim)
+        pressMotion()
         setOnClickListener { onClick() }
     }
 }
@@ -204,7 +204,7 @@ private class AtlasCanvas(context: Context) : View(context) {
         val start = camera
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = MOVE_MS
-            interpolator = DecelerateInterpolator()
+            interpolator = motionEase
             addUpdateListener {
                 val t = it.animatedFraction
                 setCamera(

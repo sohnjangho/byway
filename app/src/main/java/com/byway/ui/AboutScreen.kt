@@ -25,6 +25,6 @@ internal fun aboutScreen(context: Context, kit: BrowseKit, onBack: () -> Unit): 
             setBackgroundColor(palette.bg)
             setPadding(edge, dp(Dimens.SPACE_6), edge, dp(Dimens.SPACE_6))
             addView(smallButton("← 뒤로", onBack), LinearLayout.LayoutParams(WRAP, WRAP))
-            addView(ScrollView(context).apply { addView(details) }, fill().apply { topMargin = dp(Dimens.SPACE_4) })
+            addView(ScrollView(context).apply { addView(details) }.bounceAtEnds(vertical = true), fill().apply { topMargin = dp(Dimens.SPACE_4) })
         }
     }

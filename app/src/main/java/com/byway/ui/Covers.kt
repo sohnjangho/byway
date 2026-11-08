@@ -42,6 +42,8 @@ internal object Covers {
         override fun sizeOf(key: String, value: Bitmap) = value.allocationByteCount
     }
     private val available = mutableMapOf<String, Set<String>>()
+    private val waiters = mutableListOf<Runnable>()
+    private var reading = 0
 
     /** 커버가 있으면 [onLoaded]를 메인 스레드에서 부른다. 없으면 부르지 않는다. 화면은 코스 그림을 그대로 둔다. */
     fun load(context: Context, courseId: String, sizePx: Int, onLoaded: (Bitmap) -> Unit) {
@@ -62,9 +64,34 @@ internal object Covers {
         read(context, SCENERY_FOLDER, file, FULL_SIZE, onLoaded)
     }
 
+    fun hasScene(context: Context, courseId: String, night: Boolean): Boolean =
+        sceneFile(courseId, night) in files(context, SCENE_FOLDER)
+
     fun loadScene(context: Context, courseId: String, night: Boolean, onLoaded: (Bitmap) -> Unit) {
-        val file = if (night) "$courseId-night.jpg" else "$courseId.jpg"
-        if (file in files(context, SCENE_FOLDER)) read(context, SCENE_FOLDER, file, FULL_SIZE, onLoaded)
+        if (hasScene(context, courseId, night)) read(context, SCENE_FOLDER, sceneFile(courseId, night), FULL_SIZE, onLoaded)
+    }
+
+    private fun sceneFile(courseId: String, night: Boolean) = if (night) "$courseId-night.jpg" else "$courseId.jpg"
+
+    /** 지금 읽는 그림이 다 끝나면, 늦어도 [limitMs] 뒤에는 [action]을 부른다. 메인 스레드에서만 쓴다. */
+    fun afterReads(limitMs: Long, action: () -> Unit) {
+        if (reading == 0) return action()
+        val waiter = object : Runnable {
+            override fun run() {
+                if (waiters.remove(this)) action()
+            }
+        }
+        waiters += waiter
+        main.postDelayed(waiter, limitMs)
+    }
+
+    private fun finishRead() {
+        reading--
+        if (reading > 0) return
+        waiters.toList().forEach {
+            main.removeCallbacks(it)
+            it.run()
+        }
     }
 
     fun loadAtlas(context: Context, night: Boolean, onLoaded: (Bitmap) -> Unit) {
@@ -77,16 +104,19 @@ internal object Covers {
         val key = "$folder/$file/$sample"
         cache[key]?.let { return onLoaded(it) }
         val assets = context.applicationContext.assets
+        reading++
         worker.execute {
             val options = BitmapFactory.Options().apply {
                 inSampleSize = sample
                 inPreferredConfig = Bitmap.Config.RGB_565
             }
-            val bitmap = assets.open("$folder/$file").use { BitmapFactory.decodeStream(it, null, options) }
-                ?: return@execute
+            val bitmap = runCatching { assets.open("$folder/$file").use { BitmapFactory.decodeStream(it, null, options) } }.getOrNull()
             main.post {
-                cache.put(key, bitmap)
-                onLoaded(bitmap)
+                bitmap?.let {
+                    cache.put(key, it)
+                    onLoaded(it)
+                }
+                finishRead()
             }
         }
     }

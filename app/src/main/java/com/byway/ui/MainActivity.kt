@@ -29,6 +29,8 @@ class MainActivity : AppCompatActivity() {
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
+    private var builtTab = nav.tab
+    private var builtCourse: String? = null
     private val render: (DriveState) -> Unit = ::render
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,38 +104,56 @@ class MainActivity : AppCompatActivity() {
         val next = screenFor(state, nav)
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette || stale) {
+            val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
+            val sign = enterSign(builtTab, nav.tab)
+            val reveal = motion != ScreenMotion.NONE && next == Screen.Browse(Tab.HOME) && nav.courseId != builtCourse
             stale = false
             current = next
             builtWidth = width
             builtPalette = palette
+            builtTab = nav.tab
+            builtCourse = nav.courseId
             window.setBackgroundDrawable(ColorDrawable(palette.bg))
             root.setBackgroundColor(palette.bg)
-            root.removeAllViews()
-            root.addView(build(next, state, BrowseKit(book, width) { open(it) }))
+            place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal)
         }
         (root.getChildAt(0) as? DriveScreen)?.show(state)
     }
 
     private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
 
-    private fun build(screen: Screen, state: DriveState, kit: BrowseKit): View = when (screen) {
-        is Screen.Browse -> parked(kit, browse(screen.tab, kit))
-        Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
-        is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
-        Screen.Waiting -> waitingScreen(this)
-        Screen.About -> parked(kit, aboutScreen(this, kit) { go(nav.copy(about = false)) }, over = false)
+    /** 메뉴가 있는 정차 화면끼리는 메뉴를 두고 내용만 바꾼다. 주행 화면은 움직임 없이 그 자리에서 바꾼다. */
+    private fun place(screen: Screen, state: DriveState, kit: BrowseKit, motion: ScreenMotion, sign: Int, reveal: Boolean) {
+        val over = screen !is Screen.About
+        val content = when (screen) {
+            is Screen.Browse -> browse(screen.tab, kit, reveal)
+            Screen.About -> aboutScreen(this, kit) { go(nav.copy(about = false)) }
+            else -> null
+        }
+        val frame = root.getChildAt(0) as? RailFrame
+        if (content != null && motion != ScreenMotion.NONE && frame != null) {
+            frame.swap(content, nav.tab, over, sign)
+            return
+        }
+        root.removeAllViews()
+        root.addView(
+            when {
+                content != null -> RailFrame(this, nav.tab, kit.window, ::openTab, content, over)
+                screen is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
+                screen == Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
+                else -> waitingScreen(this)
+            },
+        )
     }
 
-    private fun parked(kit: BrowseKit, content: View, over: Boolean = true): View =
-        withRail(nav.tab, kit.window, ::openTab, content, over)
-
-    private fun browse(tab: Tab, kit: BrowseKit): View = when (tab) {
+    private fun browse(tab: Tab, kit: BrowseKit, reveal: Boolean): View = when (tab) {
         Tab.HOME -> homeScreen(
             this,
             kit,
             courseId = nav.courseId,
             weather = demoWeather(),
             stripX = nav.stripX,
+            reveal = reveal,
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },

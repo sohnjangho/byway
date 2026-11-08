@@ -79,6 +79,7 @@ internal fun Context.pressedVeil(): Drawable = StateListDrawable().apply {
 internal fun View.asCard(clickable: Boolean = false) = apply {
     val face = context.palette
     background = if (clickable) context.pressable(face.bgRaised, face.bgPressed) else context.rounded(face.bgRaised)
+    if (clickable) pressMotion()
     elevation = context.dp(if (context.night) Dimens.CARD_SHADOW_NIGHT else Dimens.CARD_SHADOW_DAY).toFloat()
     post { (parent as? ViewGroup)?.clipToPadding = false }
 }
@@ -87,7 +88,7 @@ private fun Context.button(title: String, size: Float, height: Int, onClick: () 
     text = title
     textSize = size
     isAllCaps = false
-    stateListAnimator = null
+    pressMotion()
     minHeight = dp(height)
     setPadding(dp(Dimens.BUTTON_PADDING), 0, dp(Dimens.BUTTON_PADDING), 0)
     setOnClickListener { onClick() }
@@ -107,9 +108,10 @@ internal fun Context.quietButton(title: String, onClick: () -> Unit): Button =
         background = pressable(palette.bgRaised, palette.bgPressed, Dimens.RADIUS_MD, palette.line)
     }
 
-/** 주행 화면 버튼. 눈을 끄는 색면을 두지 않으려고 테두리만 그린다. */
+/** 주행 화면 버튼. 눈을 끄는 색면을 두지 않으려고 테두리만 그리고 눌림 움직임도 뺀다. */
 internal fun Context.outlineButton(title: String, onClick: () -> Unit): Button =
     button(title, Dimens.BODY, Dimens.BUTTON_MEDIUM, onClick).apply {
+        stateListAnimator = null
         setTextColor(palette.ink)
         background = pressable(Color.TRANSPARENT, palette.bgPressed, Dimens.RADIUS_MD, palette.line)
     }

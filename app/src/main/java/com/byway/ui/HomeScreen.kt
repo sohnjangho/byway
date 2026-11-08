@@ -3,10 +3,12 @@ package com.byway.ui
 import android.content.Context
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
+import androidx.core.view.children
 import com.byway.core.course.Course
 import com.byway.core.course.SceneMood
 import com.byway.core.course.ScenePlace
@@ -23,6 +25,7 @@ internal fun homeScreen(
     courseId: String?,
     weather: Weather,
     stripX: Int?,
+    reveal: Boolean,
     onPick: (Course, Int) -> Unit,
     onStart: (String) -> Unit,
     onBrowse: () -> Unit,
@@ -39,7 +42,7 @@ internal fun homeScreen(
     FrameLayout(this).apply {
         setBackgroundColor(palette.bg)
         val sceneView = SceneView(context, kit.window)
-        sceneView.show(course, scene, places, night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)))
+        sceneView.show(course, scene, places, night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)), reveal)
         addView(sceneView, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_SCENE_HEIGHT) else MATCH))
 
         val soft = SoftPatch(context, third)
@@ -84,6 +87,7 @@ internal fun homeScreen(
             }
         }
         addView(side, sideSize)
+        if (reveal) staggerIn(linesOf(info, near), dp(Dimens.SPACE_3).toFloat())
 
         if (!third) {
             val strip = courseStrip(kit, course, stripX, onPick)
@@ -97,6 +101,10 @@ internal fun homeScreen(
         }
     }
 }
+
+/** 코스를 바꿀 때 차례로 나타나는 줄. 아래 버튼은 자리를 지킨다. */
+private fun linesOf(info: View, near: View): List<View> =
+    (info as ViewGroup).children.toList() + (near as ViewGroup).children.toList().dropLast(1).filterNot { it is Space }
 
 private fun Context.infoColumn(kit: BrowseKit, course: Course, kick: String): View = column().apply {
     val third = kit.window == WindowClass.THIRD
@@ -139,7 +147,7 @@ private fun Context.nearColumn(
     val scroll = ScrollView(context).apply {
         isVerticalScrollBarEnabled = false
         addView(list)
-    }
+    }.bounceAtEnds(vertical = true)
     addView(scroll, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = dp(Dimens.SPACE_2) })
     addSpaced(Space(context), Dimens.SPACE_2)
     val start = primaryButton("내비에 코스 입히기") { onStart(course.id) }

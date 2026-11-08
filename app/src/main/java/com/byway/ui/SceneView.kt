@@ -1,5 +1,6 @@
 package com.byway.ui
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
@@ -7,6 +8,7 @@ import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
@@ -16,7 +18,9 @@ import android.graphics.Typeface
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.VelocityTracker
 import android.view.ViewConfiguration
+import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.byway.core.course.Course
@@ -24,11 +28,18 @@ import com.byway.core.course.CourseScene
 import com.byway.core.course.ScenePlace
 import com.byway.service.SceneCatalog
 import kotlin.math.abs
+import kotlin.math.sign
 
 private const val NIGHT_OPACITY = 0.66f
 private const val DAY_OPACITY = 0.86f
 private const val PIN_RADIUS = 20f
 private const val GLOW_ALPHA = 0.22f
+private const val SWIPE_DISTANCE_DP = 420
+private const val FLING_FACTOR = 6f
+private const val PICTURE_MIX_SPEED = 1.6f
+
+/** 경로는 한눈에 끝나지 않고 앞에서부터 그려져 보이도록 천천히 시작한다. */
+private val routeEase = PathInterpolator(0.33f, 0f, 0.2f, 1f)
 
 /** 코스 둘레 위성 그림과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
 @SuppressLint("ViewConstructor")
@@ -42,9 +53,17 @@ internal class SceneView(context: Context, private val window: WindowClass, list
     private val credit = chip(MAP_CREDIT)
     private val latest = LatestOnly()
     private val slop = ViewConfiguration.get(context).scaledTouchSlop * SWIPE_FACTOR
+    private val fling = ViewConfiguration.get(context).scaledMinimumFlingVelocity * FLING_FACTOR
+    private val swipeDistance = context.dp(SWIPE_DISTANCE_DP).toFloat()
     private var downX = 0f
     private var course: Course? = null
     private var canShowPhoto = false
+    private var photoShown = false
+    private var progress = 0f
+    private var side = 1f
+    private var dragging = false
+    private var tracker: VelocityTracker? = null
+    private var settle: ValueAnimator? = null
 
     init {
         addView(fallback, matchFrame())
@@ -81,6 +100,7 @@ internal class SceneView(context: Context, private val window: WindowClass, list
         }
         addView(photoCredit, creditSize())
         addView(credit, creditSize())
+        hint.pressMotion()
         hint.setOnClickListener { togglePhoto() }
     }
 
@@ -91,22 +111,20 @@ internal class SceneView(context: Context, private val window: WindowClass, list
         setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
     }
 
-    fun show(course: Course, scene: CourseScene?, places: List<ScenePlace>, night: Boolean, sceneryAvailable: Boolean) {
+    /** [reveal]이면 이전 그림에서 넘어오며 경로를 앞에서부터 그린다. */
+    fun show(course: Course, scene: CourseScene?, places: List<ScenePlace>, night: Boolean, sceneryAvailable: Boolean, reveal: Boolean = false) {
         this.course = course
         canShowPhoto = sceneryAvailable
         showRoute()
         fallback.show(course, emptyList())
         val token = latest.next()
-        canvasView.showScene(scene, places, night, SceneCatalog.index(context).sceneSize.x)
-        canvasView.visibility = GONE
-        fallback.visibility = VISIBLE
-        if (scene != null) {
+        canvasView.showScene(scene, places, night, SceneCatalog.index(context).sceneSize.x, reveal)
+        val hasPicture = scene != null && Covers.hasScene(context, course.id, night)
+        canvasView.visibility = if (hasPicture) VISIBLE else GONE
+        fallback.visibility = if (hasPicture) GONE else VISIBLE
+        if (hasPicture) {
             Covers.loadScene(context, course.id, night) { bitmap ->
-                if (latest.isCurrent(token)) {
-                    canvasView.setPicture(bitmap)
-                    canvasView.visibility = VISIBLE
-                    fallback.visibility = GONE
-                }
+                if (latest.isCurrent(token)) canvasView.setPicture(bitmap)
             }
         }
         photo.setPicture(null)
@@ -117,23 +135,73 @@ internal class SceneView(context: Context, private val window: WindowClass, list
     }
 
     private fun showRoute() {
-        photo.visibility = GONE
-        photoCredit.visibility = GONE
-        credit.visibility = VISIBLE
-        hint.text = "밀어서 풍경 보기"
+        settle?.cancel()
+        progress = 0f
+        placePhoto()
+        markChips(false)
+    }
+
+    private fun markChips(onPhoto: Boolean) {
+        photoShown = onPhoto
+        photoCredit.visibility = if (onPhoto) VISIBLE else GONE
+        credit.visibility = if (onPhoto) GONE else VISIBLE
+        hint.text = if (onPhoto) "경로로 돌아가기" else "밀어서 풍경 보기"
         hint.visibility = if (canShowPhoto) VISIBLE else GONE
+    }
+
+    /** 사진은 손가락을 따라 옆에서 들어오고 나간다. */
+    private fun placePhoto() {
+        photo.visibility = if (progress > 0f) VISIBLE else GONE
+        photo.alpha = progress
+        photo.translationX = side * (1f - progress) * swipeDistance
     }
 
     private fun togglePhoto() {
         if (!canShowPhoto) return
-        if (photo.visibility == VISIBLE) {
-            showRoute()
-        } else {
-            photo.visibility = VISIBLE
-            photoCredit.visibility = VISIBLE
-            credit.visibility = GONE
-            hint.text = "경로로 돌아가기"
+        side = 1f
+        settleTo(!photoShown)
+    }
+
+    private fun settleTo(onPhoto: Boolean) {
+        settle?.cancel()
+        markChips(onPhoto)
+        settle = ValueAnimator.ofFloat(progress, if (onPhoto) 1f else 0f).apply {
+            duration = MotionSpec.MEDIUM2
+            interpolator = motionEase
+            addUpdateListener {
+                progress = it.animatedValue as Float
+                placePhoto()
+            }
+            start()
         }
+    }
+
+    private fun followFinger(drag: Float) {
+        settle?.cancel()
+        progress = swipeProgress(photoShown, drag, swipeDistance)
+        side = if (photoShown) sign(drag) else -sign(drag)
+        placePhoto()
+    }
+
+    private fun release(drag: Float) {
+        val speed = tracker?.run {
+            computeCurrentVelocity(1000)
+            xVelocity
+        } ?: 0f
+        val along = speed * sign(drag)
+        settleTo(settlesOnPhoto(progress, if (photoShown) -along else along, fling))
+    }
+
+    private fun endGesture() {
+        dragging = false
+        tracker?.recycle()
+        tracker = null
+    }
+
+    override fun onDetachedFromWindow() {
+        settle?.cancel()
+        endGesture()
+        super.onDetachedFromWindow()
     }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
@@ -148,7 +216,17 @@ internal class SceneView(context: Context, private val window: WindowClass, list
                 downX = event.x
                 return canShowPhoto
             }
-            MotionEvent.ACTION_UP -> if (abs(event.x - downX) > slop) togglePhoto()
+            MotionEvent.ACTION_MOVE -> if (canShowPhoto) {
+                val tracking = tracker ?: VelocityTracker.obtain().also { tracker = it }
+                tracking.addMovement(event)
+                val drag = event.x - downX
+                if (abs(drag) > slop) dragging = true
+                if (dragging) followFinger(drag - sign(drag) * slop)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (dragging) release(event.x - downX)
+                endGesture()
+            }
         }
         return canShowPhoto
     }
@@ -207,7 +285,13 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
     private var places: List<ScenePlace> = emptyList()
     private var night = true
     private var sceneWidth = 0f
+    private var outgoing: Bitmap? = null
+    private var revealing = false
+    private var reveal = 1f
+    private var mix = 1f
+    private var mover: ValueAnimator? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val layerPaint = Paint()
     private val fade = Paint()
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -220,33 +304,65 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
         typeface = Typeface.DEFAULT_BOLD
     }
 
-    fun showScene(scene: CourseScene?, places: List<ScenePlace>, night: Boolean, sceneWidth: Float) {
+    fun showScene(scene: CourseScene?, places: List<ScenePlace>, night: Boolean, sceneWidth: Float, reveal: Boolean) {
+        mover?.cancel()
         this.scene = scene
         this.places = places
         this.night = night
         this.sceneWidth = sceneWidth
+        revealing = reveal
+        outgoing = if (reveal) picture ?: outgoing else null
         picture = null
+        this.reveal = if (reveal) 0f else 1f
+        mix = if (reveal) 0f else 1f
         invalidate()
     }
 
     fun setPicture(bitmap: Bitmap) {
         picture = bitmap
         invalidate()
+        if (!revealing) return
+        // 넘어올 이전 그림이 없으면 화면 전환이 이미 그림을 드러내고 있다.
+        if (outgoing == null) mix = 1f
+        mover = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = MotionSpec.LONG2
+            interpolator = routeEase
+            addUpdateListener {
+                reveal = it.animatedFraction
+                if (outgoing != null) mix = (reveal * PICTURE_MIX_SPEED).coerceAtMost(1f)
+                invalidate()
+            }
+            start()
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        mover?.cancel()
+        super.onDetachedFromWindow()
     }
 
     override fun onDraw(canvas: Canvas) {
-        val bitmap = picture ?: return
+        if (picture == null && outgoing == null) return
         val density = resources.displayMetrics.density
         val rect = sceneRect(window, width / density, height / density, list)
         val out = RectF(rect.left * density, rect.top * density, (rect.left + rect.width) * density, (rect.top + rect.height) * density)
-        drawPicture(canvas, bitmap, out, density)
-        scene?.let { drawRoute(canvas, it, out) }
+        drawPicture(canvas, out, density)
+        if (picture != null) scene?.let { drawRoute(canvas, it, out) }
     }
 
-    private fun drawPicture(canvas: Canvas, bitmap: Bitmap, out: RectF, density: Float) {
-        val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)
-        paint.alpha = ((if (night) NIGHT_OPACITY else DAY_OPACITY) * 255).toInt()
-        canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), out, paint)
+    private fun drawPicture(canvas: Canvas, out: RectF, density: Float) {
+        layerPaint.alpha = ((if (night) NIGHT_OPACITY else DAY_OPACITY) * 255).toInt()
+        val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), layerPaint)
+        if (mix < 1f) {
+            outgoing?.let {
+                paint.alpha = 255
+                canvas.drawBitmap(it, Rect(0, 0, it.width, it.height), out, paint)
+            }
+        }
+        picture?.let {
+            paint.alpha = (mix * 255).toInt()
+            canvas.drawBitmap(it, Rect(0, 0, it.width, it.height), out, paint)
+        }
         val band = sceneFade(window, list)
         val from = band.from * density
         val to = band.to * density
@@ -265,7 +381,9 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
         if (sceneWidth <= 0f) return
         val scale = out.width() / sceneWidth
         val line = context.dp(Dimens.COURSE_LINE.toInt()).toFloat()
-        val paths = scene.lines.map { it.mood to pathOf(it.points.map { p -> Pair(p.x, p.y) }, out, scale) }
+        val whole = scene.lines.map { pathOf(it.points.map { p -> Pair(p.x, p.y) }, out, scale) }
+        val shown = if (reveal < 1f) trimmed(whole) else whole
+        val paths = scene.lines.zip(shown) { sceneLine, path -> sceneLine.mood to path }
         paths.forEach { (mood, path) ->
             stroke.color = NightPalette.moodColor(mood)
             stroke.alpha = (GLOW_ALPHA * 255).toInt()
@@ -283,7 +401,14 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
             stroke.strokeWidth = line
             canvas.drawPath(path, stroke)
         }
-        places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no) }
+        places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal)) }
+    }
+
+    private fun trimmed(paths: List<Path>): List<Path> {
+        val lengths = revealedLengths(paths.map { PathMeasure(it, false).length }, reveal)
+        return paths.zip(lengths) { path, length ->
+            Path().also { PathMeasure(path, false).getSegment(0f, length, it, true) }
+        }
     }
 
     private fun pathOf(points: List<Pair<Float, Float>>, out: RectF, scale: Float): Path = Path().apply {
@@ -292,13 +417,17 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
         }
     }
 
-    private fun drawPin(canvas: Canvas, x: Float, y: Float, number: Int) {
+    private fun drawPin(canvas: Canvas, x: Float, y: Float, number: Int, opacity: Float) {
+        if (opacity <= 0f) return
         val radius = context.dp(PIN_RADIUS.toInt()).toFloat()
         pinFill.color = colors.photoScrim
+        pinFill.alpha = (pinFill.alpha * opacity).toInt()
         canvas.drawCircle(x, y, radius + context.dp(3), pinFill)
         pinFill.color = colors.onPhoto
+        pinFill.alpha = (pinFill.alpha * opacity).toInt()
         canvas.drawCircle(x, y, radius, pinFill)
         pinText.color = colors.photoScrim
+        pinText.alpha = (pinText.alpha * opacity).toInt()
         pinText.textSize = context.dp(Dimens.LABEL.toInt()).toFloat()
         canvas.drawText("$number", x, y + pinText.textSize * 0.36f, pinText)
     }

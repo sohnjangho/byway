@@ -8,7 +8,7 @@ import com.byway.core.course.Course
 
 /** 홈 아래 코스 띠. 고른 코스가 보이는 자리로 스크롤해 둔다. */
 internal fun Context.courseStrip(kit: BrowseKit, chosen: Course, previous: Int?, onPick: (Course, Int) -> Unit): View {
-    val scroller = HorizontalScrollView(this)
+    val scroller = HorizontalScrollView(this).bounceAtEnds(vertical = false)
     val row = LinearLayout(this)
     var chosenIndex = 0
     kit.book.courses.forEachIndexed { i, course ->
@@ -33,6 +33,7 @@ private fun Context.stripCard(course: Course, on: Boolean, onClick: () -> Unit):
     }
     val inset = dp(Dimens.SPACE_2)
     setPadding(inset, inset, inset, inset)
+    pressMotion()
     setOnClickListener { onClick() }
     addView(
         cover(course, dp(Dimens.STRIP_THUMB)),

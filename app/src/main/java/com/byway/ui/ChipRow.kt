@@ -26,6 +26,7 @@ internal fun Context.chipRow(choices: List<Choice>, selected: String?, size: Flo
                 gravity = Gravity.CENTER
                 minHeight = dp(Dimens.TOUCH_MIN)
                 setPadding(dp(Dimens.SPACE_6), 0, dp(Dimens.SPACE_6), 0)
+                pressMotion()
                 setOnClickListener {
                     mark(choice.key)
                     onPick(choice.key)
@@ -39,7 +40,7 @@ internal fun Context.chipRow(choices: List<Choice>, selected: String?, size: Flo
         }
         mark(selected)
         addView(line)
-    }
+    }.bounceAtEnds(vertical = false)
 
 /** 고른 칩은 accent 면이 아니라 옅은 바탕이다. 한 화면의 accent 면은 주 버튼 하나다. */
 private fun Context.paint(chip: TextView, on: Boolean) {
