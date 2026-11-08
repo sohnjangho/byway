@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """make-covers.py 시험. 사용: python3 tools/test_make_covers.py"""
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -135,6 +136,41 @@ class SoftTest(unittest.TestCase):
         values = [value for pixel in image.getdata() for value in pixel]
         self.assertGreaterEqual(min(values), mc.SOFT_DARKEST)
         self.assertLessEqual(max(values), mc.SOFT_BRIGHTEST)
+
+
+class SoftPhotoChoiceTest(unittest.TestCase):
+    """흐린 배경은 사진을 변형한 결과물이라 이용 조건이 없는 사진만 쓴다."""
+
+    def written(self, credit):
+        course = {"id": "sample", "path": TALL, "sceneryCredit": credit}
+        with tempfile.TemporaryDirectory() as folder:
+            Image.new("RGB", (640, 480), (200, 40, 40)).save(Path(folder) / "sample.jpg")
+            target = Path(folder) / "sample-soft.jpg"
+            satellite = Image.new("RGB", (256, 256), (60, 110, 70))
+            with mock.patch.object(mc, "SCENERY", Path(folder)), mock.patch.object(mc, "tile", return_value=satellite):
+                mc.write_soft(course, target)
+            return Image.open(target).convert("RGB").getpixel((10, 10))
+
+    def assert_photo(self, credit):
+        red, green, _ = self.written(credit)
+        self.assertGreater(red, green, credit)
+
+    def assert_satellite(self, credit):
+        red, green, _ = self.written(credit)
+        self.assertGreater(green, red, credit)
+
+    def test_a_cc0_photo_becomes_the_soft_background(self):
+        self.assert_photo("사진: 작가 (CC0, Wikimedia Commons)")
+
+    def test_a_public_domain_photo_becomes_the_soft_background(self):
+        self.assert_photo("사진: 작가 (Public domain, Wikimedia Commons)")
+
+    def test_a_photo_with_terms_is_replaced_by_the_satellite_ground(self):
+        for licence in ("CC BY 2.0", "CC BY-SA 3.0", "CC BY-SA 4.0"):
+            self.assert_satellite(f"사진: 작가 ({licence}, Wikimedia Commons)")
+
+    def test_a_photo_without_a_credit_is_replaced_by_the_satellite_ground(self):
+        self.assert_satellite("")
 
 
 if __name__ == "__main__":

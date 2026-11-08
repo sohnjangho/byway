@@ -18,6 +18,7 @@ TILE = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/
 SIZE = 640
 SCALE = 2
 FILL = 0.8
+FREE_PHOTO_LICENCES = ("CC0", "Public domain")
 CACHE = Path(tempfile.gettempdir()) / "byway-tiles"
 CACHE.mkdir(exist_ok=True)
 FALLBACK = (240, 164, 90)
@@ -161,11 +162,17 @@ def main():
         write_soft(course, out / f"{course['id']}-soft.jpg")
 
 
+def free_photo(credit):
+    """흐린 배경은 사진을 변형한 결과물이라 이용 조건이 없는 사진만 쓴다."""
+    return any(f"({licence}," in credit for licence in FREE_PHOTO_LICENCES)
+
+
 def write_soft(course, target):
     photo = SCENERY / f"{course['id']}.jpg"
-    if target.exists() and (not photo.exists() or photo.stat().st_mtime <= target.stat().st_mtime):
+    usable = photo.exists() and free_photo(course.get("sceneryCredit", ""))
+    if target.exists() and (not usable or photo.stat().st_mtime <= target.stat().st_mtime):
         return
-    soft(course, Image.open(photo).convert("RGB") if photo.exists() else None).save(target, quality=80)
+    soft(course, Image.open(photo).convert("RGB") if usable else None).save(target, quality=80)
     print(target.name, target.stat().st_size, flush=True)
 
 

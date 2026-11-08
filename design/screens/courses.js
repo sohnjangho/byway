@@ -721,7 +721,7 @@ window.COURSES = [
    "데이트"
   ],
   "photo": "images/scenery/dalmaji-coast.jpg",
-  "credit": "사진: StephNurnberg (CC BY 2.0, Wikimedia Commons)",
+  "credit": "사진: H. Y. Shin 000 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/dalmaji-coast-night.jpg",
   "coverDay": "images/covers/dalmaji-coast.jpg",
   "soft": "images/covers/dalmaji-coast-soft.jpg",
@@ -1523,7 +1523,7 @@ window.COURSES = [
    "혼자"
   ],
   "photo": "images/scenery/heonhwa-coast.jpg",
-  "credit": "사진: Masterhatch (CC BY-SA 4.0, Wikimedia Commons)",
+  "credit": "사진: 최광모 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/heonhwa-coast-night.jpg",
   "coverDay": "images/covers/heonhwa-coast.jpg",
   "soft": "images/covers/heonhwa-coast-soft.jpg",
@@ -1865,7 +1865,7 @@ window.COURSES = [
    "데이트"
   ],
   "photo": "images/scenery/mulmi-coast.jpg",
-  "credit": "사진: Korea Heritage Service (CC BY-SA 4.0, Wikimedia Commons)",
+  "credit": "사진: Choi2451 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/mulmi-coast-night.jpg",
   "coverDay": "images/covers/mulmi-coast.jpg",
   "soft": "images/covers/mulmi-coast-soft.jpg",
@@ -2057,7 +2057,7 @@ window.COURSES = [
    "데이트"
   ],
   "photo": "images/scenery/paldang-sunset.jpg",
-  "credit": "사진: S h y numis (CC BY-SA 4.0, Wikimedia Commons)",
+  "credit": "사진: Katsujiro Maekawa (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/paldang-sunset-night.jpg",
   "coverDay": "images/covers/paldang-sunset.jpg",
   "soft": "images/covers/paldang-sunset-soft.jpg",
@@ -2382,7 +2382,7 @@ window.COURSES = [
    "혼자"
   ],
   "photo": "images/scenery/yangpyeong-river.jpg",
-  "credit": "사진: Masterhatch (CC BY-SA 4.0, Wikimedia Commons)",
+  "credit": "사진: Mereytan (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/yangpyeong-river-night.jpg",
   "coverDay": "images/covers/yangpyeong-river.jpg",
   "soft": "images/covers/yangpyeong-river-soft.jpg",
