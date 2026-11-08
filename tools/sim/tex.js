@@ -67,10 +67,11 @@ export async function loadMaterials() {
   ]);
   return { grass, grassN, road, roadN, roadSnow, bark, barkN, leaves, facade: windows(facade) };
 }
+/* 천장 직물은 무늬 반복을 촘촘하게(30) 해야 체크무늬 식탁보가 아니라 직물 결로 보인다 */
 export async function cabinMaterials() {
   const [leather, leatherN, dash, liner] = await Promise.all([
     texture('brown_leather_diff', { repeat: 3 }), texture('brown_leather_nor', { color: false, repeat: 3 }),
-    texture('fabric_leather_02_diff', { repeat: 4 }), texture('fabric_pattern_05_diff', { repeat: 3 }),
+    texture('fabric_leather_02_diff', { repeat: 4 }), texture('fabric_pattern_05_diff', { repeat: 30 }),
   ]);
   return {
     leather: new THREE.MeshStandardMaterial({ map: leather, normalMap: leatherN, roughness: 0.6, color: '#d9cfc6' }),

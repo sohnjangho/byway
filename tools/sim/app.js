@@ -44,17 +44,21 @@ export function createApp(root, { course, navmap, onApply, onSay }) {
   for (let i = 1; i < r.length; i++) cum.push(cum[i - 1] + Math.hypot(r[i][0] - r[i - 1][0], r[i][1] - r[i - 1][1]));
   const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
   for (let i = 2; i < r.length - 2; i++) { let d = ang(r[i], r[i + 2]) - ang(r[i - 2], r[i]); d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) > 0.7 && (!turns.length || i - turns[turns.length - 1].i > 4)) turns.push({ i, at: cum[i], dir: d > 0 ? 'right' : 'left' }); }
+  /* 내비 지도 배율(지도 1m = NAV_SCALE px). 1.15 면 50km/h 로 달려도 차 안에서 지도가 멈춘 듯 보여 가까이 당긴다.
+     선 굵기는 배율과 무관하게 화면 px 로 둔다(non-scaling-stroke) */
+  const NAV_SCALE = 2.6;
   const line = (pts) => 'M' + pts.map((p) => p[0] + ' ' + p[1]).join('L'), g = [];
   navmap.water.forEach((w) => g.push(`<path d="${line(w)}Z" fill="#b7d1ea"/>`));
   const W = { hw: [20, '#c9a24a', '#f8d27a'], main: [15, '#c3c7cd', '#ffffff'], link: [10, '#c3c7cd', '#ffffff'], minor: [9, '#cfd2d7', '#ffffff'] };
   ['minor', 'link', 'main', 'hw'].forEach((c) => { const [w, e, f] = W[c], d = navmap.roads[c].map(line).join(''); g.push(`<path d="${d}" fill="none" stroke="${e}" stroke-width="${w + 4}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${f}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); });
   g.push(`<path d="${line(r)}" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/><path d="${line(r)}" fill="none" stroke="#2f7cf6" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><path id="routeDone" fill="none" stroke="#9aa3ad" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>`);
   $('navg').innerHTML = g.join('');
+  $('navg').querySelectorAll('path').forEach((e) => e.setAttribute('vector-effect', 'non-scaling-stroke'));
   const arrow = (dir) => dir === 'left' ? '<path d="M58 92 V44 Q58 30 44 30 H22" stroke="#fff" stroke-width="12" fill="none"/><path d="M28 10 L4 30 L28 50 Z" fill="#fff"/>'
     : dir === 'right' ? '<path d="M18 92 V44 Q18 30 32 30 H54" stroke="#fff" stroke-width="12" fill="none"/><path d="M48 10 L72 30 L48 50 Z" fill="#fff"/>'
     : '<path d="M38 92 V24" stroke="#fff" stroke-width="12" fill="none"/><path d="M14 30 L38 4 L62 30 Z" fill="#fff"/>';
   const fmt = (m) => (m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.max(10, Math.round(m / 10) * 10) + 'm');
-  const at = (s) => { let i = cum.findIndex((c) => c >= s); if (i <= 0) i = 1; const x = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1); const a = r[Math.max(0, i - 2)], b = r[Math.min(r.length - 1, i + 1)]; return { p: [r[i - 1][0] + (r[i][0] - r[i - 1][0]) * x, r[i - 1][1] + (r[i][1] - r[i - 1][1]) * x], i, h: Math.atan2(b[1] - a[1], b[0] - a[0]) }; };
+  const at = (s) => { let i = cum.findIndex((c) => c >= s); if (i < 0) i = cum.length - 1; if (i === 0) i = 1; const x = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1); const a = r[Math.max(0, i - 2)], b = r[Math.min(r.length - 1, i + 1)]; return { p: [r[i - 1][0] + (r[i][0] - r[i - 1][0]) * x, r[i - 1][1] + (r[i][1] - r[i - 1][1]) * x], i, h: Math.atan2(b[1] - a[1], b[0] - a[0]) }; };
   /* 스팟: 코스 파일의 스팟 가운데 경로 위 가까운 점 */
   const spots = course.spots.map((s) => { let bi = 0, bd = Infinity; course.path.forEach((p, i) => { const d = (p[0] - s.lat) ** 2 + (p[1] - s.lon) ** 2; if (d < bd) { bd = d; bi = i; } }); return { name: s.name, at: cum[bi] }; });
 
@@ -102,9 +106,10 @@ export function createApp(root, { course, navmap, onApply, onSay }) {
     $('cabin').textContent = app.section < 0 ? '출발 전' : info.cabin;
     $('music').textContent = app.section < 0 ? '대기' : `'${info.music}'`;
     /* 내비: 실제 코스 경로 위 같은 자리 */
-    const { p, i, h } = at(routeS);
-    root.querySelector('#navg').setAttribute('transform', `translate(840 1900) rotate(${(-h * 180) / Math.PI - 90}) scale(1.15) translate(${-p[0]} ${-p[1]})`);
-    $('routeDone').setAttribute('d', line(r.slice(0, i).concat([p])));
+    /* 헤딩업: 차 표시는 고정, 지도가 차 자리로 옮겨지고 진행 방향(앞뒤 30m 로 잡아 흔들리지 않게)이 위로 돈다 */
+    const { p, i } = at(routeS), fa = at(routeS + 30).p, fb = at(routeS - 30).p, h = Math.atan2(fa[1] - fb[1], fa[0] - fb[0]);
+    root.querySelector('#navg').setAttribute('transform', `translate(840 1900) rotate(${(-h * 180) / Math.PI - 90}) scale(${NAV_SCALE}) translate(${-p[0]} ${-p[1]})`);
+    $('routeDone').setAttribute('d', routeS > 0 ? line(r.slice(0, i).concat([p])) : '');
     const ahead = turns.filter((x) => x.at > routeS + 5);
     $('tbtArrow').innerHTML = arrow(ahead[0] && ahead[0].at - routeS < 2000 ? ahead[0].dir : 'straight');
     $('tbtDist').textContent = ahead[0] ? fmt(ahead[0].at - routeS) : '';

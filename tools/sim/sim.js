@@ -27,15 +27,16 @@ addEventListener('resize', resize); resize();
 
 /* ---------- 자료 ---------- */
 const tex = (url) => new THREE.TextureLoader().loadAsync(url).then((t) => { t.colorSpace = THREE.SRGBColorSpace; return t; });
-const [course, navmap, trees, cabinGltf, skyDay, skyDusk, skyCloud, skySnow, mats, cmats] = await Promise.all([
+const [course, navmap, trees, cabinGltf, skyDay, skyDusk, skyCloud, skySnow, skyClear, skyAutumn, mats, cmats] = await Promise.all([
   fetch('../../app/src/main/assets/courses/paldang-sunset.json').then((r) => r.json()),
   fetch(DEMO + 'osm/navmap.json').then((r) => r.json()),
   loadTrees(DEMO + 'models/trees.glb'),
   new GLTFLoader().loadAsync('models/cabin.glb'),
   tex(DEMO + 'sky/city.jpg'), tex(DEMO + 'sky/river.jpg'), tex(DEMO + 'sky/forest.jpg'), tex(DEMO + 'sky/snow.jpg'),
+  tex(DEMO + 'sky/clear.jpg'), tex(DEMO + 'sky/autumn.jpg'),
   loadMaterials(), cabinMaterials(),
 ]);
-const world = await buildWorld(course, { trees, mats, skies: [{ tex: skyDay, w: 2220, h: 500 }, { tex: skyDusk, w: 2560, h: 440 }, { tex: skyCloud, w: 2560, h: 452 }, { tex: skySnow, w: 2560, h: 410 }] });
+const world = await buildWorld(course, { trees, mats, skies: [{ tex: skyDay, w: 2220, h: 500 }, { tex: skyDusk, w: 2560, h: 440 }, { tex: skyCloud, w: 2560, h: 452 }, { tex: skySnow, w: 2560, h: 410 }, { tex: skyClear, w: 6144, h: 1024 }, { tex: skyAutumn, w: 6144, h: 1024 }] });
 const env = createEnv(world);
 
 /* ---------- 차 실내 ---------- */
@@ -49,17 +50,36 @@ cabin.traverse((o) => {
   if (!o.isMesh) return;
   named[o.name] = o;
   o.castShadow = false; o.receiveShadow = true;
-  /* 실사 재질: 블렌더 재질 이름(leather·trim_dark·trim_mid·headliner)에 맞춰 바꾸고, 무늬 좌표는 상자 투영으로 만든다 */
   const mname = o.material && o.material.name;
-  if (cmats[mname]) { o.geometry = boxUV(o.geometry, 1.5); o.material = cmats[mname]; }
   if (o.name.startsWith('glass') || o.name.startsWith('window_')) o.material = new THREE.MeshBasicMaterial({ color: '#a8bccb', transparent: true, opacity: 0.07, depthWrite: false });
-  if (o.name === 'screen' || o.name === 'slim') o.material = hole;
-  if (o.name === 'ambient') o.material = new THREE.MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false });
+  else if (o.name === 'screen' || o.name === 'slim') o.material = hole;
+  else if (o.name === 'ambient') o.material = new THREE.MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false });
+  else {
+    /* 실사 재질: 블렌더 재질 이름(leather·trim_dark·trim_mid·headliner)에 맞춰 바꾸고, 무늬 좌표는 상자 투영으로 만든다.
+       재질표에 없는 이름(body·chrome: 사이드미러·보닛·변속 레버)은 밝은 회색 상자로 떠 보여 어두운 트림으로 맞춘다 */
+    o.geometry = boxUV(o.geometry, 1.5); o.material = cmats[mname] || cmats.trim_dark;
+  }
   /* 운전자 머리 자리라 운전석 등받이·머리받침은 그리지 않는다(뒤를 볼 때 얼굴 앞을 막는다) */
   if (o.name === 'back_driver' || o.name === 'head_driver') o.visible = false;
 });
 car.add(camera);
 camera.position.copy(EYE);
+/* 룸미러: 뒤를 보는 작은 카메라를 512×160 그림에 3프레임에 한 번 그려(숲에서 2프레임마다면 50fps 아래로 내려간다) 거울 면(운전자 쪽)에 입힌다. 좌우는 거울처럼 뒤집는다 */
+const MIRROR = true;
+const mirrorRT = new THREE.WebGLRenderTarget(512, 160, { type: THREE.HalfFloatType });
+mirrorRT.texture.repeat.x = -1; mirrorRT.texture.offset.x = 1;
+const mirrorCam = new THREE.PerspectiveCamera(16, 512 / 160, 0.1, 3000);
+mirrorCam.position.set(0, 1.38, -0.37); mirrorCam.rotation.set(-0.04, Math.PI, 0); car.add(mirrorCam);
+const mirrorFace = new THREE.Mesh(new THREE.PlaneGeometry(0.235, 0.062), new THREE.MeshBasicMaterial({ map: mirrorRT.texture, color: '#d8dde2' }));
+mirrorFace.position.set(0, 1.38, -0.383); mirrorFace.visible = MIRROR; car.add(mirrorFace);
+let mirrorTick = 0;
+function renderMirror() {
+  /* 거울 속에는 운전석 등받이가 보여야 한다(운전자 시점에서만 숨긴다). 그림자는 본 화면에서 그린 것을 다시 쓴다 */
+  const seat = [named.back_driver, named.head_driver].filter(Boolean);
+  seat.forEach((o) => (o.visible = true)); renderer.shadowMap.autoUpdate = false;
+  renderer.setRenderTarget(mirrorRT); renderer.render(world.scene, mirrorCam); renderer.setRenderTarget(null);
+  seat.forEach((o) => (o.visible = false)); renderer.shadowMap.autoUpdate = true;
+}
 
 /* 화면 판 위치에 DOM 을 얹는다. 판의 네 모서리로 중심·가로·세로 축을 구해 차 기준 변환을 저장해 둔다 */
 function mountDom(mesh, el, pxW) {
@@ -102,7 +122,7 @@ function say(text) {
 const cabinFx = { window: 0, light: new THREE.Color('#ffd9a0') };
 const windowBase = {};
 ['window_fl', 'window_fr'].forEach((n) => { if (named[n]) windowBase[n] = named[n].position.y; });
-const app = createApp(screenEl, { course, navmap, onSay: say, onApply: () => { cabinNote.style.display = 'block'; cabinNote.innerHTML = '<b>내비에 코스를 입혔습니다</b><br>D 를 눌러 출발하세요'; } });
+const app = createApp(screenEl, { course, navmap, onSay: say, onApply: () => { cabinNote.style.display = 'block'; cabinNote.innerHTML = '<b>내비에 코스를 입혔습니다</b><br>구간에 들어서면 차 안 연출이 바뀝니다'; } });
 app.onSection = (si) => {
   const info = SECTION_INFO[si];
   cabinFx.window = info.window; cabinFx.light.set(info.light);
@@ -193,13 +213,24 @@ canvas.addEventListener('pointerup', (e) => {
   }
   drag = null;
 });
+/* 터치: 손을 뗄 때 따라오는 클릭을 막는다. 화면 모드로 바뀐 직후 같은 자리의 화면 속 앱이 눌리거나 바로 빠져나가지 않게 */
+canvas.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+/* 화면 모드에서 나가기: 단추, 또는 화면 밖을 탭(끌지 않고). 화면 모드에서는 캔버스가 눌리지 않아 아래 #css 층이 받는다 */
+document.getElementById('backSeat').addEventListener('click', () => leaveScreen());
+const cssEl = document.getElementById('css'); let outside = null;
+cssEl.addEventListener('pointerdown', (e) => { outside = state.screenMode && !screenEl.contains(e.target) ? { x: e.clientX, y: e.clientY } : null; });
+cssEl.addEventListener('pointerup', (e) => { if (outside && Math.hypot(e.clientX - outside.x, e.clientY - outside.y) < 12) leaveScreen(); outside = null; });
 function enterScreen() { state.screenMode = true; document.body.classList.add('screen-mode'); }
 function leaveScreen() { state.screenMode = false; document.body.classList.remove('screen-mode'); }
 document.querySelectorAll('[data-jump]').forEach((b) => b.addEventListener('click', () => { const z = world.zones.find((x) => x.mood === b.dataset.jump); state.d = z.from + (z.mood === 'park' ? 4 : 30); state.v = 0; }));
 
 /* ---------- 한 프레임 ---------- */
+const guideEl = document.getElementById('guide'), guideSteps = [...guideEl.querySelectorAll('li')];
+let guideDone = false;
 const up = new THREE.Vector3(0, 1, 0);
-function laneAt(d) { const park = world.zones[1].from; return d < park - 60 ? 0 : Math.min(1, (d - (park - 60)) / 60) * LANE; }
+/* 오른쪽 차로 가운데(중앙선에서 LANE). 운전석 눈은 차 중심에서 왼쪽 0.37m 라 중앙선 오른쪽 약 1.38m.
+   출발 주차 칸(d<6)에서만 칸 가운데에 서 있다가 빠져나오며(d 6~20) 차로로 옮긴다. 후진·정차도 같은 규칙 */
+function laneAt(d) { return Math.min(1, Math.max(0, (d - 6) / 14)) * LANE; }
 function step(dt) {
   state.t += dt;
   /* 운전: 앞뒤로만. 경로 밖으로 나가지 않는다 */
@@ -243,7 +274,8 @@ function step(dt) {
   $('spd').style.display = state.gear !== 'P' && !shifting ? 'flex' : 'none'; $('spd').textContent = kmh;
   /* 에움길: 구간 진행률과 실제 코스 경로 위 위치 */
   const zi = world.zones.indexOf(here.zone), zf = Math.min(1, Math.max(0, (state.d - here.zone.from) / (here.zone.to - here.zone.from)));
-  const src = world.sources[zi - 1], navS = src ? app.cumAt(src.start) + (state.d - src.at) : Math.max(0, state.d - 120);
+  /* 주차장(구간 0)에서도 첫 구간 기준으로 재어, 출구로 나가는 동안 내비가 코스 시작점으로 다가간다(전에는 처음 120m 동안 멈춰 있었다) */
+  const src = world.sources[Math.max(0, zi - 1)], navS = app.cumAt(src.start) + (state.d - src.at);
   app.update({ gear: state.gear, routeS: navS, zoneIndex: zi, zoneFrac: zf, kmh });
   if (state.d >= world.length - 25 && Math.abs(state.v) < 0.3 && app.applied) app.finish();
   $('sDest').textContent = app.applied ? (app.finished ? '도착 · 양평 두물머리' : '두물머리까지 ' + $('remain').textContent + 'km') : '목적지 없음';
@@ -254,12 +286,19 @@ function step(dt) {
   const now = new Date(); $('clk').textContent = `${String(now.getHours() % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() < 12 ? '오전' : '오후'}`;
   $('sSpeed').textContent = kmh;
   slimEl.querySelectorAll('#sGear span').forEach((g) => (g.className = g.textContent === gearShown ? 'on' : ''));
+  /* 처음 안내: ① 코스 고르기 ② D ③ 가속. 지금 할 단계를 강조하고 셋이 함께 끝나면 숨긴다 */
+  if (!guideDone) {
+    const done = [app.applied, state.gear === 'D', state.gear === 'D' && state.v > 0.5];
+    if (done.every(Boolean)) { guideDone = true; guideEl.hidden = true; }
+    else guideSteps.forEach((li, i) => { const c = done[i] ? 'done' : i === done.indexOf(false) ? 'now' : ''; if (li.className !== c) li.className = c; });
+  }
   document.getElementById('hudZone').textContent = here.zone.mood === 'park' ? '주차장' : here.zone.name;
   document.getElementById('hudSpeed').textContent = `${kmh} km/h · ${gearShown}`;
 }
 const clock = new THREE.Clock();
 function frame() {
   step(Math.min(clock.getDelta(), 0.05));
+  if (MIRROR && !state.screenMode && mirrorTick++ % 3 === 0) renderMirror();
   renderer.render(world.scene, camera);
   css.render(cssScene, camera);
   requestAnimationFrame(frame);

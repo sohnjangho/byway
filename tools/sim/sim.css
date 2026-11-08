@@ -1,6 +1,6 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: "Asta Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
 #css, #gl { position: fixed; inset: 0; width: 100%; height: 100%; }
-#gl { z-index: 1; display: block; }
+#gl { z-index: 1; display: block; touch-action: none; }
 #css { z-index: 0; }
 body.screen-mode #gl { pointer-events: none; }
 .hud { position: fixed; left: 16px; top: 16px; z-index: 5; display: flex; flex-direction: column; gap: 8px; max-width: 560px; color: #fff; pointer-events: none; }
@@ -11,10 +11,12 @@ body.screen-mode #gl { pointer-events: none; }
 .hud-keys b { color: #f0a45a; }
 .hud-state { display: flex; gap: 16px; font-size: 14px; }
 .hud-jump { display: flex; gap: 6px; pointer-events: auto; background: none; padding: 0; }
-.hud-jump button { border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.hud-jump button { min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
 .loading { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; background: #0b0c0e; }
-/* 센터 화면: Pleos 실제 크기 2560×1440 */
-.pleos { position: relative; width: 2560px; height: 1440px; overflow: hidden; background: #f6f8fc; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+/* 센터 화면: Pleos 실제 크기 2560×1440.
+   overflow 를 숨기지 않는다: 3D 변환된 요소에 overflow: hidden 이 있으면 Chrome 이 누른 점을 찾지 못해 화면 속 앱이 실제 클릭·탭을 받지 못한다.
+   화면 밖으로 넘친 것은 어차피 WebGL 캔버스의 구멍(화면 판) 바깥이라 보이지 않는다 */
+.pleos { position: relative; width: 2560px; height: 1440px; overflow: visible; background: #f6f8fc; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
 .pleos > img.base { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pleos .shift { position: absolute; left: 0; top: 0; width: 853px; height: 1440px; }
 .pleos .cover { position: absolute; display: flex; align-items: center; justify-content: center; }
@@ -79,7 +81,7 @@ body.screen-mode #gl { pointer-events: none; }
 .pleos .appfull.as-area { left: 853px; width: 1680px; }
 .pleos .pane .scene-mood { width: 100%; -webkit-mask-image: none; mask-image: none; z-index: 0; }
 .hud-weather { display: flex; flex-wrap: wrap; gap: 6px; pointer-events: auto; background: none; padding: 0; }
-.hud-weather button { border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.hud-weather button { min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
 .hud-weather button.on, .hud-jump button:active { background: #f0a45a; color: #231509; font-weight: 700; }
 
 .touch { position: fixed; right: 16px; bottom: 16px; z-index: 6; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
@@ -88,3 +90,20 @@ body.screen-mode #gl { pointer-events: none; }
 .touch button.big { min-width: 96px; height: 72px; font-size: 18px; }
 .touch button.go { background: rgba(240, 164, 90, 0.92); color: #231509; }
 .touch button:active { transform: scale(0.96); }
+
+/* 처음 안내 카드: 지금 할 단계(now)는 주황, 끝난 단계(done)는 흐리게 */
+.hud-guide ol { margin: 0; padding: 0; list-style: none; counter-reset: g; display: flex; flex-direction: column; gap: 4px; }
+.hud-guide li { counter-increment: g; display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 22px; color: #9aa0a8; }
+.hud-guide li::before { content: counter(g); flex: none; width: 22px; height: 22px; border-radius: 50%; background: #3a3d42; color: #d6dae0; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.hud-guide li.now { color: #fff; font-weight: 700; }
+.hud-guide li.now::before { background: #f0a45a; color: #231509; }
+.hud-guide li.done { text-decoration: line-through; opacity: 0.6; }
+.hud-guide li.done::before { content: "✓"; }
+.hud-guide b { color: inherit; }
+.hud-guide li.now b { color: #f0a45a; }
+/* 화면 모드: 운전 단추는 숨기고 '운전석으로' 단추를 보인다 */
+.back-seat { display: none; position: fixed; left: 16px; bottom: 16px; z-index: 7; min-height: 56px; padding: 0 22px; border: 0; border-radius: 14px; background: rgba(240, 164, 90, 0.95); color: #231509; font: 700 18px "Noto Sans KR", sans-serif; cursor: pointer; touch-action: manipulation; }
+body.screen-mode .back-seat { display: block; }
+body.screen-mode .touch { display: none; }
+/* 태블릿 폭에서는 날씨·구간 단추가 화면 왼쪽 위를 덮어 앱 대신 눌린다. 화면 모드에서는 접어 둔다 */
+body.screen-mode .hud-weather, body.screen-mode .hud-jump, body.screen-mode .hud-state { display: none; }

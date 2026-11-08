@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- 태블릿: 두 번 탭·집기로 페이지가 확대되지 않게 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>에움길 주행 시뮬레이터</title>
 <!-- 브라우저에서 바로 도는 3D 주행 시뮬레이터. 시안과 연출이며 실제 차량 소프트웨어가 아니다.
      실행: 저장소 루트에서 python3 -m http.server 후 /tools/sim/ 을 연다. three.js 는 vendor/ 에 들어 있어 인터넷 없이 돈다. -->
@@ -18,6 +20,8 @@
 <div class="hud">
   <div class="hud-title">에움길 주행 시뮬레이터 <span>시안 · 연출</span></div>
   <div class="hud-keys"><b>↑/W</b> 가속 · <b>↓/S</b> 감속·후진 · <b>D/P</b> 기어 · <b>마우스 끌기</b> 둘러보기 · <b>1 2 3 4</b> 앞·왼쪽·오른쪽·뒤 · <b>화면 클릭</b> 에움길 조작 · <b>Esc</b> 돌아가기</div>
+  <!-- 처음 안내: 지금 할 단계가 강조되고 세 단계가 끝나면 사라진다 -->
+  <div class="hud-guide" id="guide"><ol><li>가운데 화면을 눌러 <b>코스 고르기</b></li><li><b>D</b> 를 눌러 기어 넣기</li><li><b>가속</b>(↑) 을 눌러 출발</li></ol></div>
   <div class="hud-state"><span id="hudZone"></span><span id="hudSpeed"></span></div>
   <div class="hud-weather"><button data-preset="auto">자동</button><button data-preset="spring">봄</button><button data-preset="summer">여름</button><button data-preset="autumn">가을</button><button data-preset="winter">겨울</button><button data-preset="rain">비</button><button data-preset="snow">눈</button><button data-preset="sunset">노을</button><button data-preset="night">밤</button></div>
   <div class="hud-jump"><button data-jump="park">주차장</button><button data-jump="forest">숲길</button><button data-jump="city">도심</button><button data-jump="river">강변</button></div>
@@ -27,6 +31,8 @@
   <div class="touch-row"><button data-key="1">앞</button><button data-key="2">왼쪽</button><button data-key="3">오른쪽</button><button data-key="4">뒤</button></div>
   <div class="touch-row"><button data-key="p">P</button><button data-key="d">D</button><button data-hold="arrowdown" class="big">감속</button><button data-hold="arrowup" class="big go">가속</button></div>
 </div>
+<!-- 화면 모드에서 운전석으로 돌아가기(Esc 가 없는 태블릿용) -->
+<button class="back-seat" id="backSeat">← 운전석으로</button>
 <div class="loading" id="loading">불러오는 중…</div>
 <script type="module" src="sim.js"></script>
 </body>
