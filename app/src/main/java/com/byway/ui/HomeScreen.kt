@@ -8,9 +8,11 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Space
 import com.byway.core.course.Course
+import com.byway.core.course.SceneMood
 import com.byway.core.course.ScenePlace
 import com.byway.core.course.Weather
 import com.byway.core.course.moodFor
+import com.byway.service.MyDrives
 import com.byway.service.SceneCatalog
 import java.util.Calendar
 
@@ -50,7 +52,7 @@ internal fun homeScreen(
         addView(soft, softSize)
 
         val effect = MoodEffectView(context, third)
-        effect.show(mood, night)
+        effect.show(if (MyDrives.moodOn) mood else SceneMood.PLAIN, night)
         val effectSize = when {
             third -> FrameLayout.LayoutParams(MATCH, dp(Dimens.THIRD_EFFECT_HEIGHT), Gravity.BOTTOM)
             else -> FrameLayout.LayoutParams(dp(if (full) Dimens.EFFECT_WIDTH_FULL else Dimens.EFFECT_WIDTH), MATCH)
@@ -138,15 +140,14 @@ private fun Context.nearColumn(
     addView(scroll, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = dp(Dimens.SPACE_2) })
     addSpaced(Space(context), Dimens.SPACE_2)
     val start = primaryButton("내비에 코스 입히기") { onStart(course.id) }
-    if (third) {
-        val buttons = LinearLayout(context).apply {
-            addView(start, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
-            addView(quietButton("코스 바꾸기", onBrowse), LinearLayout.LayoutParams(WRAP, MATCH))
+    val buttons = LinearLayout(context).apply {
+        addView(start, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
+        if (third) {
+            addView(quietButton("코스 바꾸기", onBrowse), LinearLayout.LayoutParams(WRAP, MATCH).apply { marginEnd = dp(Dimens.SPACE_3) })
         }
-        addView(buttons)
-    } else {
-        addView(start)
+        addView(saveToggle(course, Context::quietButton), LinearLayout.LayoutParams(WRAP, MATCH))
     }
+    addView(buttons)
 }
 
 private fun Context.placeRow(place: ScenePlace): View = row().apply {

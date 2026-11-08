@@ -6,105 +6,189 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Space
 import com.byway.core.course.Course
 import com.byway.service.MyDrives
 
-private const val PER_ROW = 3
+/** 내 코스. 큰 지도에 내 코스 번호와 지명이 있고, 코스를 고르면 경로와 설명이 나온다. 기록은 이 차에만 저장된다. */
+internal fun mineScreen(
+    context: Context,
+    kit: BrowseKit,
+    nav: Nav,
+    update: (Nav) -> Unit,
+    onStart: (String) -> Unit,
+    onBrowse: () -> Unit,
+    onAbout: () -> Unit,
+): View = with(context) {
+    val recent = MyDrives.recent(this)
+    val courses = kit.book.mine(MyDrives.saved(this), recent)
+    val third = kit.window == WindowClass.THIRD
+    val full = kit.window == WindowClass.FULL
+    var current = nav
 
-/** 프로필, 내 기록, 최근 코스, 저장한 코스, 설정. 이 차에 저장된 값만 보여 준다. */
-internal fun mineScreen(context: Context, kit: BrowseKit, onBrowse: () -> Unit, onAbout: () -> Unit): View =
-    with(context) {
-        val profile = profileCard(kit, onAbout)
-        val shelves = column().apply {
-            addView(shelfTitle("최근 달린 코스"))
-            addSpaced(recentShelf(kit), Dimens.SPACE_3)
-            addSpaced(shelfTitle("저장한 코스"), Dimens.SPACE_6)
-            addSpaced(savedShelf(kit, onBrowse), Dimens.SPACE_3)
+    FrameLayout(this).apply {
+        setBackgroundColor(palette.bg)
+        val atlas = AtlasView(context)
+        val shade = when {
+            third -> null
+            full -> AtlasShade(false, 1220f, 1440f)
+            else -> AtlasShade(false, 700f, 920f)
         }
-        val edge = dp(kit.edge)
-        if (kit.wide) {
-            LinearLayout(context).apply {
-                setPadding(edge, dp(Dimens.SPACE_8), edge, dp(Dimens.SPACE_8))
-                addView(profile, LinearLayout.LayoutParams(dp(Dimens.PROFILE_WIDTH), MATCH).apply { marginEnd = dp(Dimens.SPACE_8) })
-                addView(ScrollView(context).apply { addView(shelves) }, LinearLayout.LayoutParams(0, MATCH, 1f))
-            }
+        val picked = nav.picked?.takeIf { id -> courses.any { it.id == id } }
+        atlas.show(Tab.MINE, kit.window, courses, picked, nav.atlas, night, shade)
+        addView(atlas, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_MINE_ATLAS_HEIGHT) else MATCH))
+
+        val slot = FrameLayout(context)
+        lateinit var showList: () -> Unit
+        fun showCourse(id: String) {
+            val course = courses.firstOrNull { it.id == id } ?: return
+            slot.removeAllViews()
+            slot.addView(courseCard(kit, course, recent, { showList() }, onStart), matchFrame())
+        }
+        fun pick(id: String) {
+            val camera = atlas.cameraFor(id) ?: return
+            current = current.copy(picked = id, atlas = camera)
+            update(current)
+            atlas.focusOn(camera, id)
+            showCourse(id)
+        }
+        showList = {
+            val camera = atlas.overview()
+            current = current.copy(picked = null, atlas = camera)
+            update(current)
+            atlas.focusOn(camera, null)
+            slot.removeAllViews()
+            slot.addView(myList(courses, recent, ::pick, onBrowse), matchFrame())
+        }
+        atlas.onPick = ::pick
+        atlas.onCamera = {
+            current = current.copy(atlas = it)
+            update(current)
+        }
+        atlas.addChrome(0, "내 코스") { showList() }
+        slot.addView(myList(courses, recent, ::pick, onBrowse), matchFrame())
+        picked?.let(::showCourse)
+
+        val side = column().apply {
+            val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
+            setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
+            addView(identity())
+            addSpaced(totals(kit), Dimens.SPACE_4)
+            addView(slot, fill().apply { topMargin = dp(Dimens.SPACE_4) })
+            addSpaced(toggles(kit, onAbout), Dimens.SPACE_3)
+        }
+        val sideSize = if (third) {
+            FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = dp(Dimens.THIRD_MINE_ATLAS_HEIGHT) }
         } else {
-            val body = column().apply {
-                setPadding(edge, dp(Dimens.SPACE_6), edge, dp(Dimens.SPACE_8))
-                addView(profile)
-                addSpaced(shelves, Dimens.SPACE_6)
-            }
-            ScrollView(context).apply { addView(body) }
+            FrameLayout.LayoutParams(dp(if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH), MATCH).apply { leftMargin = dp(Dimens.RAIL_WIDTH) }
         }
+        addView(side, sideSize)
     }
-
-private fun Context.shelfTitle(text: String) = label(text, Dimens.HEADING, bold = true)
-
-private fun Context.courseShelf(kit: BrowseKit, courses: List<Course>): View {
-    val cells = courses.map { coverCard(kit, it, dp(Dimens.MINE_SHELF_HEIGHT)) }
-    val used = if (kit.wide) Dimens.PROFILE_WIDTH + Dimens.SPACE_8 else 0
-    return coverRow(cells, dp(kit.cellWidth(if (kit.wide) PER_ROW else 2, used)), dp(Dimens.MINE_SHELF_HEIGHT))
-}
-
-private fun Context.recentShelf(kit: BrowseKit): View {
-    val courses = kit.book.known(MyDrives.recent(this))
-    return if (courses.isEmpty()) emptyNote("아직 끝까지 달린 코스가 없습니다") else courseShelf(kit, courses)
-}
-
-private fun Context.savedShelf(kit: BrowseKit, onBrowse: () -> Unit): View {
-    val courses = kit.book.known(MyDrives.saved(this))
-    if (courses.isNotEmpty()) return courseShelf(kit, courses)
-    return column().apply {
-        addView(emptyNote("저장한 코스가 없습니다"))
-        addSpaced(quietButton("코스 고르러 가기", onBrowse), Dimens.SPACE_3)
-    }
-}
-
-private fun Context.profileCard(kit: BrowseKit, onAbout: () -> Unit): View = column().apply {
-    asCard()
-    setPadding(dp(Dimens.SPACE_8), dp(Dimens.SPACE_8), dp(Dimens.SPACE_8), dp(Dimens.SPACE_8))
-    addView(identity())
-    addSpaced(record(), Dimens.SPACE_6)
-    if (kit.wide) addView(Space(context), fill())
-    addSpaced(toggleRow("차 안 연출", MyDrives.ambienceOn) { MyDrives.ambienceOn = it }, Dimens.SPACE_6)
-    addSpaced(toggleRow("음성 안내", MyDrives.voiceOn) { MyDrives.voiceOn = it }, Dimens.SPACE_3)
-    addSpaced(quietButton("앱 정보", onAbout), Dimens.SPACE_4)
 }
 
 private fun Context.identity(): View = row().apply {
-    val mark = label("나", Dimens.VALUE, palette.accent, bold = true).apply {
+    val mark = label("나", Dimens.HEADING, palette.accent, bold = true).apply {
         gravity = Gravity.CENTER
-        background = rounded(palette.bgPressed, Dimens.AVATAR_LARGE / 2)
+        background = rounded(palette.bgPressed, Dimens.AVATAR_MEDIUM / 2)
     }
-    addView(
-        mark,
-        LinearLayout.LayoutParams(dp(Dimens.AVATAR_LARGE), dp(Dimens.AVATAR_LARGE)).apply { marginEnd = dp(Dimens.SPACE_4) },
-    )
-    val name = column().apply {
-        addView(label("주말 드라이버", Dimens.HEADING, bold = true))
-        addView(label("이 차에 저장됩니다", Dimens.SMALL, palette.inkMuted))
+    addView(mark, LinearLayout.LayoutParams(dp(Dimens.AVATAR_MEDIUM), dp(Dimens.AVATAR_MEDIUM)).apply { marginEnd = dp(Dimens.SPACE_4) })
+    val text = column().apply {
+        addView(label("내 코스", Dimens.HEADING, bold = true))
+        addView(label("기록은 이 차에만 저장됩니다", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
     }
-    addView(name, LinearLayout.LayoutParams(0, WRAP, 1f))
+    addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
 }
 
-/** 기록이 없을 때 0을 늘어놓지 않고 무엇이 쌓이는지만 쓴다. */
-private fun Context.record(): View {
+private fun Context.totals(kit: BrowseKit): View {
     val totals = MyDrives.totals(this)
-    if (totals.finishedCourses == 0) return label("코스를 끝까지 달리면 여기에 기록이 쌓입니다", Dimens.SMALL, palette.inkMuted)
+    val values = listOf(
+        "${totals.finishedCourses}개" to "완주한 코스",
+        kmText(totals.meters) to "달린 거리",
+        "${totals.curves}개" to "지나온 굽이",
+        "${MyDrives.saved(this).size}개" to "저장한 코스",
+    )
+    val cells = values.map { (value, name) ->
+        column().apply {
+            addView(label(withSmallUnit(value), Dimens.VALUE, bold = true).tabular().atMostLines(1))
+            addView(label(name, Dimens.LABEL, palette.inkSecondary).atMostLines(1))
+        }
+    }
+    val columns = if (kit.window == WindowClass.TWO) 2 else 4
+    return grid(cells, columns, dp(Dimens.MINE_FACT_HEIGHT))
+}
+
+private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: (String) -> Unit, onBrowse: () -> Unit): View {
+    if (courses.isEmpty()) {
+        return column().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label("아직 달리거나 저장한 코스가 없습니다", Dimens.BODY))
+            addSpaced(quietButton("코스 둘러보기", onBrowse), Dimens.SPACE_3)
+        }
+    }
+    val list = column()
+    courses.forEachIndexed { i, course ->
+        val line = row().apply {
+            minimumHeight = dp(Dimens.TOUCH_MIN)
+            background = pressable(android.graphics.Color.TRANSPARENT, palette.bgPressed)
+            val inset = dp(Dimens.SPACE_2)
+            setPadding(inset, inset, inset, inset)
+            setOnClickListener { onPick(course.id) }
+            val number = label("${i + 1}", Dimens.LABEL, palette.onAccent, bold = true).tabular().apply {
+                gravity = Gravity.CENTER
+                background = rounded(palette.accent, Dimens.PLACE_NUMBER / 2)
+            }
+            addView(number, LinearLayout.LayoutParams(dp(Dimens.PLACE_NUMBER), dp(Dimens.PLACE_NUMBER)).apply { marginEnd = dp(Dimens.SPACE_3) })
+            val text = column().apply {
+                addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
+                addView(label(if (course.id in recent) "달린 코스" else "저장한 코스", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
+            }
+            addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
+        }
+        list.addSpaced(line, if (i == 0) 0 else Dimens.SPACE_2)
+    }
+    return ScrollView(this).apply {
+        isVerticalScrollBarEnabled = false
+        addView(list)
+    }
+}
+
+private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<String>, onBack: () -> Unit, onStart: (String) -> Unit): View = column().apply {
+    softBackground(course)
+    val edge = dp(Dimens.SPACE_6)
+    setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
+    val facts = kit.book.facts(course)
+    addView(label(if (course.id in recent) "달린 코스" else "저장한 코스", Dimens.LABEL).atMostLines(1))
+    addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
+    addSpaced(pickRow(course.tags), Dimens.SPACE_2)
+    addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
+    addSpaced(label(listOf(course.region, kmText(facts.meters), "굽이 ${facts.curves}개", "오르막 ${climbText(course, facts)}").joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addView(android.widget.Space(context), fill())
+    val buttons = LinearLayout(context).apply {
+        addView(quietButton("내 코스 전체", onBack), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
+        addView(primaryButton("내비에 입히기") { onStart(course.id) }, LinearLayout.LayoutParams(0, WRAP, 1f))
+    }
+    addView(buttons)
+}
+
+private fun Context.toggles(kit: BrowseKit, onAbout: () -> Unit): View {
     val cells = listOf(
-        Fact("${totals.finishedCourses}", "끝까지 달린 코스"),
-        Fact(kmText(totals.meters), "코스로 달린 거리"),
-        Fact("${totals.curves}", "지나온 굽이"),
-        Fact("${MyDrives.saved(this).size}", "저장한 코스"),
-    ).map { factCell(it, Dimens.VALUE) }
-    return grid(cells, columns = 2, rowHeight = dp(Dimens.RECORD_CELL_HEIGHT), gap = Dimens.SPACE_3)
+        toggleRow("차 안 연출", MyDrives.ambienceOn) { MyDrives.ambienceOn = it },
+        toggleRow("음성 안내", MyDrives.voiceOn) { MyDrives.voiceOn = it },
+        toggleRow("음악 앱 재생", MyDrives.musicOn) { MyDrives.musicOn = it },
+        toggleRow("분위기 효과", MyDrives.moodOn) { MyDrives.moodOn = it },
+    )
+    val columns = if (kit.window == WindowClass.FULL) 4 else 2
+    return column().apply {
+        addView(grid(cells, columns, dp(Dimens.TOUCH_MIN), gap = Dimens.SPACE_2))
+        addSpaced(smallButton("앱 정보", onAbout), Dimens.SPACE_2)
+    }
 }
 
 /** 켜고 끄는 줄. 움직임 없이 색과 위치만 바뀐다. */
 private fun Context.toggleRow(title: String, initial: Boolean, onChange: (Boolean) -> Unit): View = row().apply {
     var on = initial
     minimumHeight = dp(Dimens.TOUCH_MIN)
+    background = rounded(palette.bgDeep, Dimens.RADIUS_SM)
+    setPadding(dp(Dimens.SPACE_4), 0, dp(Dimens.SPACE_3), 0)
     val knob = View(context)
     val pill = FrameLayout(context)
     fun paint() {
@@ -118,7 +202,7 @@ private fun Context.toggleRow(title: String, initial: Boolean, onChange: (Boolea
     }
     pill.addView(knob)
     paint()
-    addView(label(title, Dimens.BODY), LinearLayout.LayoutParams(0, WRAP, 1f))
+    addView(label(title, Dimens.LABEL).atMostLines(1), LinearLayout.LayoutParams(0, WRAP, 1f))
     addView(pill, LinearLayout.LayoutParams(dp(Dimens.TOGGLE_WIDTH), dp(Dimens.TOGGLE_HEIGHT)))
     contentDescription = title
     setOnClickListener {

@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openTab(tab: Tab) {
         leaveSummary()
-        go(nav.copy(tab = tab, courseId = null, about = false))
+        go(nav.copy(tab = tab, about = false, picked = null, atlas = null))
     }
 
     private fun leaveSummary() {
@@ -138,11 +138,14 @@ class MainActivity : AppCompatActivity() {
             onBrowse = { openTab(Tab.BROWSE) },
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
-        Tab.RANKING -> rankingScreen(this, kit, nav.rankBy) { nav = nav.copy(rankBy = it) }
+        Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
         Tab.MINE -> mineScreen(
             this,
             kit,
-            onBrowse = { openTab(Tab.HOME) },
+            nav,
+            { nav = it },
+            onStart = ::start,
+            onBrowse = { openTab(Tab.BROWSE) },
             onAbout = { go(nav.copy(about = true)) },
         )
     }

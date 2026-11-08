@@ -92,7 +92,7 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
             maxWidth = context.dp(Dimens.ATLAS_CREDIT_WIDTH)
         }
         addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
-            marginEnd = edge + context.dp(Dimens.TOUCH_MIN + Dimens.SPACE_3)
+            marginEnd = edge + context.dp(Dimens.ATLAS_TOOL_ROOM)
             bottomMargin = context.dp(Dimens.SPACE_2)
         })
     }
@@ -173,7 +173,7 @@ private class AtlasCanvas(context: Context) : View(context) {
 
     fun overview(): AtlasCamera {
         val boxes = courses.map { it.second.box }
-        return if (boxes.isEmpty()) AtlasCamera(scene.koreaSize.x / 2, scene.koreaSize.y / 2, 1f) else fit(grow(union(boxes), 0.12f, 260f), focus)
+        return if (boxes.isEmpty()) fit(Box(0f, 0f, scene.koreaSize.x, scene.koreaSize.y), focus) else fit(grow(union(boxes), 0.12f, 260f), focus)
     }
 
     fun cameraFor(courseId: String): AtlasCamera? =

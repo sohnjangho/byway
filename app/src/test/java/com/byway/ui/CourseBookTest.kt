@@ -96,4 +96,12 @@ class CourseBookTest {
         assertEquals(10_000.0, lengths.sum(), 50.0)
         assertEquals(5_000.0, lengths[0], 25.0)
     }
+
+    @Test
+    fun myCoursesPutRecentFirstWithoutRepeats() {
+        val path = listOf(GeoPoint(37.0, 127.0), GeoPoint(37.1, 127.1))
+        val made = listOf("a", "b", "c").map { Course(it, it, path, listOf(Section("구간", 0, 1))) }
+        val book = CourseBook(made)
+        assertEquals(listOf("b", "a", "c"), book.mine(setOf("c", "a", "없어진 코스"), listOf("b", "a")).map { it.id })
+    }
 }

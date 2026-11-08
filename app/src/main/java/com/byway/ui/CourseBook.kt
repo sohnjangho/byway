@@ -41,6 +41,9 @@ class CourseBook(val courses: List<Course>) {
     /** 기록에 남은 코스가 앱에서 사라졌으면 뺀다. */
     fun known(ids: Collection<String>): List<Course> = ids.mapNotNull(byId::get)
 
+    /** 달린 코스를 앞에, 저장한 코스를 뒤에 둔다. 앱에서 사라진 코스는 뺀다. */
+    fun mine(saved: Set<String>, recent: List<String>): List<Course> = known((recent + saved).distinct())
+
     fun facts(course: Course): CourseFacts = measured.getValue(course.id)
 
     fun ranked(by: RankBy): List<Ranked> = rankings.getOrPut(by) { rank(courses, by) }

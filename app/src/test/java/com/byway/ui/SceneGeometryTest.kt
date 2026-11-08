@@ -22,6 +22,12 @@ class SceneGeometryTest {
     }
 
     @Test
+    fun listScreenDrawsTheThirdWindowSmaller() {
+        assertEquals(SceneRect(841f - 1394f, 70f, 1394f, 702f), sceneRect(WindowClass.THIRD, 841f, 1210f, list = true))
+        assertEquals(FadeBand(true, 490f, 550f, 1f), sceneFade(WindowClass.THIRD, list = true))
+    }
+
+    @Test
     fun fadeBands() {
         assertEquals(FadeBand(false, 1280f, 1680f, 0.2f), sceneFade(WindowClass.TWO))
         assertEquals(FadeBand(false, 960f, 1420f, 0.2f), sceneFade(WindowClass.FULL))

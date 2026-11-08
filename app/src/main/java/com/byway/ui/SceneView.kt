@@ -34,9 +34,9 @@ private const val SATELLITE_CREDIT = "Sentinel-2 cloudless by EOX IT Services Gm
 
 /** 코스 둘레 위성 그림과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
 @SuppressLint("ViewConstructor")
-internal class SceneView(context: Context, private val window: WindowClass) : FrameLayout(context) {
+internal class SceneView(context: Context, private val window: WindowClass, list: Boolean = false) : FrameLayout(context) {
     private val colors = context.palette
-    private val canvasView = SceneCanvas(context, window)
+    private val canvasView = SceneCanvas(context, window, list)
     private val fallback = CoursePathView(context)
     private val photo = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = GONE }
     private val hint = chip("")
@@ -76,7 +76,7 @@ internal class SceneView(context: Context, private val window: WindowClass) : Fr
             } else {
                 // 전체·2/3 창은 아래에 코스 띠가 있어 그 위에 둔다.
                 LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
-                    bottomMargin = context.dp(Dimens.SCENE_CREDIT_BOTTOM)
+                    bottomMargin = context.dp(if (list) Dimens.SPACE_3 else Dimens.SCENE_CREDIT_BOTTOM)
                     marginEnd = edge
                 }
             }
@@ -161,7 +161,7 @@ internal class SceneView(context: Context, private val window: WindowClass) : Fr
 }
 
 /** 그림은 그대로 두고 경로는 그 위에 그린다. 지도 라이브러리와 네트워크가 필요 없다. */
-private class SceneCanvas(context: Context, private val window: WindowClass) : View(context) {
+private class SceneCanvas(context: Context, private val window: WindowClass, private val list: Boolean) : View(context) {
     private val colors = context.palette
     private var picture: Bitmap? = null
     private var scene: CourseScene? = null
@@ -198,7 +198,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass) : V
     override fun onDraw(canvas: Canvas) {
         val bitmap = picture ?: return
         val density = resources.displayMetrics.density
-        val rect = sceneRect(window, width / density, height / density)
+        val rect = sceneRect(window, width / density, height / density, list)
         val out = RectF(rect.left * density, rect.top * density, (rect.left + rect.width) * density, (rect.top + rect.height) * density)
         drawPicture(canvas, bitmap, out, density)
         scene?.let { drawRoute(canvas, it, out) }
@@ -208,7 +208,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass) : V
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)
         paint.alpha = ((if (night) NIGHT_OPACITY else DAY_OPACITY) * 255).toInt()
         canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), out, paint)
-        val band = sceneFade(window)
+        val band = sceneFade(window, list)
         val from = band.from * density
         val to = band.to * density
         val startColor = android.graphics.Color.argb((band.alphaFrom * 255).toInt(), 0, 0, 0)

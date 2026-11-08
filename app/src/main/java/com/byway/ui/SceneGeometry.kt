@@ -11,16 +11,21 @@ private const val SCENE_HEIGHT = 1210f
 private const val THIRD_WIDTH = 1683f
 private const val THIRD_HEIGHT = 847f
 private const val THIRD_TOP = 26f
+private const val LIST_WIDTH = 1394f
+private const val LIST_HEIGHT = 702f
+private const val LIST_TOP = 70f
 
-fun sceneRect(window: WindowClass, viewW: Float, viewH: Float): SceneRect = when (window) {
-    WindowClass.THIRD -> SceneRect(viewW - THIRD_WIDTH, THIRD_TOP, THIRD_WIDTH, THIRD_HEIGHT)
+/** [list]는 랭킹처럼 1/3 창에서 목록 자리를 내느라 장면을 더 줄이는 화면이다. */
+fun sceneRect(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = false): SceneRect = when {
+    window == WindowClass.THIRD && list -> SceneRect(viewW - LIST_WIDTH, LIST_TOP, LIST_WIDTH, LIST_HEIGHT)
+    window == WindowClass.THIRD -> SceneRect(viewW - THIRD_WIDTH, THIRD_TOP, THIRD_WIDTH, THIRD_HEIGHT)
     else -> SceneRect(viewW - SCENE_WIDTH, viewH / 2 - SCENE_HEIGHT / 2, SCENE_WIDTH, SCENE_HEIGHT)
 }
 
-fun sceneFade(window: WindowClass): FadeBand = when (window) {
+fun sceneFade(window: WindowClass, list: Boolean = false): FadeBand = when (window) {
     WindowClass.TWO -> FadeBand(false, 1280f, 1680f, 0.2f)
     WindowClass.FULL -> FadeBand(false, 960f, 1420f, 0.2f)
-    WindowClass.THIRD -> FadeBand(true, 590f, 706f, 1f)
+    WindowClass.THIRD -> if (list) FadeBand(true, 490f, 550f, 1f) else FadeBand(true, 590f, 706f, 1f)
 }
 
 /** 뒤에서 읽는 그림 중 가장 나중에 요청한 것만 쓴다. */
