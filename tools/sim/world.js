@@ -3,6 +3,7 @@
 // 가까운 곳(도로 양옆 약 200m)은 3D, 먼 산과 하늘은 풍경 사진 띠를 카메라 둘레 원통에 입힌다.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { cylinderUV } from './tex.js';
 
 const SNIPPET = 1200;
 const STEP = 2;
@@ -36,18 +37,29 @@ function pickWindow(pts, start, end) {
   }
   return best;
 }
-/* 앞 점들 끝에 이어 붙인다: 첫 점을 이전 끝점으로 옮기고 첫 방향을 이전 끝 방향에 맞춘다 */
-function append(route, piece) {
+/* 앞 점들 끝에 이어 붙인다: 첫 점을 이전 끝점으로 옮기고 첫 방향을 이전 끝 방향에 맞춘다.
+   그대로 붙인 것과 좌우를 뒤집은 것을 둘 다 만들어 앞 길과 덜 겹치는 쪽을 쓴다(길이 감겨 다른 구간 위를 지나지 않게).
+   높낮이는 60%로 줄인다 */
+function placed(route, piece, mirror) {
   const last = route[route.length - 1], prev = route[route.length - 2];
   const want = Math.atan2(last.z - prev.z, last.x - prev.x);
   const have = Math.atan2(piece[1].z - piece[0].z, piece[1].x - piece[0].x);
   const rot = want - have, c = Math.cos(rot), s = Math.sin(rot), o = piece[0];
   const step = Math.hypot(last.x - prev.x, last.z - prev.z) || 20;
+  const h0 = Math.atan2(piece[1].z - piece[0].z, piece[1].x - piece[0].x), out = [];
   piece.forEach((p, i) => {
     if (i === 0) return;
-    const x = p.x - o.x, z = p.z - o.z;
-    route.push(new THREE.Vector3(last.x + x * c - z * s + Math.cos(want) * step * 0.6, last.y + (p.y - o.y), last.z + x * s + z * c + Math.sin(want) * step * 0.6));
+    let x = p.x - o.x, z = p.z - o.z;
+    if (mirror) { const along = x * Math.cos(h0) + z * Math.sin(h0), side = -x * Math.sin(h0) + z * Math.cos(h0); x = along * Math.cos(h0) + side * Math.sin(h0); z = along * Math.sin(h0) - side * Math.cos(h0); }
+    out.push(new THREE.Vector3(last.x + x * c - z * s + Math.cos(want) * step * 0.6, last.y + (p.y - o.y) * 0.6, last.z + x * s + z * c + Math.sin(want) * step * 0.6));
   });
+  return out;
+}
+function append(route, piece) {
+  const old = route.slice(0, Math.max(0, route.length - 8));
+  const gap = (cand) => Math.min(...cand.map((p) => Math.min(...old.map((q) => Math.hypot(p.x - q.x, p.z - q.z)))));
+  const a = placed(route, piece, false), b = placed(route, piece, true);
+  route.push(...(old.length && gap(b) > gap(a) ? b : a));
 }
 const lengthOf = (pts) => pts.reduce((sum, p, i) => sum + (i ? Math.hypot(p.x - pts[i - 1].x, p.z - pts[i - 1].z) : 0), 0);
 
@@ -78,7 +90,7 @@ export const zoneAt = (zones, d) => zones.find((z) => d >= z.from && d < z.to) |
 
 /* ---------- 땅, 도로, 선 ---------- */
 const HILLS = { park: [0, 0], forest: [10, 7], city: [2, 2], river: [10, -1] };
-const GRASS = { park: ['#7f9c44', '#8a9a4a'], forest: ['#7f9c44', '#a39a48'], city: ['#86a056', '#93a062'], river: ['#a3a352', '#b39a4e'] };
+const GRASS = { park: ['#8fb04c', '#9aae54'], forest: ['#8fb04c', '#b4aa52'], city: ['#96b262', '#a4b06c'], river: ['#b8b85c', '#c8ac58'] };
 function hillsAt(zones, d) {
   const z = zoneAt(zones, d), i = zones.indexOf(z), next = zones[i + 1];
   const h = HILLS[z.mood];
@@ -86,8 +98,9 @@ function hillsAt(zones, d) {
   const f = smooth((d - (z.to - 150)) / 150), n = HILLS[next.mood];
   return [h[0] + (n[0] - h[0]) * f, h[1] + (n[1] - h[1]) * f];
 }
-function makeGround(curve, length, zones) {
-  const offs = [-260, -150, -80, -35, -14, -5.4, -4.4, 4.4, 5.4, 14, 35, 80, 150, 260];
+function makeGround(curve, length, zones, mats) {
+  /* 단면 꼭짓점. 긴 삼각형은 다른 도로 위를 지날 수 있어 바깥도 50m 이하 간격으로 끊는다 */
+  const offs = [-150, -100, -60, -35, -20, -12, -5.4, -4.4, 4.4, 5.4, 12, 20, 35, 60, 100, 150];
   const heightAt = (d, base, off) => {
     if (Math.abs(off) <= 4.4) return base;
     const [l, r] = hillsAt(zones, d), mood = zoneAt(zones, d).mood;
@@ -98,16 +111,19 @@ function makeGround(curve, length, zones) {
     return base - 0.15 + (off < 0 ? l : r) * 3 * (1 - Math.exp(-Math.max(Math.abs(off) - 14, 0) / 50)) + (Math.abs(off) > 14 ? n * Math.min(1, (Math.abs(off) - 14) / 20) : 0);
   };
   const n = Math.floor(length / STEP), pos = [], col = [], idx = [], up = new THREE.Vector3(0, 1, 0), c = new THREE.Color();
-  /* 이어 붙인 길이 휘어 다른 구간 근처를 다시 지날 수 있다. 땅 꼭짓점이 자기 단면보다 다른 구간 도로에 더 가까우면
-     그 도로의 땅 아래로 내린다. 그래야 어느 도로에서 봐도 다른 구간의 땅이 머리 위를 덮지 않는다 */
+  const kinds = [], alt = [], moods = [], uvs = [];
+  /* 땅 꼭짓점이 자기 단면보다 다른 지점의 도로에 더 가까우면 그 도로의 땅 아래로 내린다.
+     이어 붙인 길이 다른 구간 근처를 다시 지나거나, 급커브 안쪽에서 먼 단면끼리 엇갈려 접힐 때 땅이 머리 위를 덮지 않게 한다 */
   const SAMPLE = 8, samples = curve.getSpacedPoints(Math.ceil(length / SAMPLE)), sd = samples.map((_, i) => (i * length) / (samples.length - 1));
+  const foreign = [];
   const tucked = (x, z, d, off, h) => {
     let best = -1, bd = off * off;
     for (let i = 0; i < samples.length; i++) {
-      if (Math.abs(sd[i] - d) < 120) continue;
+      if (Math.abs(sd[i] - d) < 12) continue;   /* 자기 단면 근처만 빼고 모두 본다. 급커브 안쪽에서 접힌 단면도 잡는다 */
       const dd = (samples[i].x - x) ** 2 + (samples[i].z - z) ** 2;
       if (dd < bd) { bd = dd; best = i; }
     }
+    foreign.push(best >= 0);
     if (best < 0) return h;
     const q = samples[best], rr = new THREE.Vector3().crossVectors(curve.getTangentAt(sd[best] / length), up).normalize();
     const o2 = (x - q.x) * rr.x + (z - q.z) * rr.z;
@@ -117,20 +133,34 @@ function makeGround(curve, length, zones) {
     const d = i * STEP, u = d / length, p = curve.getPointAt(u), r = new THREE.Vector3().crossVectors(curve.getTangentAt(u), up).normalize(), mood = zoneAt(zones, d).mood;
     offs.forEach((off, k) => {
       const x = p.x + r.x * off, z = p.z + r.z * off, h = heightAt(d, p.y, off);
+      uvs.push(off / 5, d / 5);
+      if (Math.abs(off) <= 5.4) foreign.push(false);
       pos.push(x, Math.abs(off) <= 5.4 ? h : tucked(x, z, d, Math.abs(off), h), z);
       const a = Math.abs(off);
-      c.set(a <= 4.4 ? (mood === 'park' && d < 70 ? '#6a6d72' : (i % 7 ? '#55585e' : '#505359')) : a <= 5.4 ? '#8d8a80' : GRASS[mood][(i + k) % 3 ? 0 : 1]);
+      kinds.push(a <= 4.4 ? (mood === 'park' && d < 70 ? 3 : 0) : a <= 5.4 ? 1 : 2); alt.push((i + k) % 3 ? 0 : 1); moods.push(mood);
+      c.set(a <= 4.4 ? (mood === 'park' && d < 70 ? '#f0f0f0' : (i % 7 ? '#e4e4e4' : '#dcdcdc')) : a <= 5.4 ? '#b8ab8e' : GRASS[mood][(i + k) % 3 ? 0 : 1]);
       col.push(c.r, c.g, c.b);
     });
   }
   const w = offs.length;
-  for (let i = 0; i < n; i++) for (let k = 0; k < w - 1; k++) { const a = i * w + k; idx.push(a, a + w, a + 1, a + 1, a + w, a + w + 1); }
+  /* 다른 지점 도로에 더 가까운 꼭짓점이 하나라도 있는 면은 그리지 않는다. 그 자리는 그 도로의 땅이 덮는다.
+     도로 면(가운데 칸)과 풀밭 면을 나눠 서로 다른 실사 재질을 쓴다 */
+  const roadK = offs.indexOf(-4.4), roadIdx = [];
+  for (let i = 0; i < n; i++) for (let k = 0; k < w - 1; k++) {
+    const a = i * w + k;
+    if (foreign[a] || foreign[a + 1] || foreign[a + w] || foreign[a + w + 1]) continue;
+    (k === roadK ? roadIdx : idx).push(a, a + w, a + 1, a + 1, a + w, a + w + 1);
+  }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.setIndex(idx.concat(roadIdx)); g.addGroup(0, idx.length, 0); g.addGroup(idx.length, roadIdx.length, 1); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, [
+    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, map: mats.grass, normalMap: mats.grassN }),
+    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, map: mats.road, normalMap: mats.roadN }),
+  ]);
   mesh.receiveShadow = true;
-  return { mesh, heightAt };
+  return { mesh, heightAt, kinds, alt, moods, mats };
 }
 function stripe(curve, from, to, off, width, color, dash) {
   const pos = [], idx = [], up = new THREE.Vector3(0, 1, 0); let q = 0;
@@ -150,7 +180,8 @@ function stripe(curve, from, to, off, width, color, dash) {
 export async function loadTrees(url) {
   const gltf = await new GLTFLoader().loadAsync(url);
   const mesh = (name) => { const o = gltf.scene.getObjectByName(name); const g = o.geometry.clone(); g.translate(-o.position.x, -o.position.y, -o.position.z); return g; };
-  return ['deciduous_0', 'deciduous_1', 'deciduous_2', 'conifer_0', 'conifer_1'].map((n) => ({ wood: mesh(n + '_wood'), leaf: mesh(n + '_leaf') }));
+  /* 블렌더 나무에는 무늬 좌표가 없어 원기둥 투영으로 만든다 */
+  return ['deciduous_0', 'deciduous_1', 'deciduous_2', 'conifer_0', 'conifer_1'].map((n) => ({ wood: cylinderUV(mesh(n + '_wood'), 2, 0.6), leaf: cylinderUV(mesh(n + '_leaf'), 3, 0.5) }));
 }
 /* 나무 무리. 계절이 바뀌면 recolor 로 잎 색만 다시 칠한다 */
 export const LEAVES = {
@@ -160,6 +191,25 @@ export const LEAVES = {
   winter: ['#e9eef3', '#dfe6ec', '#f4f7fa', '#d8dfe6'],
 };
 const CONIFER = { spring: ['#3a6a34', '#46783c'], summer: ['#2f5a2a', '#3a6630'], autumn: ['#2f5a2a', '#3a6630', '#2a4f27'], winter: ['#dce4ea', '#9fb3a6'] };
+/* 땅 색: 계절·날씨에 따라 풀과 노면을 다시 칠한다. 'zone' 은 구간 기본색 */
+const GROUND = {
+  spring: { grass: ['#9fd060', '#b2da74'], road: ['#e4e4e4', '#dcdcdc'], shoulder: '#b8ab8e' },
+  summer: { grass: ['#6aa83e', '#78b04a'], road: ['#e4e4e4', '#dcdcdc'], shoulder: '#b8ab8e' },
+  snow: { grass: ['#ffffff', '#f2f5f8'], road: ['#ffffff', '#f4f4f4'], shoulder: '#f4f6f8' },
+  wet: { grass: ['#5c7a3a', '#68803e'], road: ['#8a8d92', '#84878c'], shoulder: '#8a8070' },
+};
+export function paintGround(ground, style) {
+  const col = ground.mesh.geometry.attributes.color, c = new THREE.Color();
+  for (let i = 0; i < ground.kinds.length; i++) {
+    const k = ground.kinds[i], g = GROUND[style];
+    if (k === 3) c.set(style === 'snow' ? '#ffffff' : style === 'wet' ? '#8a8d92' : '#f0f0f0');
+    else if (!g) c.set(k === 0 ? (ground.alt[i] ? '#dcdcdc' : '#e4e4e4') : k === 1 ? '#b8ab8e' : GRASS[ground.moods[i]][ground.alt[i]]);
+    else c.set(k === 0 ? g.road[ground.alt[i]] : k === 1 ? g.shoulder : g.grass[ground.alt[i]]);
+    col.setXYZ(i, c.r, c.g, c.b);
+  }
+  col.needsUpdate = true;
+  ground.mesh.material[1].map = style === 'snow' ? ground.mats.roadSnow : ground.mats.road;
+}
 export function recolor(groups, season) {
   const c = new THREE.Color();
   groups.forEach((g) => {
@@ -168,13 +218,13 @@ export function recolor(groups, season) {
     g.leaf.instanceColor.needsUpdate = true;
   });
 }
-function plantTrees(scene, kinds, trees) {
+function plantTrees(scene, kinds, trees, mats) {
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), groups = [];
   kinds.forEach((kind, k) => {
     const list = trees.filter((t) => t.kind === k);
     if (!list.length) return;
-    const leaf = new THREE.InstancedMesh(kind.leaf, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }), list.length);
-    const wood = new THREE.InstancedMesh(kind.wood, new THREE.MeshLambertMaterial({ color: '#5a4632' }), list.length);
+    const leaf = new THREE.InstancedMesh(kind.leaf, new THREE.MeshLambertMaterial({ vertexColors: true, map: mats.leaves }), list.length);
+    const wood = new THREE.InstancedMesh(kind.wood, new THREE.MeshLambertMaterial({ map: mats.bark, normalMap: mats.barkN }), list.length);
     leaf.castShadow = wood.castShadow = true;
     list.forEach((t, i) => {
       const s = t.h / 7;
@@ -219,8 +269,13 @@ function sunSprite() {
 export async function buildWorld(course, assets) {
   const { curve, length, zones, sources } = buildRoute(course);
   const scene = new THREE.Scene();
-  const ground = makeGround(curve, length, zones);
+  const ground = makeGround(curve, length, zones, assets.mats);
   scene.add(ground.mesh);
+  /* 땅 띠 바깥: 경로에서 가장 낮은 곳보다 아래에 넓은 바닥을 깐다. 어느 도로에서도 머리 위로 오지 않는다 */
+  const lowY = Math.min(...curve.getSpacedPoints(400).map((q) => q.y)) - 12;
+  const baseTex = assets.mats.grass.clone(); baseTex.repeat.set(2400, 2400); baseTex.needsUpdate = true;
+  const base = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), new THREE.MeshLambertMaterial({ map: baseTex, color: '#8fb04c' }));
+  base.rotation.x = -Math.PI / 2; base.position.set(curve.getPointAt(0.5).x, lowY, curve.getPointAt(0.5).z); base.receiveShadow = true; scene.add(base);
   /* 도로선은 주차장 출구 길(통로 끝)부터 끝까지 */
   const lineFrom = 70;
   scene.add(stripe(curve, lineFrom, length, -0.12, 0.12, '#f2c230'), stripe(curve, lineFrom, length, 0.12, 0.12, '#f2c230'));
@@ -239,7 +294,8 @@ export async function buildWorld(course, assets) {
   const groundAt = (x, z) => { const n = nearest(x, z); return { y: ground.heightAt(n.d, n.p.y, n.off), dist: n.dist }; };
   const clear = (x, z, gap) => nearest(x, z).dist >= gap;
   /* 주차장: 칸, 차, 건물 */
-  const lot = new THREE.Mesh(new THREE.PlaneGeometry(140, 70), new THREE.MeshLambertMaterial({ color: '#6a6d72' }));
+  const lotTex = assets.mats.road.clone(); lotTex.repeat.set(28, 14); lotTex.needsUpdate = true;
+  const lot = new THREE.Mesh(new THREE.PlaneGeometry(140, 70), new THREE.MeshLambertMaterial({ map: lotTex, color: '#f0f0f0' }));
   lot.rotation.x = -Math.PI / 2; lot.position.set(20, 0.01, -14); lot.receiveShadow = true; scene.add(lot);
   const line = (x, z, w, d) => { const g = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: '#e9e9e4' })); g.rotation.x = -Math.PI / 2; g.position.set(x, 0.03, z); scene.add(g); };
   for (let x = -30; x <= 56; x += 2.7) { line(x - 1.35, 0, 0.12, 5.4); line(x - 1.35, -28, 0.12, 5.4); }
@@ -268,7 +324,7 @@ export async function buildWorld(course, assets) {
       trees.push({ x, z: zz, y: g.y, h: 7 + r() * 6, kind: Math.floor(r() * 5), seed: r() });
     }
   });
-  const treeGroups = plantTrees(scene, assets.trees, trees);
+  const treeGroups = plantTrees(scene, assets.trees, trees, assets.mats);
   recolor(treeGroups, 'autumn');
   /* 도심 건물 */
   const city = zones.find((z) => z.mood === 'city'), blocks = [], rb = rng(99);
@@ -278,10 +334,11 @@ export async function buildWorld(course, assets) {
     const off = 30 + rb() * 140, { p, r } = frame(d), x = p.x + r.x * off * side, z = p.z + r.z * off * side;
     const g = groundAt(x, z);
     if (g.dist < 22) continue;
-    blocks.push({ x, z, y: g.y, h: 12 + Math.pow(rb(), 2) * 70, w: 12 + rb() * 18, dd: 12 + rb() * 16, c: ['#b9bcc2', '#d6d0c4', '#9ea7b3', '#c9c2b6', '#8f969f'][Math.floor(rb() * 5)] });
+    blocks.push({ x, z, y: g.y, h: 12 + Math.pow(rb(), 2) * 70, w: 12 + rb() * 18, dd: 12 + rb() * 16, c: ['#ffffff', '#f2ece2', '#e4e9ef', '#efe8dc', '#dfe3e7'][Math.floor(rb() * 5)] });
   }
   const box = new THREE.BoxGeometry(1, 1, 1); box.translate(0, 0.5, 0);
-  const houses = new THREE.InstancedMesh(box, new THREE.MeshLambertMaterial(), blocks.length); houses.castShadow = true;
+  const facade = assets.mats.facade.clone(); facade.repeat.set(2, 3); facade.needsUpdate = true;
+  const houses = new THREE.InstancedMesh(box, new THREE.MeshLambertMaterial({ map: facade }), blocks.length); houses.castShadow = true;
   blocks.forEach((b, i) => { m.compose(new THREE.Vector3(b.x, b.y - 0.5, b.z), new THREE.Quaternion().setFromAxisAngle(up, (i * 0.7) % 1.5), new THREE.Vector3(b.w, b.h, b.dd)); houses.setMatrixAt(i, m); houses.setColorAt(i, col.set(b.c)); });
   scene.add(houses);
   /* 강: 강변 구간 오른쪽 */
@@ -304,6 +361,10 @@ export async function buildWorld(course, assets) {
   const lamps = new THREE.InstancedMesh(pole, new THREE.MeshLambertMaterial({ color: '#6c7075' }), poleSpots.length);
   poleSpots.forEach(([x, y, z], i) => { m.makeTranslation(x, y - 0.2, z); lamps.setMatrixAt(i, m); });
   lamps.castShadow = true; scene.add(lamps);
+  /* 가로등 불: 밤에만 밝힌다 */
+  const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#4a4a44', toneMapped: false }), poleSpots.length);
+  poleSpots.forEach(([x, y, z], i) => { m.makeTranslation(x, y + 7.9, z); bulbs.setMatrixAt(i, m); });
+  scene.add(bulbs);
   /* 하늘과 빛 */
   const dome = skyDome(); scene.add(dome);
   const backs = assets.skies.map((s) => backdrop(s.tex, s.w, s.h)); backs.forEach((b) => scene.add(b));
@@ -314,5 +375,5 @@ export async function buildWorld(course, assets) {
   Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 700 }); sun.shadow.bias = -0.0006;
   scene.add(sun, sun.target);
   scene.fog = new THREE.Fog('#c6d4e2', 250, 3000);
-  return { scene, curve, length, zones, sources, frame, treeGroups, trees, dome, backs, sunDisc, hemi, sun, water, ground, groundAt, lamps };
+  return { scene, curve, length, zones, sources, frame, treeGroups, trees, dome, backs, sunDisc, hemi, sun, water, ground, groundAt, lamps, bulbs, base };
 }

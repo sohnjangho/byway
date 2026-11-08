@@ -24,7 +24,7 @@ export function createApp(root, { course, navmap, onApply, onSay }) {
         <div class="end"><span>⌕</span><strong>안내 종료</strong></div></div>
     </div>
     <div class="pane" id="pane"><section class="drive" id="drive">
-      <div class="glow" id="glow"></div>
+      <div class="glow" id="glow"></div><div class="scene-mood"></div>
       <div class="drive-head"><span class="t-drive-line bold">${COURSE.name}</span><span class="t-label ink-2 num" id="secno"></span></div>
       <h1 class="t-drive-section" id="secname"></h1>
       <div class="drive-remain"><span class="t-drive-number num" id="remain"></span><span class="t-drive-unit ink-2">km</span><span class="t-drive-line ink-2">남은 거리</span></div>
@@ -58,11 +58,18 @@ export function createApp(root, { course, navmap, onApply, onSay }) {
   /* 스팟: 코스 파일의 스팟 가운데 경로 위 가까운 점 */
   const spots = course.spots.map((s) => { let bi = 0, bd = Infinity; course.path.forEach((p, i) => { const d = (p[0] - s.lat) ** 2 + (p[1] - s.lon) ** 2; if (d < bd) { bd = d; bi = i; } }); return { name: s.name, at: cum[bi] }; });
 
-  const app = { applied: false, finished: false, section: -1, saidSpots: new Set(), mode: 'browse' };
+  const app = { applied: false, finished: false, section: -1, saidSpots: new Set(), mode: 'browse', page: 'MainFullDay.dc.html' };
+  /* 계절·날씨를 고르면 정차 중 에움길이 그 분위기 메인(2/3 창)으로 바뀐다. 추천 코스와 화면 효과가 함께 바뀐다 */
+  const MOOD_PAGE = { spring: 'MainSpringDay', summer: 'MainSummerDay', autumn: 'MainAutumnDay', winter: 'MainWinterDay', rain: 'MainRainDay', snow: 'MainSnowDay', sunset: 'MainSunsetDay', night: 'MainNight' };
+  app.setMood = (mood) => {
+    app.page = mood ? MOOD_PAGE[mood] + '.dc.html' : 'MainFullDay.dc.html';
+    $('appFull').classList.toggle('as-area', !!mood);
+    if (!app.applied) $('appFrame').src = SCREENS + app.page;
+  };
   /* 시안 화면에서 '내비에 코스 입히기'를 누르면 Drive 화면으로 넘어가려 한다. 그 순간 가로채 주행 칸으로 바꾼다 */
   $('appFrame').addEventListener('load', () => {
     const path = $('appFrame').contentWindow.location.pathname;
-    if (/Drive/.test(path)) { $('appFrame').src = SCREENS + 'MainFullDay.dc.html'; apply(); }
+    if (/Drive/.test(path)) { $('appFrame').src = SCREENS + app.page; apply(); }
   });
   function apply() {
     if (app.applied) return;

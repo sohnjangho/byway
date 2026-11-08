@@ -8,6 +8,7 @@
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }</script>
 <link rel="stylesheet" href="../../design/screens/tokens.css">
 <link rel="stylesheet" href="../../design/screens/app.css">
+<link rel="stylesheet" href="../../design/screens/effects.css">
 <link rel="stylesheet" href="sim.css">
 <script src="../../design/screens/courses.js"></script>
 </head>
@@ -18,6 +19,7 @@
   <div class="hud-title">에움길 주행 시뮬레이터 <span>시안 · 연출</span></div>
   <div class="hud-keys"><b>↑/W</b> 가속 · <b>↓/S</b> 감속·후진 · <b>D/P</b> 기어 · <b>마우스 끌기</b> 둘러보기 · <b>1 2 3 4</b> 앞·왼쪽·오른쪽·뒤 · <b>화면 클릭</b> 에움길 조작 · <b>Esc</b> 돌아가기</div>
   <div class="hud-state"><span id="hudZone"></span><span id="hudSpeed"></span></div>
+  <div class="hud-weather"><button data-preset="auto">자동</button><button data-preset="spring">봄</button><button data-preset="summer">여름</button><button data-preset="autumn">가을</button><button data-preset="winter">겨울</button><button data-preset="rain">비</button><button data-preset="snow">눈</button><button data-preset="sunset">노을</button><button data-preset="night">밤</button></div>
   <div class="hud-jump"><button data-jump="park">주차장</button><button data-jump="forest">숲길</button><button data-jump="city">도심</button><button data-jump="river">강변</button></div>
 </div>
 <div class="loading" id="loading">불러오는 중…</div>

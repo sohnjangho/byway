@@ -75,3 +75,9 @@ body.screen-mode #gl { pointer-events: none; }
 .voice i { font-style: normal; color: #f0a45a; font-size: 16px; }
 .cabin-note { position: fixed; right: 16px; top: 16px; z-index: 6; padding: 10px 14px; border-radius: 10px; background: rgba(10,11,13,0.72); color: #fff; font-size: 14px; line-height: 20px; max-width: 320px; }
 .cabin-note b { color: #f0a45a; }
+
+.pleos .appfull.as-area { left: 853px; width: 1680px; }
+.pleos .pane .scene-mood { width: 100%; -webkit-mask-image: none; mask-image: none; z-index: 0; }
+.hud-weather { display: flex; flex-wrap: wrap; gap: 6px; pointer-events: auto; background: none; padding: 0; }
+.hud-weather button { border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.hud-weather button.on, .hud-jump button:active { background: #f0a45a; color: #231509; font-weight: 700; }

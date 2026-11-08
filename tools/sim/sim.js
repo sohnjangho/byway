@@ -2,9 +2,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
-import { buildWorld, loadTrees, zoneAt, LANE } from './world.js';
-import { createEnv } from './env.js';
+import { buildWorld, loadTrees, zoneAt, LANE, recolor, paintGround } from './world.js';
+import { createEnv, PRESETS } from './env.js';
 import { createApp, SECTION_INFO } from './app.js';
+import { loadMaterials, cabinMaterials, boxUV } from './tex.js';
 
 const DEMO = '../demo/';
 const MAX_FWD = 60 / 3.6, MAX_REV = 12 / 3.6;          // 최고 속도(m/s)
@@ -26,14 +27,15 @@ addEventListener('resize', resize); resize();
 
 /* ---------- 자료 ---------- */
 const tex = (url) => new THREE.TextureLoader().loadAsync(url).then((t) => { t.colorSpace = THREE.SRGBColorSpace; return t; });
-const [course, navmap, trees, cabinGltf, skyDay, skyDusk] = await Promise.all([
+const [course, navmap, trees, cabinGltf, skyDay, skyDusk, skyCloud, skySnow, mats, cmats] = await Promise.all([
   fetch('../../app/src/main/assets/courses/paldang-sunset.json').then((r) => r.json()),
   fetch(DEMO + 'osm/navmap.json').then((r) => r.json()),
   loadTrees(DEMO + 'models/trees.glb'),
   new GLTFLoader().loadAsync('models/cabin.glb'),
-  tex(DEMO + 'sky/city.jpg'), tex(DEMO + 'sky/river.jpg'),
+  tex(DEMO + 'sky/city.jpg'), tex(DEMO + 'sky/river.jpg'), tex(DEMO + 'sky/forest.jpg'), tex(DEMO + 'sky/snow.jpg'),
+  loadMaterials(), cabinMaterials(),
 ]);
-const world = await buildWorld(course, { trees, skies: [{ tex: skyDay, w: 2220, h: 500 }, { tex: skyDusk, w: 2560, h: 440 }] });
+const world = await buildWorld(course, { trees, mats, skies: [{ tex: skyDay, w: 2220, h: 500 }, { tex: skyDusk, w: 2560, h: 440 }, { tex: skyCloud, w: 2560, h: 452 }, { tex: skySnow, w: 2560, h: 410 }] });
 const env = createEnv(world);
 
 /* ---------- 차 실내 ---------- */
@@ -47,6 +49,9 @@ cabin.traverse((o) => {
   if (!o.isMesh) return;
   named[o.name] = o;
   o.castShadow = false; o.receiveShadow = true;
+  /* 실사 재질: 블렌더 재질 이름(leather·trim_dark·trim_mid·headliner)에 맞춰 바꾸고, 무늬 좌표는 상자 투영으로 만든다 */
+  const mname = o.material && o.material.name;
+  if (cmats[mname]) { o.geometry = boxUV(o.geometry, 1.5); o.material = cmats[mname]; }
   if (o.name.startsWith('glass') || o.name.startsWith('window_')) o.material = new THREE.MeshBasicMaterial({ color: '#a8bccb', transparent: true, opacity: 0.07, depthWrite: false });
   if (o.name === 'screen' || o.name === 'slim') o.material = hole;
   if (o.name === 'ambient') o.material = new THREE.MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false });
@@ -105,6 +110,48 @@ app.onSection = (si) => {
   cabinNote.innerHTML = `<b>차 안 연출</b> ${info.cabin}<br><b>음악</b> 연결된 음악 앱에 '${info.music}' 재생 요청`;
 };
 const shiftImgs = Array.from({ length: SHIFT_FRAMES }, (_, i) => { const im = new Image(); im.src = `${DEMO}pleos/shift/${String(i).padStart(3, '0')}.jpg`; return im; });
+
+/* ---------- 날씨 효과 ---------- */
+const BOX = [60, 30, 60];
+function particles(n, rain) {
+  const pos = new Float32Array(n * (rain ? 6 : 3));
+  for (let i = 0; i < n; i++) {
+    const x = (Math.random() - 0.5) * BOX[0], y = Math.random() * BOX[1], z = (Math.random() - 0.5) * BOX[2];
+    if (rain) pos.set([x, y, z, x + 0.05, y - 0.55, z], i * 6); else pos.set([x, y, z], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const o = rain ? new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#c8d2dc', transparent: true, opacity: 0.55 }))
+    : new THREE.Points(g, new THREE.PointsMaterial({ color: '#ffffff', size: 0.09, transparent: true, opacity: 0.95 }));
+  o.frustumCulled = false; o.visible = false; world.scene.add(o); return o;
+}
+const rainFx = particles(7000, true), snowFx = particles(6000, false);
+function fall(o, dt, speed, rain) {
+  const a = o.geometry.attributes.position, per = rain ? 2 : 1;
+  for (let i = 0; i < a.count; i += per) {
+    let y = a.getY(i) - speed * dt; let x = a.getX(i) + (rain ? 0 : Math.sin(state.t * 0.8 + i) * 0.3 * dt);
+    if (y < 0) y += BOX[1];
+    a.setXY(i, x, y); if (rain) a.setXY(i + 1, x + 0.05, y - 0.55);
+  }
+  a.needsUpdate = true;
+}
+/* 전조등 두 개: 비·눈·밤에 켠다 */
+const heads = [-0.7, 0.7].map((x) => { const s = new THREE.SpotLight('#f4f6ff', 0, 80, 0.38, 0.6, 1.4); s.position.set(x, 0.75, -2.3); s.target.position.set(x * 2, 0, -40); car.add(s, s.target); return s; });
+/* 와이퍼: 앞 유리 아래 두 개. 유리면 안에서 부채꼴로 쓸어 올린다 */
+const wipers = [-0.45, 0.2].map((x) => {
+  const pivot = new THREE.Group(); pivot.position.set(x, 0.99, -0.86); pivot.rotation.x = -0.56;
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.014, 0.025), new THREE.MeshLambertMaterial({ color: '#111214' })); blade.position.x = 0.29; blade.geometry.translate(0, 0, 0);
+  pivot.add(blade); car.add(pivot); pivot.visible = false; return pivot;
+});
+function setPreset(name) {
+  const pr = PRESETS[name]; env.setPreset(name);
+  recolor(world.treeGroups, pr.season); paintGround(world.ground, pr.ground);
+  rainFx.visible = !!pr.rain; snowFx.visible = !!pr.snow; wipers.forEach((w) => (w.visible = !!pr.wipers));
+  heads.forEach((h) => (h.intensity = pr.lights ? (pr.night ? 140 : 60) : 0));
+  renderer.toneMappingExposure = pr.night ? 1.6 : 1.25;
+  app.setMood(pr.mood); screenEl.dataset.mood = pr.mood || 'plain';
+  document.querySelectorAll('[data-preset]').forEach((b) => b.classList.toggle('on', b.dataset.preset === name));
+}
+document.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => setPreset(b.dataset.preset)));
 
 /* ---------- 상태 ---------- */
 const state = { d: 4, v: 0, gear: 'P', shiftAt: -1, ambient: new THREE.Color('#ffd9a0'), yaw: 0, pitch: -0.06, targetYaw: 0, screenMode: false, t: 0 };
@@ -172,8 +219,12 @@ function step(dt) {
     camera.position.lerp(EYE, Math.min(1, dt * 6));
     camera.quaternion.slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(state.pitch, state.yaw, 0, 'YXZ')), Math.min(1, dt * 10));
   }
-  /* 하늘과 빛 */
+  /* 하늘과 빛, 날씨 */
   const eye = camera.getWorldPosition(new THREE.Vector3()), here = env.apply(state.d, eye);
+  [rainFx, snowFx].forEach((o) => o.position.set(eye.x, eye.y - 8, eye.z));
+  if (rainFx.visible) fall(rainFx, dt, 16, true);
+  if (snowFx.visible) fall(snowFx, dt, 1.4, false);
+  wipers.forEach((w, i) => { if (w.visible) w.rotation.z = 0.15 + 1.25 * (0.5 - 0.5 * Math.cos(state.t * 3.2)); });
   /* 센터 화면과 슬림 화면 */
   car.updateMatrixWorld(true);
   screens.forEach((s) => { s.obj.matrix.copy(car.matrixWorld).multiply(s.local); s.obj.matrixWorldNeedsUpdate = true; });
@@ -209,4 +260,4 @@ function frame() {
 document.getElementById('loading').remove();
 frame();
 /* 시험용: 상태를 밖에서 정할 수 있다 */
-window.sim = { state, world, step, app, say, setView: (yaw) => { state.targetYaw = state.yaw = yaw; }, enterScreen, leaveScreen };
+window.sim = { state, world, step, app, say, setPreset, setView: (yaw) => { state.targetYaw = state.yaw = yaw; }, enterScreen, leaveScreen };
