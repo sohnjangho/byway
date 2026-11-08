@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.byway"
     compileSdk = 34
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.byway"

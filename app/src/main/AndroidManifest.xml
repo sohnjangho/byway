@@ -30,6 +30,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
+        <uses-library android:name="android.car" android:required="false" />
+
         <activity
             android:name=".ui.MainActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode"
