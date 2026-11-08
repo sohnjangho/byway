@@ -133,7 +133,8 @@ class MainActivity : AppCompatActivity() {
             kit,
             courseId = nav.courseId,
             weather = demoWeather(),
-            onPick = ::open,
+            stripX = nav.stripX,
+            onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
         )

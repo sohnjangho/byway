@@ -2,9 +2,14 @@ package com.byway.ui
 
 import com.byway.core.course.Course
 
+private const val SATELLITE = "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
+
+/** 위성 그림과 코스 선이 보이는 화면의 출처. */
+const val MAP_CREDIT = "$SATELLITE · 코스 © OpenStreetMap contributors"
+
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",
-    "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)",
+    SATELLITE,
     "고도: Open-Meteo, Copernicus DEM",
 )
 

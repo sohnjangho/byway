@@ -36,7 +36,6 @@ private const val REGION_LABEL_MAX = 1.6f
 private const val CITY_LABEL_MAX = 14f
 private const val NAMED_MIN = 2.4f
 private const val CLOSE_RATIO = 0.6f
-private const val SATELLITE_CREDIT = "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
 
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
 internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float)
@@ -85,7 +84,7 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
             marginEnd = edge
             bottomMargin = context.dp(Dimens.ATLAS_TOOLS_BOTTOM)
         })
-        val credit = context.label(SATELLITE_CREDIT, Dimens.LABEL, colors.onPhoto).apply {
+        val credit = context.label(MAP_CREDIT, Dimens.LABEL, colors.onPhoto).apply {
             background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
             val inset = context.dp(Dimens.CREDIT_PADDING)
             setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
@@ -231,7 +230,7 @@ private class AtlasCanvas(context: Context) : View(context) {
         animator?.cancel()
         pinch.onTouchEvent(event)
         if (!pinch.isInProgress) taps.onTouchEvent(event)
-        if (event.actionMasked == MotionEvent.ACTION_UP) onCamera(camera)
+        if (reportsCamera(event.actionMasked == MotionEvent.ACTION_UP, animator?.isRunning == true)) onCamera(camera)
         return true
     }
 

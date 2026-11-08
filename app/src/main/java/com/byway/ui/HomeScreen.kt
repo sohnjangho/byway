@@ -22,7 +22,8 @@ internal fun homeScreen(
     kit: BrowseKit,
     courseId: String?,
     weather: Weather,
-    onPick: (Course) -> Unit,
+    stripX: Int?,
+    onPick: (Course, Int) -> Unit,
     onStart: (String) -> Unit,
     onBrowse: () -> Unit,
 ): View = with(context) {
@@ -71,6 +72,8 @@ internal fun homeScreen(
                 addView(near, fill().apply { topMargin = dp(Dimens.SPACE_3) })
             }
         }
+        // 글 칸의 빈 곳을 눌러도 뒤의 사진이 넘어가지 않게 한다.
+        side.isClickable = true
         val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
         side.setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else dp(Dimens.SPACE_4))
         val sideSize = when {
@@ -83,7 +86,7 @@ internal fun homeScreen(
         addView(side, sideSize)
 
         if (!third) {
-            val strip = courseStrip(kit, course, onPick)
+            val strip = courseStrip(kit, course, stripX, onPick)
             addView(
                 strip,
                 FrameLayout.LayoutParams(MATCH, dp(Dimens.STRIP_CARD_HEIGHT), Gravity.BOTTOM).apply {

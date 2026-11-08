@@ -63,7 +63,6 @@ docs/       제작 가이드
 | Maven | https://nexus-playground.pleos.ai/repository/maven-releases/ |
 | Emulator | Pleos Connect system image (API 34), Cold boot, RAM 4GB |
 
-**주의**: 이 맥미니에는 Java·Android SDK·Gradle이 설치되어 있지 않다. 빌드 환경 구성이 선행되어야 한다.
 
 ## 상태
 
@@ -71,15 +70,35 @@ docs/       제작 가이드
 - [x] SDK 조사
 - [x] **빌드 환경 구성** (JDK 21, Android SDK 34, Gradle 8.9, Android Studio)
 - [x] **프로젝트 빌드 성공** (`app-debug.apk` 11MB)
-- [ ] Pleos Emulator 구성
-- [ ] 프로토타입 화면 (코스 목록 → 실행 → 스팟)
-- [ ] 시연 영상
-- [ ] GitHub 저장소 공개
+- [x] Pleos Emulator 구성
+- [x] 새 화면 구조 이전(위성 장면, 한국 지도, 레일 메뉴)
+- [x] 시연 영상
+
+## 실행 방법
+
+APK 위치: `apk/` 폴더의 `팀명_앱이름_release.apk`
+
+```bash
+adb install -r apk/*_release.apk
+adb shell pm grant --user 10 com.byway pleos.car.permission.FUSED_LOCATION
+adb shell am start --user 10 -n com.byway/.ui.MainActivity
+```
+
+기어가 P일 때 코스를 고를 수 있습니다. 홈의 "내비에 코스 입히기"를 누르면 차 내비에 코스가 올라갑니다.
+
+## 테스트 환경
+
+- Pleos Connect 에뮬레이터(AVD `Pleos_Connect`, API 34, 2560×1440)
+- 앱 창 2/3(1700폭), 1/3(841폭), 주야간 모드에서 확인. 전체 창(2560폭)은 에뮬레이터에서 창을 넓힐 수 없어 화면 확인 전
+- 에뮬레이터 내비 위치가 판교로 고정되어 있어 주행 시연은 판교 출발 코스(팔당 노을)로 합니다
+- 기어와 속도는 Virtual Console(`adb forward tcp:8088 tcp:8088`)로 바꿉니다. `tools/record-demo.sh` 참고
 
 ## 빌드
 
+JDK 21, Android SDK 34, Gradle 8.9가 필요합니다.
+
 ```bash
-cd ~/projects/byway
-./gradlew assembleDebug
-# → app/build/outputs/apk/debug/app-debug.apk
+./gradlew :core:test :app:testDebugUnitTest
+./gradlew assembleDebug    # app/build/outputs/apk/debug/
+./gradlew assembleRelease  # 서명 설정 ~/.byway/release.properties 필요
 ```

@@ -41,6 +41,8 @@ data class Nav(
     val atlas: AtlasCamera? = null,
     /** 둘러보기에서 고른 코스. 지도가 이 코스로 확대되어 있다. */
     val picked: String? = null,
+    /** 홈 코스 띠를 넘겨 둔 자리(px). */
+    val stripX: Int? = null,
 ) : Serializable
 
 /** 한 Activity 안에서 바뀌는 화면들. */

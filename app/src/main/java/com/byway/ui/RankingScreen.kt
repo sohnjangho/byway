@@ -72,6 +72,7 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
         }
 
         val side = column().apply {
+            isClickable = true
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else dp(Dimens.SPACE_4))
             if (!third) {

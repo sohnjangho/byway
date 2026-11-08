@@ -37,4 +37,10 @@ class CreditsTest {
         assertTrue(OPEN_SOURCE_NOTICES.isNotEmpty())
         OPEN_SOURCE_NOTICES.forEach { assertTrue(it, it.contains("Apache")) }
     }
+
+    @Test
+    fun mapCreditNamesSatelliteAndRoads() {
+        assertTrue(MAP_CREDIT.contains("Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"))
+        assertTrue(MAP_CREDIT.contains("OpenStreetMap"))
+    }
 }

@@ -42,4 +42,11 @@ class SceneGeometryTest {
         assertFalse(latest.isCurrent(first))
         assertTrue(latest.isCurrent(second))
     }
+
+    @Test
+    fun photoFadesUnderTheTextColumn() {
+        assertEquals(FadeBand(false, 560f, 760f, 0.22f), photoFade(WindowClass.TWO, 1184f))
+        assertEquals(FadeBand(false, 960f, 1420f, 0.2f), photoFade(WindowClass.FULL, 1210f))
+        assertEquals(FadeBand(true, 584f, 730f, 1f), photoFade(WindowClass.THIRD, 730f))
+    }
 }

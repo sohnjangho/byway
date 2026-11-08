@@ -28,6 +28,13 @@ fun sceneFade(window: WindowClass, list: Boolean = false): FadeBand = when (wind
     WindowClass.THIRD -> if (list) FadeBand(true, 490f, 550f, 1f) else FadeBand(true, 590f, 706f, 1f)
 }
 
+/** 풍경 사진이 정보 칸 아래에서 흐려지는 띠. */
+fun photoFade(window: WindowClass, viewH: Float): FadeBand = when (window) {
+    WindowClass.TWO -> FadeBand(false, 560f, 760f, 0.22f)
+    WindowClass.FULL -> FadeBand(false, 960f, 1420f, 0.2f)
+    WindowClass.THIRD -> FadeBand(true, viewH * 0.8f, viewH, 1f)
+}
+
 /** 뒤에서 읽는 그림 중 가장 나중에 요청한 것만 쓴다. */
 class LatestOnly {
     private var last = 0

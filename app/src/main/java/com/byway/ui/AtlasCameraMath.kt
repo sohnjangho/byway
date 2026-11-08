@@ -44,4 +44,7 @@ fun toScreen(x: Float, y: Float, camera: AtlasCamera, focus: Box): Px = Px(
 
 fun courseCamera(spot: AtlasSpot, focus: Box): AtlasCamera = fit(grow(spot.box, 0.18f, 120f), focus)
 
+/** 손을 뗐을 때 지금 자리를 저장할지. 핀을 눌러 확대가 시작됐으면 목표 자리가 이미 저장되어 있다. */
+fun reportsCamera(lifted: Boolean, moving: Boolean): Boolean = lifted && !moving
+
 fun clampScale(scale: Float, minScale: Float, maxScale: Float): Float = scale.coerceIn(minScale, maxScale)

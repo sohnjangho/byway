@@ -18,7 +18,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.TextView
 import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
@@ -30,7 +29,6 @@ private const val NIGHT_OPACITY = 0.66f
 private const val DAY_OPACITY = 0.86f
 private const val PIN_RADIUS = 20f
 private const val GLOW_ALPHA = 0.22f
-private const val SATELLITE_CREDIT = "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
 
 /** 코스 둘레 위성 그림과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
 @SuppressLint("ViewConstructor")
@@ -38,10 +36,10 @@ internal class SceneView(context: Context, private val window: WindowClass, list
     private val colors = context.palette
     private val canvasView = SceneCanvas(context, window, list)
     private val fallback = CoursePathView(context)
-    private val photo = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = GONE }
+    private val photo = ScenePhoto(context, window).apply { visibility = GONE }
     private val hint = chip("")
     private val photoCredit = chip("")
-    private val credit = chip(SATELLITE_CREDIT)
+    private val credit = chip(MAP_CREDIT)
     private val latest = LatestOnly()
     private val slop = ViewConfiguration.get(context).scaledTouchSlop * SWIPE_FACTOR
     private var downX = 0f
@@ -111,9 +109,9 @@ internal class SceneView(context: Context, private val window: WindowClass, list
                 }
             }
         }
-        photo.setImageDrawable(null)
+        photo.setPicture(null)
         if (sceneryAvailable) {
-            Covers.loadScenery(context, course) { if (latest.isCurrent(token)) photo.setImageBitmap(it) }
+            Covers.loadScenery(context, course) { if (latest.isCurrent(token)) photo.setPicture(it) }
             photoCredit.text = course.sceneryCredit
         }
     }
@@ -157,6 +155,47 @@ internal class SceneView(context: Context, private val window: WindowClass, list
 
     private companion object {
         const val SWIPE_FACTOR = 4
+    }
+}
+
+/** 풍경 사진. 정보 칸 아래쪽은 흐려서 글이 사진 위에 그대로 놓이지 않게 한다. */
+private class ScenePhoto(context: Context, private val window: WindowClass) : View(context) {
+    private var picture: Bitmap? = null
+    private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val mask = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) }
+
+    fun setPicture(bitmap: Bitmap?) {
+        picture = bitmap
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val bitmap = picture ?: return
+        val density = resources.displayMetrics.density
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val layer = canvas.saveLayer(0f, 0f, w, h, null)
+        canvas.drawBitmap(bitmap, centerCrop(bitmap), Rect(0, 0, width, height), paint)
+        val band = photoFade(window, h / density)
+        val from = band.from * density
+        val to = band.to * density
+        val start = android.graphics.Color.argb((band.alphaFrom * 255).toInt(), 0, 0, 0)
+        mask.shader = if (band.vertical) {
+            LinearGradient(0f, from, 0f, to, start, android.graphics.Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        } else {
+            LinearGradient(from, 0f, to, 0f, start, android.graphics.Color.BLACK, Shader.TileMode.CLAMP)
+        }
+        canvas.drawRect(0f, 0f, w, h, mask)
+        canvas.restoreToCount(layer)
+    }
+
+    private fun centerCrop(bitmap: Bitmap): Rect {
+        val scale = maxOf(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
+        val w = (width / scale).toInt()
+        val h = (height / scale).toInt()
+        val left = (bitmap.width - w) / 2
+        val top = (bitmap.height - h) / 2
+        return Rect(left, top, left + w, top + h)
     }
 }
 

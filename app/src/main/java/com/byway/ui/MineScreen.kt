@@ -69,6 +69,7 @@ internal fun mineScreen(
         picked?.let(::showCourse)
 
         val side = column().apply {
+            isClickable = true
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
             addView(identity())

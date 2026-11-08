@@ -66,6 +66,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
         }
 
         val body = column().apply {
+            isClickable = true
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) 0 else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
             if (!third) {

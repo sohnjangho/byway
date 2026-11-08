@@ -37,5 +37,12 @@ fun placeLine(place: ScenePlace): String {
     return listOf(place.label, place.note, "${km}km 지점").filter { it.isNotBlank() }.joinToString(" · ")
 }
 
+/** 고른 카드가 이미 보이면 띠를 그대로 두어, 누른 자리 밑에서 띠가 움직이지 않게 한다. */
+fun stripScrollFor(previous: Int?, index: Int, step: Int, cardWidth: Int, viewWidth: Int): Int {
+    val left = index * step
+    if (previous != null && left >= previous && left + cardWidth <= previous + viewWidth) return previous
+    return left
+}
+
 /** 출처가 없는 사진은 보이지 않는다. */
 fun canSwipeToScenery(credit: String, hasFile: Boolean): Boolean = credit.isNotBlank() && hasFile

@@ -60,4 +60,12 @@ class AtlasCameraMathTest {
         assertEquals(24f, clampScale(99f, 0.3f, 24f), 0f)
         assertEquals(2f, clampScale(2f, 0.3f, 24f), 0f)
     }
+
+    /** 핀을 누르면 손을 떼는 순간 확대가 시작된다. 그때 시작 자리를 저장하면 창이 바뀔 때 확대가 사라진다. */
+    @Test
+    fun cameraIsNotReportedWhileMovingToAPin() {
+        assertEquals(false, reportsCamera(lifted = true, moving = true))
+        assertEquals(true, reportsCamera(lifted = true, moving = false))
+        assertEquals(false, reportsCamera(lifted = false, moving = false))
+    }
 }

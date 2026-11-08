@@ -57,4 +57,19 @@ class HomeCopyTest {
         val book = CourseBook(listOf(course))
         assertSame(book.suggested(SceneMood.SUNSET, 18), book.suggested(SceneMood.SUNSET, 18))
     }
+
+    @Test
+    fun stripStaysPutWhenTheCardIsAlreadyVisible() {
+        assertEquals(300, stripScrollFor(previous = 300, index = 2, step = 296, cardWidth = 284, viewWidth = 1500))
+    }
+
+    @Test
+    fun stripMovesOnlyToBringAHiddenCardIn() {
+        assertEquals(2960, stripScrollFor(previous = 0, index = 10, step = 296, cardWidth = 284, viewWidth = 1500))
+    }
+
+    @Test
+    fun stripStartsAtTheChosenCard() {
+        assertEquals(592, stripScrollFor(previous = null, index = 2, step = 296, cardWidth = 284, viewWidth = 1500))
+    }
 }
