@@ -169,6 +169,13 @@ addEventListener('keydown', (e) => {
   if (k === '4') state.targetYaw = Math.PI;
 });
 addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+/* 화면 단추: 누르는 동안 키를 누른 것과 같다(가속·감속), 한 번 누르면 키 한 번(기어·시점) */
+document.querySelectorAll('[data-hold]').forEach((b) => {
+  const k = b.dataset.hold;
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); keys.add(k); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, () => keys.delete(k)));
+});
+document.querySelectorAll('[data-key]').forEach((b) => b.addEventListener('click', () => dispatchEvent(new KeyboardEvent('keydown', { key: b.dataset.key }))));
 /* 마우스: 끌면 둘러보고, 끌지 않고 누르면 센터 화면을 누른 것인지 본다 */
 let drag = null;
 canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, moved: false }; canvas.setPointerCapture(e.pointerId); });
