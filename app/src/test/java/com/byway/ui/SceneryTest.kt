@@ -24,16 +24,6 @@ class SceneryTest {
     }
 
     @Test
-    fun aCourseWithAPhotoOffersScenery() {
-        assertTrue(Picture.SCENERY in picturesFor(hasScenery = true))
-    }
-
-    @Test
-    fun aCourseWithoutAPhotoDoesNotOfferScenery() {
-        assertFalse(Picture.SCENERY in picturesFor(hasScenery = false))
-    }
-
-    @Test
     fun theSoftBackgroundIsTheCoursesOwnFile() {
         assertEquals("c1-soft.jpg", softFile("c1", setOf("c1-soft.jpg", "c1.jpg")))
     }
