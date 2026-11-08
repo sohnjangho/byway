@@ -5,7 +5,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const [base, out, fpsArg] = process.argv.slice(2);
+const [base, out, fpsArg, only] = process.argv.slice(2);
 const fps = Number(fpsArg || 30);
 const chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const port = 9341;
@@ -28,8 +28,9 @@ async function open(width, height) {
     if (r.exceptionDetails) throw new Error(`${expression}: ${JSON.stringify(r.exceptionDetails).slice(0, 300)}`);
     return r.result && r.result.value;
   };
+  const rect = (js) => run(`(() => { const el = ${js}; const r = el.getBoundingClientRect(); return [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]; })()`);
   const shot = async (file, format = 'png') => fs.writeFileSync(file, Buffer.from((await call('Page.captureScreenshot', { format, quality: format === 'jpeg' ? 92 : undefined })).data, 'base64'));
-  return { go, run, shot, close: async () => { ws.close(); await fetch(`http://127.0.0.1:${port}/json/close/${tgt.id}`); } };
+  return { go, run, shot, rect, close: async () => { ws.close(); await fetch(`http://127.0.0.1:${port}/json/close/${tgt.id}`); } };
 }
 
 try {
@@ -37,11 +38,45 @@ try {
   const stills = path.join(path.dirname(new URL(import.meta.url).pathname), 'stills');
   fs.mkdirSync(stills, { recursive: true });
   const page = await open(1700, 1184);
-  for (const name of ['MainDay', 'SummaryDay']) {
+  for (const name of ['SummaryDay']) {
     await page.go(`${base}/design/screens/${name}.dc.html`);
     await page.shot(path.join(stills, `${name}.png`));
   }
   await page.close();
+
+  // 1-2. 고르는 과정: 전체 창 시안을 실제로 눌러 가며 찍는다. 누른 자리는 steps.json 에 남긴다
+  const stepsDir = path.join(stills, 'steps');
+  fs.mkdirSync(stepsDir, { recursive: true });
+  const full = await open(2560, 1210);
+  const find = (sel, text) => `[...document.querySelectorAll('${sel}')].find((e) => e.textContent.includes('${text}'))`;
+  const burst = async (name, click) => {
+    await full.run(`${click}.click()`);
+    const frames = [], t0 = Date.now();
+    while (Date.now() - t0 < 1300) {
+      const file = `${name}_${String(frames.length).padStart(2, '0')}.jpg`;
+      const at = (Date.now() - t0) / 1000;
+      await full.shot(path.join(stepsDir, file), 'jpeg');
+      frames.push([at, file]);
+    }
+    await wait(400);
+    const file = `${name}_end.jpg`; await full.shot(path.join(stepsDir, file), 'jpeg'); frames.push([1.6, file]);
+    return frames;
+  };
+  const steps = {};
+  await full.go(`${base}/design/screens/MainFullDay.dc.html`);
+  await full.shot(path.join(stepsDir, 'main.jpg'), 'jpeg');
+  steps.tapBrowse = await full.rect(find('.rail-item', '둘러보기'));
+  steps.tapGo = await full.rect(`document.querySelector('.btn-primary')`);
+  await full.go(`${base}/design/screens/BrowseFullDay.dc.html`);
+  await full.shot(path.join(stepsDir, 'browse.jpg'), 'jpeg');
+  steps.tapRegion = await full.rect(find('.chip', '수도권'));
+  steps.region = await burst('region', find('.chip', '수도권'));
+  steps.tapCard = await full.rect(find('.map-card', '팔당 노을'));
+  steps.card = await burst('card', find('.map-card', '팔당 노을'));
+  steps.tapDetail = await full.rect(`document.querySelector('.cards-panel .btn-primary')`);
+  fs.writeFileSync(path.join(stepsDir, 'steps.json'), JSON.stringify(steps));
+  await full.close();
+  if (only === 'stills') process.exit(0);
 
   // 2. 재현 화면을 시각마다 그려 찍는다
   const film = await open(1920, 1080);
