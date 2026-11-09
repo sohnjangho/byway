@@ -65,8 +65,7 @@ class CourseEngine(
         val opening = started.opening(at)
         return opening + listOf(
             Say(if (from > 0) Messages.courseResumed(course.name) else Messages.courseStart(course.name)),
-            Publish(DriveEvent.SectionEntered(started.section)),
-        )
+        ) + started.firstAnnouncement()
     }
 
     /** 접근 중 → 코스 위 ⇄ 묻는 중 → 코스 밖(들르는 중이거나 복귀 중). 멈춤은 어디서든 들어간다. */
@@ -99,6 +98,9 @@ class CourseEngine(
         private var waitedFixes = 0
         private var nearFixes = 0
         private var insideFixes = 0
+
+        /** 지금 구간을 다른 기능에 알렸는지. 코스에 닿기 전에는 알리지 않아 창문 연출과 음악이 켜지지 않는다. */
+        private var announced = false
 
         /** 탐색 범위 밖에서 코스를 만난 첫 자리. 코스를 따라 나아가는지 보려고 둔다. */
         private var joinFrom: Int? = null
@@ -158,6 +160,16 @@ class CourseEngine(
             }
             if (from > 0) return rejoin(at)
             return listOf(routeAhead(Stop(Messages.START_POINT, path[from], from)), Say(Messages.TO_START))
+        }
+
+        /** 시작할 때의 구간 알림. 차가 코스에서 먼 것을 알면 닿을 때까지 미룬다. */
+        fun firstAnnouncement(): List<DriveCommand> =
+            if (phase == Phase.AWAY || (phase == Phase.APPROACHING && approachRouted)) emptyList() else announce()
+
+        private fun announce(): List<DriveCommand> {
+            if (announced) return emptyList()
+            announced = true
+            return listOf(Publish(DriveEvent.SectionEntered(section)))
         }
 
         /** 진행 지점을 옮기고 구간과 저장할 자리를 그에 맞춘다. 안내 없이 옮길 때 쓴다. */
@@ -220,7 +232,13 @@ class CourseEngine(
         /** 진행 지점이 바뀐 뒤에 함께 하는 일: 구간 안내, 완주, 다음 경로 잇기, 진행값. [before]는 그 앞에 낼 명령이다. */
         private fun advance(before: List<DriveCommand> = emptyList()): List<DriveCommand> = buildList {
             addAll(before)
-            addAll(sectionChange())
+            val change = sectionChange()
+            if (change.isEmpty()) {
+                addAll(announce())
+            } else {
+                announced = true
+                addAll(change)
+            }
             if (isFinished()) {
                 addAll(finish())
                 return@buildList
@@ -377,6 +395,7 @@ class CourseEngine(
             phase = Phase.PAUSED
             checkpoint = progress
             asked = Prompt.RESUME
+            announced = false
             return listOf(Say(text, alert = true), Ask(Prompt.RESUME), Publish(DriveEvent.CoursePaused))
         }
 
@@ -388,8 +407,8 @@ class CourseEngine(
             // 멈춘 동안 더 달렸을 수 있다. 지금 자리부터 올려야 지난 경유지로 되돌려 보내지 않는다.
             val here = point?.let { firstRunNearest(it) }
             if (here != null) moveTo(maxOf(progress, here))
-            val back = unask() + Publish(DriveEvent.SectionEntered(section))
-            if (point != null && here == null) return back + rejoin(point)
+            if (point != null && here == null) return unask() + rejoin(point)
+            val back = unask() + announce()
             phase = Phase.ON_COURSE
             strayFixes = 0
             return back + routeAhead() + Say(Messages.RESUMING)
