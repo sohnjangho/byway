@@ -7,137 +7,162 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Space
+import android.widget.TextView
 import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
 import com.byway.service.DriveState
 import com.byway.service.SceneCatalog
 
 /**
- * 내비 옆 칸의 코스 주행 화면. 코스 이름과 구간, 남은 거리, 구간 막대, 한 줄 안내, 지도와 위치 점, 코스 끝내기만 둔다.
- * 스크롤과 애니메이션은 없고 움직이는 것은 현재 위치 점뿐이다. 구간이 바뀌면 배경색이 그 자리에서 바뀐다.
+ * 내비 옆 칸의 코스 주행 화면. 홈과 같이 지도 장면을 깔고 글 칸을 경계 없이 잇는다.
+ * 글 칸에는 코스와 구간, 남은 거리, 안내 문구, 앞으로 만날 곳을 둔다. 지도에는 경로와 번호, 위치 점이 있다.
+ * 스크롤과 애니메이션, 분위기 효과는 없고 움직이는 것은 위치 점뿐이다.
  */
 @SuppressLint("ViewConstructor")
 internal class DriveScreen(
     context: Context,
     book: CourseBook,
     private val course: Course,
-    wide: Boolean,
+    private val window: WindowClass,
     onAnswer: () -> Unit,
     onEnd: () -> Unit,
 ) : FrameLayout(context) {
     private val colors = context.palette
     private val sectionMeters = book.sectionMeters(course)
-    private val scene: CourseScene? = SceneCatalog.of(context, course.id)?.takeIf { it.track.isNotEmpty() && Covers.hasScene(context, course.id, context.night) }
+    private val scene: CourseScene? = SceneCatalog.of(context, course.id)
+    private val places = shownPlaces(scene?.places.orEmpty())
+    private val third = window == WindowClass.THIRD
+    private val full = window == WindowClass.FULL
+
+    // 넓은 창에서 list 는 아래에 사진 띠가 없으니 출처를 아래로 내린다는 뜻이다.
+    // 1/3 창은 글 칸에 자리를 내느라 지도 칸이 짧아서, 홈의 사진 띠 화면과 같이 장면을 줄여 경로를 다 담는다.
+    private val sceneView = SceneView(context, window, list = !third, hintOnMap = false, strip = third)
     private val where = context.label("", Dimens.LABEL, colors.inkSecondary).tabular().fixedLines(1)
     private val section = context.label("", Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
     private val remaining = context.label("", Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
     private val bar = context.sectionBar(book, course)
-    private val noteMark = View(context)
-    private val spoken = context.label("", Dimens.DRIVE_LINE).fixedLines(2).apply { gravity = Gravity.CENTER_VERTICAL }
-    private val answer = context.outlineButton("", onAnswer).apply { visibility = GONE }
-    private val mapView = scene?.let { DriveMapView(context, course.id, it) }
-    private val pathView = if (mapView == null) CoursePathView(context).apply {
-        background = context.rounded(colors.bgRaised)
-        show(course, book.stops(course))
-    } else null
+    private val spoken = context.label("", Dimens.DRIVE_LINE).fixedLines(2)
+    private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
+    private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
+    private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
+    private val end = context.outlineButton("코스 끝내기", onEnd)
 
     init {
-        val end = context.outlineButton("코스 끝내기", onEnd)
-        val head = heading()
-        val distance = distanceBlock()
-        val note = noteBlock()
-        val map = mapBlock()
-        val page = if (wide) {
+        setBackgroundColor(colors.bg)
+        val hasPicture = scene != null && Covers.hasScene(context, course.id, context.night)
+        val sideWidth = context.dp(Dimens.RAIL_WIDTH + if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH)
+        sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
+        // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
+        addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
+            if (!third && !hasPicture) leftMargin = sideWidth
+        })
+
+        val info = infoColumn()
+        val near = nearColumn()
+        val side = if (full) {
             LinearLayout(context).apply {
-                // 글이 위에 몰리지 않게 묶음 사이를 고르게 벌린다.
-                val left = context.column().apply {
-                    addView(head)
-                    addView(Space(context), fill())
-                    addView(distance)
-                    addView(Space(context), fill())
-                    addView(note)
-                    addView(Space(context), fill())
-                    addView(answer)
-                    addSpaced(end, Dimens.SPACE_3)
-                }
-                addView(left, LinearLayout.LayoutParams(0, MATCH, TEXT_WEIGHT).apply { marginEnd = context.dp(Dimens.DRIVE_EDGE) })
-                addView(map, LinearLayout.LayoutParams(0, MATCH, MAP_WEIGHT))
+                addView(info, LinearLayout.LayoutParams(context.dp(Dimens.SIDE_INFO_WIDTH), MATCH).apply { marginEnd = context.dp(Dimens.SPACE_10) })
+                addView(near, LinearLayout.LayoutParams(0, MATCH, 1f))
             }
         } else {
             context.column().apply {
-                addView(head)
-                addSpaced(distance, Dimens.SPACE_3)
-                addSpaced(note, Dimens.SPACE_4)
-                addView(map, fill().apply { topMargin = context.dp(Dimens.SPACE_4) })
-                addSpaced(answer, Dimens.SPACE_4)
-                addSpaced(end, Dimens.SPACE_3)
+                addView(info)
+                addView(near, fill().apply { topMargin = context.dp(Dimens.SPACE_6) })
             }
         }
-        val edge = context.dp(Dimens.DRIVE_EDGE)
-        page.setPadding(edge, edge, edge, context.dp(Dimens.SPACE_10))
-        addView(page, matchFrame())
+        val edge = context.dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
+        side.setPadding(edge, if (third) context.dp(Dimens.SPACE_2) else edge, edge, context.dp(Dimens.SPACE_6))
+        addView(side, if (third) {
+            LayoutParams(MATCH, MATCH).apply { topMargin = context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) }
+        } else {
+            LayoutParams(sideWidth, MATCH)
+        })
     }
 
-    private fun heading(): View = context.column().apply {
-        addView(context.row().apply {
-            addView(context.label(course.name, Dimens.DRIVE_LINE, bold = true).atMostLines(1), LinearLayout.LayoutParams(0, WRAP, 1f))
+    private fun infoColumn(): View = context.column().apply {
+        addView(context.label(course.name, Dimens.SIDE_NAME, bold = true).atMostLines(1))
+        if (!third) addSpaced(context.pickRow(course.tags), Dimens.SPACE_2)
+        addSpaced(context.row().apply {
+            addView(section, LinearLayout.LayoutParams(0, WRAP, 1f))
             addView(where)
-        })
-        addSpaced(section, Dimens.SPACE_2)
-    }
-
-    private fun distanceBlock(): View = context.column().apply {
-        addView(LinearLayout(context).apply {
-            addView(remaining)
-            addView(context.label("km", Dimens.DRIVE_UNIT, colors.inkSecondary), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
-            addView(context.label("남은 거리", Dimens.DRIVE_LINE, colors.inkSecondary).atMostLines(1), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
-        })
+        }, if (third) Dimens.SPACE_2 else Dimens.SPACE_6)
+        addView(distanceRow())
         addView(bar, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.DRIVE_BAR_HEIGHT)).apply { topMargin = context.dp(Dimens.SPACE_3) })
+        addSpaced(spoken, Dimens.SPACE_4)
     }
 
-    /** 안내 문구. 왼쪽 선은 지금 구간의 색이다. */
-    private fun noteBlock(): View = context.row().apply {
-        background = context.rounded(colors.bgRaised, Dimens.RADIUS_SM)
-        clipToOutline = true
-        minimumHeight = context.dp(Dimens.DRIVE_NOTE_HEIGHT)
-        addView(noteMark, LinearLayout.LayoutParams(context.dp(Dimens.DRIVE_NOTE_MARK), MATCH))
-        val inset = context.dp(Dimens.SPACE_6)
-        addView(spoken, LinearLayout.LayoutParams(0, WRAP, 1f).apply { setMargins(inset, context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3)) })
+    private fun distanceRow(): View = LinearLayout(context).apply {
+        addView(remaining)
+        addView(context.label("km", Dimens.DRIVE_UNIT, colors.inkSecondary), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
+        addView(context.label("남은 거리", Dimens.DRIVE_LINE, colors.inkSecondary).atMostLines(1), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
     }
 
-    private fun mapBlock(): View = FrameLayout(context).apply {
-        addView(mapView ?: requireNotNull(pathView), matchFrame())
-        if (mapView != null) {
-            val credit = context.label(driveMapCredit(currentMapStyle()), Dimens.LABEL, colors.onPhoto).apply {
-                background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
-                val inset = context.dp(Dimens.CREDIT_PADDING)
-                setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
-            }
-            val edge = context.dp(Dimens.SPACE_3)
-            addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply { setMargins(edge, edge, edge, edge) })
-        }
+    /** 앞으로 만날 곳과 버튼. 버튼은 홈처럼 아래에 붙고 코스 끝내기의 오른쪽 끝은 물음이 떠도 그대로다. */
+    private fun nearColumn(): View = context.column().apply {
+        if (!third) addView(aheadTitle)
+        rows.forEachIndexed { i, row -> addSpaced(row.view, if (i == 0 && third) 0 else Dimens.SPACE_3) }
+        addView(Space(context), fill())
+        addView(LinearLayout(context).apply {
+            addView(answer, LinearLayout.LayoutParams(0, WRAP, ANSWER_WEIGHT).apply { marginEnd = context.dp(Dimens.SPACE_3) })
+            addView(end, LinearLayout.LayoutParams(0, MATCH, 1f))
+        })
     }
 
     fun show(state: DriveState) {
         val readout = readoutOf(sectionMeters, state.sectionIndex, state.remainingMeters)
         val current = course.sections[readout.sectionIndex]
-        setBackgroundColor(colors.airColor(current.mood))
         where.text = sectionCount(readout.sectionIndex, course.sections.size)
         section.text = current.name
         section.setTextColor(colors.moodColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
-        noteMark.setBackgroundColor(colors.moodColor(current.mood))
         spoken.text = driveLine(state.line, state.stale)
         val title = promptButton(state.prompt)
         answer.text = title.orEmpty()
         answer.visibility = if (title == null) GONE else VISIBLE
-        scene?.let { mapView?.moveTo(trackAt(it.track, drivenKm(it.totalKm, state.remainingMeters))) }
-        pathView?.moveTo(state.position)
+        val driven = scene?.let { drivenKm(it.totalKm, state.remainingMeters) } ?: 0.0
+        showAhead(driven)
+        scene?.let { sceneView.setMarker(trackAt(it.track, driven)) }
+        sceneView.moveFallbackTo(state.position)
+    }
+
+    /** 줄 수를 고정해 지나온 곳이 빠져도 아래 글이 움직이지 않는다. 가장 가까운 곳의 번호는 주황이다. */
+    private fun showAhead(driven: Double) {
+        val ahead = placesAhead(places, driven, rows.size)
+        aheadTitle.visibility = if (ahead.isEmpty()) INVISIBLE else VISIBLE
+        rows.forEachIndexed { i, row -> row.show(ahead.getOrNull(i), driven, nearest = i == 0) }
     }
 
     private companion object {
-        const val TEXT_WEIGHT = 2f
-        const val MAP_WEIGHT = 3f
+        const val AHEAD_WIDE = 6
+        const val AHEAD_THIRD = 1
+        const val ANSWER_WEIGHT = 2f
+    }
+}
+
+/** 앞으로 만날 곳 한 줄. 번호와 이름, 설명, 남은 거리다. */
+private class AheadRow(private val context: Context) {
+    private val number = context.label("", Dimens.LABEL, bold = true).tabular().apply { gravity = Gravity.CENTER }
+    private val name = context.label("", Dimens.SMALL, bold = true).atMostLines(1)
+    private val line: TextView = context.label("", Dimens.LABEL, context.palette.ink).atMostLines(1)
+    private val distance = context.label("", Dimens.SMALL, bold = true).tabular().fixedLines(1)
+
+    val view: View = context.row().apply {
+        addView(number, LinearLayout.LayoutParams(context.dp(Dimens.PLACE_NUMBER), context.dp(Dimens.PLACE_NUMBER)).apply { marginEnd = context.dp(Dimens.SPACE_3) })
+        addView(context.column().apply {
+            addView(name)
+            addView(line)
+        }, LinearLayout.LayoutParams(0, WRAP, 1f))
+        addView(distance, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
+    }
+
+    fun show(place: com.byway.core.course.ScenePlace?, driven: Double, nearest: Boolean) {
+        view.visibility = if (place == null) View.INVISIBLE else View.VISIBLE
+        if (place == null) return
+        number.text = "${place.no}"
+        context.paintBadge(number, nearest)
+        name.text = place.name
+        line.text = aheadLine(place)
+        distance.text = aheadKmText(place, driven)
     }
 }

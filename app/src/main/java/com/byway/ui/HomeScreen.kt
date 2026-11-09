@@ -154,7 +154,7 @@ private fun Context.drawerButton(onClick: () -> Unit): View =
     }
 
 /** 코스 주변 번호. 훑어보는 지점과 가까운 곳은 주황으로 바꾼다. */
-private fun Context.paintBadge(badge: TextView, near: Boolean) {
+internal fun Context.paintBadge(badge: TextView, near: Boolean) {
     badge.setTextColor(if (near) palette.onAccent else palette.bg)
     badge.background = rounded(if (near) palette.accent else palette.ink, Dimens.PLACE_NUMBER / 2)
 }

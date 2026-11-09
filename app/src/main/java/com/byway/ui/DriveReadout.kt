@@ -1,5 +1,6 @@
 package com.byway.ui
 
+import com.byway.core.course.ScenePlace
 import com.byway.core.course.Section
 import com.byway.core.drive.Prompt
 import java.util.Locale
@@ -42,3 +43,13 @@ fun resumeLine(courseName: String, sectionNo: Int): String = "$courseName 코스
 /** 코스 위의 지점이 몇 번째 구간인지. 1부터 센다. 코스 밖의 지점은 마지막 구간으로 본다. */
 fun sectionNoAt(sections: List<Section>, pathIndex: Int): Int =
     sections.indexOfFirst { pathIndex in it.startIndex..it.endIndex }.let { if (it < 0) sections.size else it + 1 }
+
+/** 앞으로 만날 곳. 지나온 곳은 빼고 가까운 차례로 [limit]곳까지다. */
+fun placesAhead(places: List<ScenePlace>, drivenKm: Double, limit: Int): List<ScenePlace> =
+    places.filter { it.km >= drivenKm }.sortedBy { it.km }.take(limit)
+
+fun aheadKmText(place: ScenePlace, drivenKm: Double): String =
+    String.format(Locale.ROOT, "%.1fkm", (place.km - drivenKm).coerceAtLeast(0.0))
+
+/** 주행 화면 장소 줄의 설명. 코스 위 거리는 옆에 남은 거리로 적으므로 뺀다. */
+fun aheadLine(place: ScenePlace): String = listOf(place.label, place.note).filter { it.isNotBlank() }.joinToString(" · ")

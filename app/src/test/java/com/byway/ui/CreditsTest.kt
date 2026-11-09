@@ -90,16 +90,6 @@ class CreditsTest {
         assertTrue(lines.any { it.contains("Data © OpenStreetMap contributors and others · Rendering © EOX") })
     }
 
-    /** 주행 화면 지도의 출처. 사진 띠가 없으니 그 출처는 적지 않는다. */
-    @Test
-    fun theDriveCreditNamesOnlyWhatIsOnTheMap() {
-        val map = driveMapCredit(MapStyle.MAP)
-        assertTrue(map, map.contains("Terrain Light") && map.contains("© OpenStreetMap contributors") && map.contains("EOX"))
-        assertTrue(map, !map.contains("Sentinel"))
-        val satellite = driveMapCredit(MapStyle.SATELLITE)
-        assertTrue(satellite, satellite.contains("Sentinel-2 cloudless") && satellite.contains("© OpenStreetMap contributors"))
-    }
-
     @Test
     fun theMapSourceIsListedWithALinkBack() {
         assertTrue(lines.any { it.contains("Terrain Light") && it.contains("maps.eox.at") })

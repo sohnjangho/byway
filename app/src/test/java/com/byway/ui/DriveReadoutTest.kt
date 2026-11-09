@@ -1,5 +1,6 @@
 package com.byway.ui
 
+import com.byway.core.course.ScenePlace
 import com.byway.core.course.Section
 import com.byway.core.drive.Prompt
 import org.junit.Assert.assertEquals
@@ -66,5 +67,47 @@ class DriveReadoutTest {
     @Test
     fun theSectionCountStartsAtOne() {
         assertEquals("구간 2/3", sectionCount(1, 3))
+    }
+
+    private fun place(no: Int, km: Double, label: String = "경치", note: String = "") =
+        ScenePlace(no = no, name = "곳$no", kind = "view", label = label, note = note, km = km, x = 0f, y = 0f)
+
+    @Test
+    fun placesAlreadyPassedDropOffTheList() {
+        val places = listOf(place(1, 2.0), place(2, 5.0), place(3, 9.0))
+        assertEquals(listOf(2, 3), placesAhead(places, 3.5, 4).map { it.no })
+    }
+
+    @Test
+    fun theNearestPlaceComesFirstEvenIfNumberedLater() {
+        val places = listOf(place(1, 9.0), place(2, 5.0))
+        assertEquals(listOf(2, 1), placesAhead(places, 0.0, 4).map { it.no })
+    }
+
+    @Test
+    fun theListStopsAtTheRowsThatFit() {
+        val places = (1..6).map { place(it, it.toDouble()) }
+        assertEquals(listOf(1), placesAhead(places, 0.0, 1).map { it.no })
+    }
+
+    @Test
+    fun aPlaceRightHereStillCounts() {
+        assertEquals(listOf(1), placesAhead(listOf(place(1, 3.0)), 3.0, 4).map { it.no })
+    }
+
+    @Test
+    fun thereIsNothingAheadAtTheEnd() {
+        assertEquals(emptyList<ScenePlace>(), placesAhead(listOf(place(1, 3.0)), 3.1, 4))
+    }
+
+    @Test
+    fun theDistanceToAPlaceIsInKilometres() {
+        assertEquals("1.5km", aheadKmText(place(1, 5.0), 3.5))
+    }
+
+    @Test
+    fun thePlaceLineLeavesOutTheCourseKm() {
+        assertEquals("경치 · 해질녘", aheadLine(place(1, 12.4, note = "해질녘")))
+        assertEquals("경치", aheadLine(place(1, 12.4)))
     }
 }

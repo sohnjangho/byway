@@ -6,9 +6,8 @@ data class SceneRect(val left: Float, val top: Float, val width: Float, val heig
 /** 그림 안의 [from]에서 [to]까지 투명도가 바뀌는 띠. 가로는 [alphaFrom]에서 1로, 세로는 [alphaFrom]에서 0으로 간다. */
 data class FadeBand(val vertical: Boolean, val from: Float, val to: Float, val alphaFrom: Float)
 
-internal const val SCENE_WIDTH = 2404f
+private const val SCENE_WIDTH = 2404f
 private const val SCENE_HEIGHT = 1210f
-private const val DRIVE_ROUTE_MARGIN = 70f
 private const val THIRD_WIDTH = 1683f
 private const val THIRD_HEIGHT = 847f
 private const val THIRD_TOP = 26f
@@ -27,23 +26,6 @@ fun sceneRect(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = f
     window == WindowClass.THIRD && strip -> SceneRect(viewW - STRIP_WIDTH, THIRD_TOP, STRIP_WIDTH, STRIP_HEIGHT)
     window == WindowClass.THIRD -> SceneRect(viewW - THIRD_WIDTH, THIRD_TOP, THIRD_WIDTH, THIRD_HEIGHT)
     else -> SceneRect(viewW - SCENE_WIDTH, viewH / 2 - SCENE_HEIGHT / 2, SCENE_WIDTH, SCENE_HEIGHT)
-}
-
-/**
- * 주행 화면 지도에서 그림의 어느 범위를 보일지. 경로 둘레를 여유 있게 담되 칸과 같은 비율로 자르고 그림 밖으로 나가지 않는다.
- * [left]~[bottom]은 그림 안의 경로 범위다.
- */
-fun driveCrop(viewW: Float, viewH: Float, left: Float, top: Float, right: Float, bottom: Float): SceneRect {
-    val shape = viewW / viewH
-    val wanted = maxOf(right - left + 2 * DRIVE_ROUTE_MARGIN, (bottom - top + 2 * DRIVE_ROUTE_MARGIN) * shape)
-    val width = minOf(wanted, SCENE_WIDTH, SCENE_HEIGHT * shape)
-    val height = width / shape
-    return SceneRect(
-        ((left + right - width) / 2).coerceIn(0f, SCENE_WIDTH - width),
-        ((top + bottom - height) / 2).coerceIn(0f, SCENE_HEIGHT - height),
-        width,
-        height,
-    )
 }
 
 /**

@@ -88,53 +88,6 @@ class SceneGeometryTest {
         assertTrue(band.to - band.from >= rect.height / 3)
     }
 
-    // 주행 화면 지도
-
-    private fun assertRouteInside(crop: SceneRect, left: Float, top: Float, right: Float, bottom: Float) {
-        assertTrue("$crop 왼쪽", crop.left <= left)
-        assertTrue("$crop 위", crop.top <= top)
-        assertTrue("$crop 오른쪽", crop.left + crop.width >= right)
-        assertTrue("$crop 아래", crop.top + crop.height >= bottom)
-    }
-
-    private fun assertInsidePicture(crop: SceneRect) {
-        assertTrue("$crop", crop.left >= 0f && crop.top >= 0f)
-        assertTrue("$crop", crop.left + crop.width <= 2404f && crop.top + crop.height <= 1210f)
-    }
-
-    /** 경로가 칸 안에 다 들어오고 칸과 같은 비율이라 그림이 찌그러지지 않는다. */
-    @Test
-    fun theDriveMapShowsTheWholeRouteAtTheViewsShape() {
-        listOf(1000f to 1070f, 745f to 560f, 1320f to 1100f).forEach { (w, h) ->
-            val crop = driveCrop(w, h, 1540f, 110f, 2344f, 1000f)
-            assertRouteInside(crop, 1540f, 110f, 2344f, 1000f)
-            assertInsidePicture(crop)
-            assertEquals(w / h, crop.width / crop.height, 0.01f)
-        }
-    }
-
-    /** 경로가 작으면 그만큼 가까이 보여 준다. */
-    @Test
-    fun aShortRouteIsShownCloser() {
-        val whole = driveCrop(1000f, 1000f, 1540f, 110f, 2344f, 1000f)
-        val short = driveCrop(1000f, 1000f, 1800f, 400f, 2100f, 700f)
-        assertTrue(short.width < whole.width)
-        assertRouteInside(short, 1800f, 400f, 2100f, 700f)
-    }
-
-    /** 그림 가장자리의 경로여도 그림 밖을 보여 주지 않는다. */
-    @Test
-    fun theDriveMapStaysInsideThePicture() {
-        assertInsidePicture(driveCrop(800f, 600f, 2200f, 20f, 2400f, 200f))
-        assertInsidePicture(driveCrop(800f, 600f, 0f, 1000f, 200f, 1200f))
-    }
-
-    /** 세로로 긴 칸에서도 그림 높이를 넘지 않는다. */
-    @Test
-    fun aTallViewNeverAsksForMoreThanThePictureHeight() {
-        assertInsidePicture(driveCrop(500f, 1100f, 1540f, 110f, 2344f, 1000f))
-    }
-
     /** 1/3 창은 지도가 길게 옅어져 아래 글 칸과 경계가 보이지 않는다. */
     @Test
     fun theThirdWindowFadesOverAThirdOfThePicture() {
