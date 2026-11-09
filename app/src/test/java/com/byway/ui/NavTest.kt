@@ -20,7 +20,7 @@ class NavTest {
             about = true,
             theme = "river",
             region = "강원",
-            rankBy = RankBy.CLIMB,
+            rankBy = RankBy.SCENERY,
             atlas = AtlasCamera(1f, 2f, 3f),
             picked = "c2",
             stripX = 7,

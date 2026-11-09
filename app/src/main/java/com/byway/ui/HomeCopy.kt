@@ -1,8 +1,17 @@
 package com.byway.ui
 
+import com.byway.core.course.Course
+import com.byway.core.course.CourseFacts
+import com.byway.core.course.EnergyRate
 import com.byway.core.course.SceneMood
 import com.byway.core.course.Pace
 import com.byway.core.course.ScenePlace
+import com.byway.core.course.energyNeeded
+import com.byway.core.course.funScore
+import com.byway.core.course.seasonFit
+import com.byway.core.course.sunTimes
+import com.byway.core.course.timeFit
+import java.util.Locale
 
 /** 홈 첫 줄. 시안 Main 의 문구와 같다. */
 fun kickFor(mood: SceneMood): String = when (mood) {
@@ -62,6 +71,39 @@ enum class SceneryControl { BUTTON, CHIP }
 /** 넓은 창의 홈은 운전석 쪽 버튼 줄에 둔다. 버튼 줄이 좁은 1/3 창과 다른 화면은 지도 위 단추를 쓴다. */
 fun sceneryControl(window: WindowClass, home: Boolean): SceneryControl =
     if (home && window != WindowClass.THIRD) SceneryControl.BUTTON else SceneryControl.CHIP
+
+/** 코스를 고를 때 보는 칸. 값을 낼 수 없는 칸은 빠진다. [lightMinutes]는 쉬지 않고 달리는 시간이다. */
+internal fun choiceFacts(course: Course, facts: CourseFacts, lightMinutes: Int, dayOfYear: Int, minuteOfDay: Int, energy: EnergyRate?): List<Fact> {
+    val start = course.path.first()
+    val sun = sunTimes(dayOfYear, start.lat, start.lon)
+    return listOfNotNull(
+        Fact(kmText(facts.meters), "거리"),
+        seasonFit(course.tags.seasons, dayOfYear)?.let { Fact("$it%", "계절 적합") },
+        timeFit(course.tags.times, minuteOfDay, lightMinutes, sun)?.let { Fact("$it%", "시간 적합") },
+        Fact("${funScore(facts, course.elevation.isNotEmpty())}점", "운전 즐거움"),
+        energy?.let { Fact(energyText(facts.meters, it), "연료량") },
+    )
+}
+
+fun energyText(meters: Double, rate: EnergyRate): String =
+    String.format(Locale.ROOT, "%.1f%s", energyNeeded(meters, rate), if (rate.electric) "kWh" else "L")
+
+/** 구간 분위기의 이름. 물가는 코스 주제로 바다, 호수, 강을 가른다. */
+private fun sceneryWord(mood: String, themes: List<String>): String = when (mood) {
+    "forest" -> "숲"
+    "city" -> "도심"
+    else -> when {
+        "coast" in themes -> "바다"
+        "lake" in themes -> "호수"
+        "river" in themes -> "강"
+        else -> "물가"
+    }
+}
+
+/** 경치 한 줄. 비율이 큰 풍경부터 쓰고 전망 명소 수를 붙인다. */
+fun sceneryLine(moodShare: Map<String, Int>, themes: List<String>, views: Int): String =
+    (moodShare.filterValues { it > 0 }.entries.sortedByDescending { it.value }.map { "${sceneryWord(it.key, themes)} ${it.value}%" } +
+        listOfNotNull("전망 명소 ${views}곳".takeIf { views > 0 })).joinToString(" · ")
 
 fun paceText(minutes: Int): String = when {
     minutes < 60 -> "${minutes}분"

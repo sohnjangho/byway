@@ -102,7 +102,7 @@ private fun Context.totals(kit: BrowseKit): View {
     val values = listOf(
         "${totals.finishedCourses}개" to "완주한 코스",
         kmText(totals.meters) to "달린 거리",
-        "${totals.curves}개" to "지나온 굽이",
+        "${totals.curves}개" to "지나온 커브",
         "${MyDrives.saved(this).size}개" to "저장한 코스",
     )
     val cells = values.map { (value, name) ->
@@ -160,7 +160,7 @@ private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<Stri
     addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
-    addSpaced(label(listOf(course.region, kmText(facts.meters), "굽이 ${facts.curves}개", "오르막 ${climbText(course, facts)}").joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
     addView(android.widget.Space(context), fill())
     val buttons = LinearLayout(context).apply {
         addView(quietButton("내 코스 전체", onBack), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })

@@ -11,9 +11,11 @@ import android.widget.Space
 import android.widget.TextView
 import androidx.core.view.children
 import com.byway.core.course.Course
+import com.byway.core.course.EnergyRate
 import com.byway.core.course.FrameInfo
 import com.byway.core.course.Pace
 import com.byway.core.course.paceOf
+import com.byway.core.course.viewCount
 import com.byway.core.course.SceneMood
 import com.byway.core.course.ScenePlace
 import com.byway.core.course.Weather
@@ -30,6 +32,7 @@ internal fun homeScreen(
     weather: Weather,
     stripX: Int?,
     reveal: Boolean,
+    energy: EnergyRate?,
     onPick: (Course, Int) -> Unit,
     onStart: (String) -> Unit,
 ): View = with(context) {
@@ -63,7 +66,11 @@ internal fun homeScreen(
         addView(effect, effectSize)
 
         val pace = paceOf(kit.book.facts(course).meters, kit.book.facts(course).curves, scene?.places.orEmpty().map { it.kind })
-        val info = infoColumn(kit, course, kickFor(mood), pace)
+        val choice = choiceFacts(
+            course, kit.book.facts(course), pace.light,
+            now.get(Calendar.DAY_OF_YEAR), hour * 60 + now.get(Calendar.MINUTE), energy,
+        )
+        val info = infoColumn(kit, course, kickFor(mood), pace, choice)
         val badges = mutableMapOf<Int, TextView>()
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
@@ -149,21 +156,16 @@ private fun Context.paintBadge(badge: TextView, near: Boolean) {
 private fun linesOf(info: View, near: View): List<View> =
     (info as ViewGroup).children.toList() + (near as ViewGroup).children.toList().dropLast(1).filterNot { it is Space }
 
-private fun Context.infoColumn(kit: BrowseKit, course: Course, kick: String, pace: Pace): View = column().apply {
+private fun Context.infoColumn(kit: BrowseKit, course: Course, kick: String, pace: Pace, choice: List<Fact>): View = column().apply {
     val third = kit.window == WindowClass.THIRD
     val facts = kit.book.facts(course)
     if (!third) addView(label(kick, Dimens.SMALL, palette.inkSecondary).atMostLines(1))
     addView(label(course.name, if (third) Dimens.SIDE_NAME_THIRD else Dimens.SIDE_NAME, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     if (!third) addSpaced(label(course.summary, Dimens.BODY).atMostLines(3), Dimens.SPACE_3)
-    val cells = listOf(
-        Fact(kmText(facts.meters), "거리"),
-        Fact("${facts.curves}개", "굽이"),
-        Fact(ratioText(facts), "에움 배율"),
-        Fact(climbText(course, facts), "오르막"),
-    )
-    addSpaced(plainFacts(cells), Dimens.SPACE_3)
-    addSpaced(label("예상 소요 시간 · 교통 상황 제외", Dimens.LABEL, palette.inkSecondary).atMostLines(1), Dimens.SPACE_3)
+    addSpaced(plainFacts(choice), Dimens.SPACE_3)
+    addSpaced(label(sceneryLine(facts.moodShare, course.tags.themes, viewCount(course)), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addSpaced(label("적합도·즐거움·소요 시간은 예상 · 교통 상황 제외", Dimens.LABEL, palette.inkSecondary).atMostLines(1), Dimens.SPACE_3)
     addSpaced(paceRow(pace, withNotes = !third), Dimens.SPACE_2)
 }
 
@@ -179,14 +181,15 @@ private fun Context.paceRow(pace: Pace, withNotes: Boolean): View = LinearLayout
     }
 }
 
-/** 시안처럼 칸 없이 값과 이름만 놓는다. */
+/** 시안처럼 칸 없이 값과 이름만 놓는다. 칸 수가 차종마다 달라 글 폭대로 두고 남는 자리를 고르게 나눈다. */
 private fun Context.plainFacts(facts: List<Fact>): View = LinearLayout(this).apply {
-    facts.forEach { fact ->
+    facts.forEachIndexed { i, fact ->
+        if (i > 0) addView(Space(context), LinearLayout.LayoutParams(0, 0, 1f))
         val cell = column().apply {
-            addView(label(withSmallUnit(fact.value), Dimens.VALUE, bold = true).tabular().atMostLines(1))
+            addView(label(withSmallUnit(fact.value), Dimens.HEADING, bold = true).tabular().atMostLines(1))
             addView(label(fact.name, Dimens.LABEL, palette.ink).atMostLines(1))
         }
-        addView(cell, LinearLayout.LayoutParams(0, WRAP, 1f))
+        addView(cell, LinearLayout.LayoutParams(WRAP, WRAP))
     }
 }
 
