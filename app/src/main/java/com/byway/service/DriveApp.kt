@@ -3,6 +3,7 @@ package com.byway.service
 import android.app.Application
 import android.util.Log
 import com.byway.platform.CarRestrictions
+import com.byway.platform.PleosEnergy
 import com.byway.platform.PleosGear
 
 /** 코스를 달리기 전에도 화면이 정차 여부를 알도록 앱 프로세스 동안 기어와 주행 규제를 읽는다. */
@@ -24,6 +25,7 @@ class DriveApp : Application() {
             publish()
         }
         gear.start()
+        PleosEnergy(this) { rate -> DriveBoard.update { it.copy(energy = rate) } }.start()
         restrictions.start()
     }
 
