@@ -93,7 +93,7 @@ def labels():
     return made("region", REGIONS) + made("city", CITIES)
 
 
-def ground():
+def ground(layer="satellite"):
     left, top = origin()
     width, height = size()
     first_x, last_x = int(left // 256), int((left + width) // 256)
@@ -101,9 +101,9 @@ def ground():
     sheet = Image.new("RGB", ((last_x - first_x + 1) * 256, (last_y - first_y + 1) * 256))
     for x in range(first_x, last_x + 1):
         for y in range(first_y, last_y + 1):
-            sheet.paste(covers.tile(ZOOM, x, y), ((x - first_x) * 256, (y - first_y) * 256))
+            sheet.paste(covers.tile(ZOOM, x, y, layer), ((x - first_x) * 256, (y - first_y) * 256))
     crop = sheet.crop((int(left - first_x * 256), int(top - first_y * 256), int(left - first_x * 256 + width), int(top - first_y * 256 + height)))
-    return covers.without_clouds(crop)
+    return covers.without_clouds(crop) if layer == "satellite" else crop
 
 
 def main():
@@ -118,11 +118,12 @@ def main():
             "x": number(middle[0]), "y": number(middle[1]), "box": box(course["path"]),
             "frame": frame(scenes[course["id"]]["view"]), "lines": lines(course),
         }
-    day, night = OUT / "korea.jpg", OUT / "korea-night.jpg"
-    if not day.exists():
-        image = ground().resize((int(width * SAVE_RATIO), int(height * SAVE_RATIO)), Image.LANCZOS)
-        image.save(day, quality=72)
-        covers.darkened(image).save(night, quality=72)
+    for layer in covers.LAYERS:
+        day, night = OUT / covers.file_name("korea", layer), OUT / covers.file_name("korea", layer, night=True)
+        if not day.exists():
+            image = ground(layer).resize((int(width * SAVE_RATIO), int(height * SAVE_RATIO)), Image.LANCZOS)
+            image.save(day, quality=72)
+            covers.night_of(image, layer).save(night, quality=72)
     (OUT / "atlas.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     print(OUT.relative_to(ROOT), data["size"], len(data["courses"]))
 

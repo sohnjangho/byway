@@ -81,7 +81,6 @@ def entry(course, metrics, has_photo):
         "photo": f"images/scenery/{cid}.jpg" if has_photo else None,
         "credit": course.get("sceneryCredit", ""),
         "coverNight": f"images/covers/{cid}-night.jpg", "coverDay": f"images/covers/{cid}.jpg",
-        "soft": f"images/covers/{cid}-soft.jpg",
     }
 
 

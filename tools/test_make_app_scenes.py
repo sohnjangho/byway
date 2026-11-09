@@ -1,7 +1,9 @@
 """앱용 장면 자료를 만드는 규칙을 시험한다. 실행: python3 tools/test_make_app_scenes.py"""
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("make_app_scenes", Path(__file__).parent / "make-app-scenes.py")
 scenes = importlib.util.module_from_spec(spec)
@@ -60,6 +62,51 @@ class IndexTest(unittest.TestCase):
         rain = self.index["moods"]["rain"]
         self.assertEqual((rain["shape"], rain["count"]), ("streak", 46))
         self.assertEqual((rain["night"], rain["dx"], rain["dy"], rain["near"], rain["far"]), ("#b9d2ec", -140, 640, 0.8, 1.3))
+
+
+class CopyTest(unittest.TestCase):
+    def test_both_map_layers_reach_the_app(self):
+        with tempfile.TemporaryDirectory() as folder:
+            images, assets = Path(folder) / "images", Path(folder) / "assets"
+            (images / "scene").mkdir(parents=True)
+            (images / "atlas").mkdir()
+            for name in scenes.scene_files("c1"):
+                (images / "scene" / name).write_bytes(b"x")
+            for name in scenes.ATLAS_FILES:
+                (images / "atlas" / name).write_bytes(b"x")
+            with mock.patch.object(scenes, "IMAGES", images), mock.patch.object(scenes, "ASSETS", assets):
+                scenes.copy_pictures(ENTRIES)
+            self.assertEqual(sorted(p.name for p in (assets / "scene").iterdir()), ["c1-map-night.jpg", "c1-map.jpg", "c1-night.jpg", "c1.jpg"])
+            self.assertEqual(sorted(p.name for p in (assets / "atlas").iterdir()), ["korea-map-night.jpg", "korea-map.jpg", "korea-night.jpg", "korea.jpg"])
+
+
+FRAMES = {"c1": {
+    "total": 12.3,
+    "frames": [{"km": 0.0, "section": "구간", "mood": "city", "elev": 10, "placeNo": None}],
+    "track": [[1.0, 2.0, 0.0], [3.0, 4.0, 12.3]],
+}}
+
+
+class FramesTest(unittest.TestCase):
+    def test_a_course_with_frames_carries_its_track(self):
+        course = scenes.build_index(ENTRIES, KOREA, FRAMES)["courses"]["c1"]
+        self.assertEqual(course["totalKm"], 12.3)
+        self.assertEqual(course["track"], FRAMES["c1"]["track"])
+        self.assertEqual(course["frames"][0]["section"], "구간")
+
+    def test_a_course_without_frames_has_nothing_to_scrub(self):
+        course = scenes.build_index(ENTRIES, KOREA)["courses"]["c1"]
+        self.assertEqual((course["track"], course["frames"], course["totalKm"]), ([], [], 0))
+
+    def test_frame_pictures_reach_the_app(self):
+        with tempfile.TemporaryDirectory() as folder:
+            images, assets = Path(folder) / "images", Path(folder) / "assets"
+            (images / "frames/c1").mkdir(parents=True)
+            (images / "frames/c1/00.jpg").write_bytes(b"x")
+            with mock.patch.object(scenes, "IMAGES", images), mock.patch.object(scenes, "ASSETS", assets):
+                scenes.copy_frames(["c1", "c2"])
+            self.assertEqual([p.name for p in (assets / "frames/c1").iterdir()], ["00.jpg"])
+            self.assertFalse((assets / "frames/c2").exists())
 
 
 if __name__ == "__main__":

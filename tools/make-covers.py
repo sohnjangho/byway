@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""코스 커버 이미지를 만든다. 위성 타일 위에 구간 색 코스 선을 그린다. 사용: tools/make-covers.py [출력 폴더]
+"""코스 커버 이미지를 만든다. 지도 타일 위에 구간 색 코스 선을 그린다. 사용: tools/make-covers.py [출력 폴더]
+지도는 두 가지다. 위성과 일반 지도를 같은 좌표로 만들고 앱이 설정에 따라 고른다.
 위성 출처: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
-2016년판은 CC BY 4.0 이다. 2018년 이후판은 비상업 허가이고 2017년판에는 한국이 없어서 바꿀 수 없다."""
+2016년판은 CC BY 4.0 이다. 2018년 이후판은 비상업 허가이고 2017년판에는 한국이 없어서 바꿀 수 없다.
+일반 지도 출처: Terrain Light, Data © OpenStreetMap contributors and others, Rendering © EOX"""
 import io
 import json
 import math
@@ -14,26 +16,26 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps, ImageStat
 
 ROOT = Path(__file__).parent.parent
-TILE = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
+LAYERS = {
+    "satellite": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg",
+    # 도로와 물, 지형만 있고 지명이 없다. 지명은 앱이 한글로 그린다.
+    "map": "https://tiles.maps.eox.at/wmts/1.0.0/terrain-light_3857/default/g/{z}/{y}/{x}.jpg",
+}
 SIZE = 640
 SCALE = 2
 FILL = 0.8
-FREE_PHOTO_LICENCES = ("CC0", "Public domain")
 CACHE = Path(tempfile.gettempdir()) / "byway-tiles"
-CACHE.mkdir(exist_ok=True)
 FALLBACK = (240, 164, 90)
 CASING = (13, 14, 16)
 # 야간 커버는 사진만 어둡게 한다. 코스 선까지 어두워지면 코스가 안 보인다.
 NIGHT_BRIGHTNESS = 0.62
 NIGHT_CONTRAST = 1.12
-# 설명 뒤에 까는 흐린 배경. 실시간 블러 대신 작은 파일 하나를 앱과 시안이 같이 쓴다.
-SOFT_SIZE = (320, 200)
-SOFT_BLUR = 4
-SOFT_COLOUR = 1.6
-# 사진이 아주 밝거나 어두워도 흐린 배경 위 글자가 4.5:1 을 넘도록 밝기 범위를 묶는다.
-SOFT_DARKEST = 40
-SOFT_BRIGHTEST = 200
-SCENERY = ROOT / "app/src/main/assets/scenery"
+# 일반 지도 야간판의 밝기. 바탕색에 더하는 값이다. 흰 땅(MAP_PAPER)이 MAP_LAND, 그보다 어두운 도로는 더 밝아진다.
+MAP_PAPER = 246
+MAP_LAND = 26
+MAP_ROAD_SLOPE = 0.7
+MAP_DARKEST = 14
+MAP_BRIGHTEST = 84
 # 세 색 중 가장 어두운 값이 이보다 밝으면 구름으로 본다. 흰 지붕이나 옅은 모래, 콘크리트도 함께 덮인다.
 CLOUD_LEVEL = 150
 
@@ -52,11 +54,26 @@ def zoom_for(path):
     return 7
 
 
-def tile(zoom, x, y):
+def tile_url(layer, zoom, x, y):
+    return LAYERS[layer].format(z=zoom, x=x, y=y)
+
+
+def cache_file(layer, zoom, x, y):
+    folder = CACHE if layer == "satellite" else CACHE.with_name(f"{CACHE.name}-{layer}")
+    folder.mkdir(exist_ok=True)
+    return folder / f"{zoom}_{x}_{y}.jpg"
+
+
+def file_name(name, layer, night=False):
+    """위성은 예전 이름 그대로 두고 일반 지도는 레이어 이름을 붙인다."""
+    return f"{name}{'' if layer == 'satellite' else '-' + layer}{'-night' if night else ''}.jpg"
+
+
+def tile(zoom, x, y, layer="satellite"):
     """받은 타일은 임시 폴더에 두고 다시 받지 않는다. 서버가 끊으면 기다렸다가 다시 시도한다."""
-    cached = CACHE / f"{zoom}_{x}_{y}.jpg"
+    cached = cache_file(layer, zoom, x, y)
     if not cached.exists():
-        request = urllib.request.Request(TILE.format(z=zoom, x=x, y=y), headers={"User-Agent": "byway-course-tool"})
+        request = urllib.request.Request(tile_url(layer, zoom, x, y), headers={"User-Agent": "byway-course-tool"})
         for attempt in range(5):
             try:
                 cached.write_bytes(urllib.request.urlopen(request, timeout=30).read())
@@ -104,35 +121,50 @@ def darkened(image):
     return ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(NIGHT_BRIGHTNESS)).enhance(NIGHT_CONTRAST)
 
 
-def ground(path):
-    """코스 둘레의 위성 사진과 그 좌표계. 구름은 뺀다."""
+def night_background():
+    """앱 야간 바탕색. 원본은 design/tokens.json 이다."""
+    tokens = json.loads((ROOT / "design/tokens.json").read_text(encoding="utf-8"))
+    value = next(token["value"]["night"] for token in tokens["color"]["tokens"] if token["name"] == "bg")
+    return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def night_map(image):
+    """일반 지도의 야간판. 물은 앱 바탕색과 같게 해서 지도 가장자리가 보이지 않게 하고, 땅은 조금 밝게, 도로는 더 밝게 한다."""
+    red, _, blue = image.split()
+    water = ImageChops.subtract(blue, red).point(lambda v: max(0, min(255, (v - 5) * 255 // 10)))
+    lift = ImageOps.grayscale(image).point(
+        lambda v: max(MAP_DARKEST, min(MAP_BRIGHTEST, round(MAP_LAND + (MAP_PAPER - v) * MAP_ROAD_SLOPE)))
+    )
+    background = night_background()
+    land = Image.merge("RGB", [lift.point(lambda v, base=base: min(255, v + base)) for base in background])
+    return Image.composite(Image.new("RGB", image.size, background), land, water)
+
+
+def night_of(image, layer):
+    return darkened(image) if layer == "satellite" else night_map(image)
+
+
+def ground(path, layer="satellite"):
+    """코스 둘레의 지도와 그 좌표계. 위성은 구름을 뺀다."""
     zoom, left, top, window = frame(path)
     first_x, last_x = int(left // 256), int((left + window) // 256)
     first_y, last_y = int(top // 256), int((top + window) // 256)
     sheet = Image.new("RGB", ((last_x - first_x + 1) * 256, (last_y - first_y + 1) * 256))
     for x in range(first_x, last_x + 1):
         for y in range(first_y, last_y + 1):
-            sheet.paste(tile(zoom, x, y), ((x - first_x) * 256, (y - first_y) * 256))
+            sheet.paste(tile(zoom, x, y, layer), ((x - first_x) * 256, (y - first_y) * 256))
     box = (int(left - first_x * 256), int(top - first_y * 256))
     drawn = SIZE * SCALE
     crop = sheet.crop((box[0], box[1], box[0] + int(window), box[1] + int(window))).resize((drawn, drawn), Image.LANCZOS)
-    return without_clouds(crop), zoom, left, top, window
+    return (without_clouds(crop) if layer == "satellite" else crop), zoom, left, top, window
 
 
-def soft(course, photo=None):
-    """풍경 사진이 있으면 그것을, 없으면 위성 사진을 흐리게 만든다."""
-    base = photo or ground(course["path"])[0]
-    blurred = ImageOps.fit(base, SOFT_SIZE, Image.LANCZOS).filter(ImageFilter.GaussianBlur(SOFT_BLUR))
-    vivid = ImageEnhance.Color(blurred).enhance(SOFT_COLOUR)
-    return vivid.point(lambda value: min(max(value, SOFT_DARKEST), SOFT_BRIGHTEST))
-
-
-def cover(course, night=False):
+def cover(course, night=False, layer="satellite"):
     path = course["path"]
-    image, zoom, left, top, window = ground(path)
+    image, zoom, left, top, window = ground(path, layer)
     drawn = SIZE * SCALE
     if night:
-        image = darkened(image)
+        image = night_of(image, layer)
     ratio = drawn / window
     colours = section_colours()
     pen = ImageDraw.Draw(image)
@@ -153,27 +185,13 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     for file in sorted((ROOT / "app/src/main/assets/courses").glob("*.json")):
         course = json.loads(file.read_text(encoding="utf-8"))
-        for suffix, night in (("", False), ("-night", True)):
-            target = out / f"{course['id']}{suffix}.jpg"
-            if target.exists():
-                continue
-            cover(course, night).save(target, quality=82)
-            print(target.name, target.stat().st_size, flush=True)
-        write_soft(course, out / f"{course['id']}-soft.jpg")
-
-
-def free_photo(credit):
-    """흐린 배경은 사진을 변형한 결과물이라 이용 조건이 없는 사진만 쓴다."""
-    return any(f"({licence}," in credit for licence in FREE_PHOTO_LICENCES)
-
-
-def write_soft(course, target):
-    photo = SCENERY / f"{course['id']}.jpg"
-    usable = photo.exists() and free_photo(course.get("sceneryCredit", ""))
-    if target.exists() and (not usable or photo.stat().st_mtime <= target.stat().st_mtime):
-        return
-    soft(course, Image.open(photo).convert("RGB") if usable else None).save(target, quality=80)
-    print(target.name, target.stat().st_size, flush=True)
+        for layer in LAYERS:
+            for night in (False, True):
+                target = out / file_name(course["id"], layer, night)
+                if target.exists():
+                    continue
+                cover(course, night, layer).save(target, quality=82)
+                print(target.name, target.stat().st_size, flush=True)
 
 
 if __name__ == "__main__":

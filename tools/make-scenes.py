@@ -53,17 +53,17 @@ def line_text(points):
     return "M" + " L".join(f"{number(x)} {number(y)}" for x, y in points)
 
 
-def ground(view):
+def ground(view, layer="satellite"):
     width, height = SIZE[0] / view["scale"], SIZE[1] / view["scale"]
     first_x, last_x = int(view["left"] // 256), int((view["left"] + width) // 256)
     first_y, last_y = int(view["top"] // 256), int((view["top"] + height) // 256)
     sheet = Image.new("RGB", ((last_x - first_x + 1) * 256, (last_y - first_y + 1) * 256))
     for x in range(first_x, last_x + 1):
         for y in range(first_y, last_y + 1):
-            sheet.paste(covers.tile(view["zoom"], x, y), ((x - first_x) * 256, (y - first_y) * 256))
+            sheet.paste(covers.tile(view["zoom"], x, y, layer), ((x - first_x) * 256, (y - first_y) * 256))
     box = (view["left"] - first_x * 256, view["top"] - first_y * 256)
-    crop = sheet.crop((int(box[0]), int(box[1]), int(box[0] + width), int(box[1] + height)))
-    return covers.without_clouds(crop.resize(SIZE, Image.LANCZOS))
+    crop = sheet.crop((int(box[0]), int(box[1]), int(box[0] + width), int(box[1] + height))).resize(SIZE, Image.LANCZOS)
+    return covers.without_clouds(crop) if layer == "satellite" else crop
 
 
 def sections(course, view):
@@ -83,11 +83,12 @@ def main():
         course = json.loads(file.read_text(encoding="utf-8"))
         view = fit(course["path"])
         data[course["id"]] = {"view": view, "sections": sections(course, view)}
-        day, night = OUT / f"{course['id']}.jpg", OUT / f"{course['id']}-night.jpg"
-        if not day.exists():
-            image = ground(view).resize((int(SIZE[0] * SAVE_RATIO), int(SIZE[1] * SAVE_RATIO)), Image.LANCZOS)
-            image.save(day, quality=74)
-            covers.darkened(image).save(night, quality=74)
+        for layer in covers.LAYERS:
+            day, night = OUT / covers.file_name(course["id"], layer), OUT / covers.file_name(course["id"], layer, night=True)
+            if not day.exists():
+                image = ground(view, layer).resize((int(SIZE[0] * SAVE_RATIO), int(SIZE[1] * SAVE_RATIO)), Image.LANCZOS)
+                image.save(day, quality=74)
+                covers.night_of(image, layer).save(night, quality=74)
         print(course["id"], view["zoom"], round(view["scale"], 2), flush=True)
     (OUT / "routes.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
