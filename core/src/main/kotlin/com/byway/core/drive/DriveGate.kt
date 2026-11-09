@@ -19,6 +19,8 @@ class DriveGate {
     fun allows(command: DriveCommand): Boolean = when (command) {
         is DriveCommand.FollowRoute, is DriveCommand.Say, is DriveCommand.ShowLine, is DriveCommand.ShowProgress, is DriveCommand.SetCabin,
         is DriveCommand.PlayMusic, DriveCommand.StopMusic -> true
+        // 물음은 버튼 하나를 한 번 누르는 것이고, 연출 되돌리기는 화면을 바꾸지 않는다.
+        is DriveCommand.Ask, DriveCommand.RestoreCabin -> true
         is DriveCommand.ShowPanel -> parked || mode == DriveMode.EYES_OFF
         is DriveCommand.Publish -> false
     }

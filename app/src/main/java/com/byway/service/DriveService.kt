@@ -132,7 +132,7 @@ class DriveService : Service() {
             is DriveCommand.ShowProgress -> DriveBoard.update {
                 it.copy(sectionIndex = command.sectionIndex, remainingMeters = command.remainingMeters)
             }
-            is DriveCommand.ShowPanel, is DriveCommand.Publish -> Log.w(TAG, "unhandled $command")
+            is DriveCommand.ShowPanel, is DriveCommand.Publish, is DriveCommand.Ask, DriveCommand.RestoreCabin -> Log.w(TAG, "unhandled $command")
         }
     }
 

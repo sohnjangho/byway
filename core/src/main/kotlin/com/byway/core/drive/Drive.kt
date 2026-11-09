@@ -32,19 +32,48 @@ interface RouteFollower {
 
 /** 일어난 일. */
 sealed interface DriveEvent {
-    data class CourseStarted(val course: Course) : DriveEvent
+    /** [resumeFrom]은 이어서 달릴 때 코스 위의 지점 번호다. 처음부터면 0 이다. */
+    data class CourseStarted(val course: Course, val resumeFrom: Int = 0) : DriveEvent
     data class LocationUpdated(val point: GeoPoint) : DriveEvent
     data class SectionEntered(val section: Section) : DriveEvent
     data class DrivingStateChanged(val parked: Boolean) : DriveEvent
     data class DriveModeChanged(val mode: DriveMode) : DriveEvent
     data object CourseFinished : DriveEvent
+
+    /** 운전자가 내비에 다른 목적지나 경유지를 넣었다. */
+    data object RouteTakenOver : DriveEvent
+
+    /** 운전자가 내비의 안내를 껐다. */
+    data object RouteCancelled : DriveEvent
+
+    /** 내비가 운전자가 넣은 목적지에 닿았다고 알렸다. */
+    data object DestinationArrived : DriveEvent
+
+    /** 운전자가 [DriveCommand.Ask]에 답했다. */
+    data class Answered(val yes: Boolean) : DriveEvent
+
+    /** 코스가 멈췄다. 운전자가 이어가기를 고르면 구간이 다시 알려진다. */
+    data object CoursePaused : DriveEvent
+
+    /** 운전자가 코스를 끝냈다. 끝까지 달린 것은 [CourseFinished]다. */
+    data object CourseStopped : DriveEvent
+}
+
+/** 운전자에게 묻는 것. 주행 화면이 버튼 하나로 답을 받는다. 답이 없으면 아니라는 뜻이다. */
+enum class Prompt {
+    /** 코스를 벗어나고 있다. 잠깐 들르는 것인가. */
+    DETOUR,
+
+    /** 코스가 멈춰 있다. 이어갈 것인가. */
+    RESUME,
 }
 
 /** 해 달라는 일. 실행은 platform 이 맡는다. */
 sealed interface DriveCommand {
     /** 코스를 따라가게 한다. path 는 경로 전체를 받을 수 있는 쪽에만 채운다. */
     data class FollowRoute(val leg: Leg, val path: List<GeoPoint>? = null) : DriveCommand
-    data class Say(val text: String) : DriveCommand
+    /** [alert]는 음성 안내를 꺼 두었어도 짧은 알림음으로 알릴 일이다. */
+    data class Say(val text: String, val alert: Boolean = false) : DriveCommand
     data class ShowLine(val text: String) : DriveCommand
 
     /** 화면이 그릴 주행 진행값. 문구가 아니라 값으로 주어 문구를 고쳐도 화면이 깨지지 않는다. */
@@ -52,6 +81,12 @@ sealed interface DriveCommand {
 
     /** 차 안 상태를 바꾼다. 값이 null 인 항목은 건드리지 않는다. */
     data class SetCabin(val scene: CabinScene) : DriveCommand
+
+    /** 연출이 바꾼 차 안을 처음 값으로 되돌린다. 운전자가 그 뒤 직접 바꾼 항목은 실행하는 쪽이 건드리지 않는다. */
+    data object RestoreCabin : DriveCommand
+
+    /** 운전자에게 묻는다. null 이면 물음을 거둔다. */
+    data class Ask(val prompt: Prompt?) : DriveCommand
 
     /** 구간 분위기에 맞는 배경음악을 튼다. track 은 forest, city, river 중 하나다. */
     data class PlayMusic(val track: String) : DriveCommand
