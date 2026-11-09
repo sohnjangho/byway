@@ -29,10 +29,10 @@ class CourseShelvesTest {
     }
 
     @Test
-    fun rankingByClimbPutsTheSteepestFirst() {
+    fun rankingByFunPutsTheHillierRoadFirst() {
         val flat = course("flat", elevation = listOf(1.0, 2.0))
         val steep = course("steep", elevation = listOf(1.0, 500.0))
-        assertEquals("steep", rank(listOf(flat, steep), RankBy.CLIMB).first().course.id)
+        assertEquals("steep", rank(listOf(flat, steep), RankBy.FUN).first().course.id)
     }
 
     @Test

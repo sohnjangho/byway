@@ -3,7 +3,7 @@ package com.byway.core.course
 import kotlin.math.roundToInt
 
 /** 랭킹 기준. 인기 순위는 서버가 생긴 뒤에 더한다. 지금은 코스에서 계산한 값만 쓴다. */
-enum class RankBy { CURVES, EUM, CLIMB, LENGTH }
+enum class RankBy { CURVES, FUN, SCENERY, LENGTH }
 
 data class Ranked(val course: Course, val facts: CourseFacts)
 
@@ -12,13 +12,14 @@ data class Shelf(val key: String, val count: Int)
 private val MOOD_NAMES = mapOf("forest" to "숲", "river" to "물가", "city" to "도심")
 
 fun rank(courses: List<Course>, by: RankBy): List<Ranked> =
-    courses.map { Ranked(it, factsOf(it)) }.sortedByDescending { value(it.facts, by) }
+    courses.map { Ranked(it, factsOf(it)) }.sortedByDescending { value(it, by) }
 
-private fun value(facts: CourseFacts, by: RankBy): Double = when (by) {
-    RankBy.CURVES -> facts.curves.toDouble()
-    RankBy.EUM -> facts.eumRatio
-    RankBy.CLIMB -> facts.climbMeters.toDouble()
-    RankBy.LENGTH -> facts.meters
+private fun value(ranked: Ranked, by: RankBy): Double = when (by) {
+    RankBy.CURVES -> ranked.facts.curves.toDouble()
+    RankBy.FUN -> funScore(ranked.facts, ranked.course.elevation.isNotEmpty()).toDouble()
+    // 도심 밖 비율이 같으면 전망 명소가 많은 코스가 앞선다.
+    RankBy.SCENERY -> naturePercent(ranked.facts.moodShare) + viewCount(ranked.course) / 100.0
+    RankBy.LENGTH -> ranked.facts.meters
 }
 
 fun withTheme(courses: List<Course>, theme: String): List<Course> = courses.filter { theme in it.tags.themes }
@@ -50,7 +51,7 @@ fun characterOf(course: Course, all: List<Course>): String {
     val others = all.filter { it.id != course.id }.map(::factsOf)
     fun leads(pick: (CourseFacts) -> Double) = pick(mine) > 0 && others.all { pick(it) < pick(mine) }
     return when {
-        leads { it.curves.toDouble() } -> "가장 굽이진 길"
+        leads { it.curves.toDouble() } -> "커브가 가장 많은 길"
         leads { shownRatio(it) } -> "가장 많이 돌아가는 길"
         leads { it.meters } -> "가장 긴 길 %.1fkm".format(java.util.Locale.ROOT, mine.meters / 1_000)
         leads { it.climbMeters.toDouble() } -> "가장 높이 오르는 길"
