@@ -20,6 +20,15 @@ class CreditsTest {
         assertTrue(lines.contains("사진: 가"))
     }
 
+    /** 앱 정보에는 칩의 짧은 출처 대신 제목과 주소까지 있는 전문을 적는다. */
+    @Test
+    fun thePhotoListShowsTheFullCreditInsteadOfTheShortOne() {
+        val full = course("c", "코스 출처", "사진: 가").copy(sceneryDetail = "사진: 가, 원본 주소")
+        val listed = creditLines(listOf(full))
+        assertTrue(listed.contains("사진: 가, 원본 주소"))
+        assertTrue(!listed.contains("사진: 가"))
+    }
+
     @Test
     fun blankCreditsAreLeftOut() {
         assertTrue(lines.none { it.isBlank() })

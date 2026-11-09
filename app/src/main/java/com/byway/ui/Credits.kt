@@ -38,7 +38,7 @@ private val FIXED_CREDITS = listOf(
 
 /** 앱에 실린 코스, 사진, 지도 자료의 출처. */
 fun creditLines(courses: List<Course>): List<String> =
-    (courses.map { it.attribution } + courses.map { it.sceneryCredit } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
+    (courses.map { it.attribution } + courses.map { it.sceneryDetail.ifBlank { it.sceneryCredit } } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
 
 /** 앱에 함께 배포되는 오픈소스. docs/권리점검.md 와 같은 목록이다. */
 val OPEN_SOURCE_NOTICES = listOf(

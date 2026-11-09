@@ -102,7 +102,7 @@ def region_of(definition):
 
 
 def build_course(definition, path):
-    photo = {"sceneryCredit": definition["sceneryCredit"]} if "sceneryCredit" in definition else {}
+    photo = {key: definition[key] for key in ("sceneryCredit", "sceneryDetail") if key in definition}
     return {
         "schemaVersion": 2,
         "id": definition["id"],

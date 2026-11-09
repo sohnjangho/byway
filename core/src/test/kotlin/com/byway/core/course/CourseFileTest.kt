@@ -62,6 +62,13 @@ class CourseFileTest {
     }
 
     @Test
+    fun theFullSceneryCreditIsOptional() {
+        assertEquals("", parseCourse(v2()).sceneryDetail)
+        val withDetail = v2().replace(""""summary":""", """"sceneryDetail":"전문","summary":""")
+        assertEquals("전문", parseCourse(withDetail).sceneryDetail)
+    }
+
+    @Test
     fun theSceneryCreditIsOptional() {
         assertEquals("", parseCourse(v2()).sceneryCredit)
         val withPhoto = v2().replace(""""summary":""", """"sceneryCredit":"작가 (CC0)","summary":""")
