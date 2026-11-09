@@ -108,6 +108,10 @@ internal fun Context.quietButton(title: String, onClick: () -> Unit): Button =
         background = pressable(palette.bgRaised, palette.bgPressed, Dimens.RADIUS_MD, palette.line)
     }
 
+/** 큰 버튼 옆에 나란히 두는 짧은 버튼. 옆 여백을 줄여 큰 버튼의 글이 잘리지 않게 한다. */
+internal fun Context.compactButton(title: String, onClick: () -> Unit): Button =
+    quietButton(title, onClick).apply { setPadding(dp(Dimens.SPACE_4), 0, dp(Dimens.SPACE_4), 0) }
+
 /** 주행 화면 버튼. 눈을 끄는 색면을 두지 않으려고 테두리만 그리고 눌림 움직임도 뺀다. */
 internal fun Context.outlineButton(title: String, onClick: () -> Unit): Button =
     button(title, Dimens.BODY, Dimens.BUTTON_MEDIUM, onClick).apply {

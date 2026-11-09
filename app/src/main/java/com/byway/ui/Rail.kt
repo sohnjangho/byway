@@ -28,9 +28,10 @@ private const val PICTURE_WAIT_MS = 120L
 @SuppressLint("ViewConstructor")
 internal class RailFrame(
     context: Context,
-    selected: Tab,
+    selected: Tab?,
     window: WindowClass,
     private val onTab: (Tab) -> Unit,
+    private val onSettings: () -> Unit,
     content: View,
     private var over: Boolean,
 ) : FrameLayout(context) {
@@ -39,7 +40,7 @@ internal class RailFrame(
     private val backdrop = RailBackdrop(context)
     private val body = if (onTop) context.row() else context.column()
     private val items = mutableMapOf<Tab, TextView>()
-    private val avatarMark = context.label("나", Dimens.SMALL, bold = true)
+    private val settingsItem = railItem("설정") { onSettings() }
     private var shown = content
     private var entering: View? = null
     private var enteringStarted = false
@@ -64,7 +65,7 @@ internal class RailFrame(
     }
 
     /** [sign]은 내용이 들어오는 쪽이다. 0이면 제자리에서 나타난다. 전환 중에 또 눌러도 바로 다음 화면으로 넘어간다. */
-    fun swap(next: View, selected: Tab, over: Boolean, sign: Int) {
+    fun swap(next: View, selected: Tab?, over: Boolean, sign: Int) {
         this.over = over
         mark(selected, animate = true)
         settleEntering()
@@ -134,39 +135,35 @@ internal class RailFrame(
             } else {
                 LinearLayout.LayoutParams(MATCH, context.dp(Dimens.RAIL_ITEM_HEIGHT)).apply { bottomMargin = context.dp(Dimens.SPACE_2) }
             }
-            addView(railItem(tab).also { items[tab] = it }, size)
+            addView(railItem(tab.title) { onTab(tab) }.also { items[tab] = it }, size)
         }
-        addView(Space(context), LinearLayout.LayoutParams(0, 0, 1f))
-        addView(avatar(), LinearLayout.LayoutParams(if (onTop) WRAP else MATCH, WRAP))
+        // 넓은 창은 맨 아래 왼쪽 구석, 1/3 창은 메뉴 바로 옆이다. 둘 다 운전석에서 가까운 쪽이다.
+        if (onTop) {
+            addView(settingsItem, LinearLayout.LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN)))
+        } else {
+            addView(Space(context), LinearLayout.LayoutParams(0, 0, 1f))
+            addView(settingsItem, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.RAIL_ITEM_HEIGHT)))
+        }
     }
 
-    private fun railItem(tab: Tab): TextView = context.label(tab.title, Dimens.SMALL).apply {
+    private fun railItem(title: String, onClick: () -> Unit): TextView = context.label(title, Dimens.SMALL).apply {
         gravity = Gravity.CENTER
         if (onTop) setPadding(context.dp(Dimens.SPACE_4), 0, context.dp(Dimens.SPACE_4), 0)
         pressMotion()
-        setOnClickListener { onTab(tab) }
+        setOnClickListener { onClick() }
     }
 
-    private fun avatar(): View = FrameLayout(context).apply {
-        minimumHeight = context.dp(Dimens.TOUCH_MIN)
-        pressMotion()
-        setOnClickListener { onTab(Tab.MINE) }
-        avatarMark.gravity = Gravity.CENTER
-        addView(avatarMark, LayoutParams(context.dp(Dimens.AVATAR_SMALL), context.dp(Dimens.AVATAR_SMALL), Gravity.CENTER))
-    }
-
-    private fun mark(selected: Tab, animate: Boolean) {
+    /** [selected]가 없으면 설정에 표시한다. */
+    private fun mark(selected: Tab?, animate: Boolean) {
         backdrop.setBackgroundColor(if (over) colors.softWash else colors.bgRaised)
-        items.forEach { (tab, item) ->
-            val on = tab == selected
+        val target = selected?.let(items::getValue) ?: settingsItem
+        (items.values + settingsItem).forEach { item ->
+            val on = item === target
             item.setTextColor(if (on || over) colors.ink else colors.inkSecondary)
             item.typeface = if (on) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
             item.background = if (on) null else context.pressable(Color.TRANSPARENT, colors.bgPressed)
         }
-        val mine = selected == Tab.MINE
-        avatarMark.setTextColor(if (mine) colors.onAccent else colors.accent)
-        avatarMark.background = context.rounded(if (mine) colors.accent else colors.bgPressed, Dimens.AVATAR_SMALL / 2)
-        val item = items.getValue(selected)
+        val item = target
         // 1/3 창은 굵은 글자로 칸 폭이 바뀌므로 배치가 끝난 뒤에 자리를 읽는다.
         OneShotPreDrawListener.add(body) {
             backdrop.moveTo(MarkBox(item.left.toFloat(), item.top.toFloat(), item.right.toFloat(), item.bottom.toFloat()), animate)

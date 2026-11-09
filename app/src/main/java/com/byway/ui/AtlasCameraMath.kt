@@ -5,8 +5,8 @@ import com.byway.core.course.Box
 import com.byway.core.course.Px
 
 private val BROWSE_FOCUS = mapOf(
-    WindowClass.TWO to Box(196f, 40f, 744f, 1104f),
-    WindowClass.FULL to Box(196f, 40f, 1324f, 1130f),
+    WindowClass.TWO to Box(916f, 40f, 744f, 1104f),
+    WindowClass.FULL to Box(1196f, 40f, 1324f, 1130f),
     WindowClass.THIRD to Box(24f, 116f, 793f, 440f),
 )
 private val MINE_FOCUS = mapOf(

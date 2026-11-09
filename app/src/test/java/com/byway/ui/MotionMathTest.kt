@@ -55,13 +55,6 @@ class MotionMathTest {
     }
 
     @Test
-    fun contentEntersFromTheSideTheMenuMovedToward() {
-        assertEquals(1, enterSign(Tab.HOME, Tab.RANKING))
-        assertEquals(-1, enterSign(Tab.MINE, Tab.BROWSE))
-        assertEquals(0, enterSign(Tab.HOME, Tab.HOME))
-    }
-
-    @Test
     fun linesAppearInOrderAndFinishWithinTheLongestTime() {
         assertEquals(0L, staggerDelay(0))
         assertTrue(staggerDelay(1) > staggerDelay(0))

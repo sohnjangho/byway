@@ -4,12 +4,19 @@ import com.byway.core.course.Course
 
 private const val SATELLITE = "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
 
-/** 위성 그림과 코스 선이 보이는 화면의 출처. */
-const val MAP_CREDIT = "$SATELLITE · 코스 © OpenStreetMap contributors"
+private const val TERRAIN = "Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX"
+
+/** 지도와 코스 선이 보이는 화면의 출처. 훑어보기 사진 띠는 위성이라 [withFrames]면 위성 출처를 함께 적는다. */
+fun mapCredit(style: MapStyle, withFrames: Boolean = false): String = when {
+    style == MapStyle.SATELLITE -> "$SATELLITE · 코스 © OpenStreetMap contributors"
+    withFrames -> "$TERRAIN · 사진 띠: $SATELLITE"
+    else -> TERRAIN
+}
 
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",
     SATELLITE,
+    "$TERRAIN (EOX::Maps, https://maps.eox.at)",
     "고도: Open-Meteo, Copernicus DEM",
 )
 

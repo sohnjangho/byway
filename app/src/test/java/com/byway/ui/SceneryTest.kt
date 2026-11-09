@@ -23,13 +23,5 @@ class SceneryTest {
         assertNull(sceneryFile("c1", "사진 작가 (CC BY 4.0)", emptySet()))
     }
 
-    @Test
-    fun theSoftBackgroundIsTheCoursesOwnFile() {
-        assertEquals("c1-soft.jpg", softFile("c1", setOf("c1-soft.jpg", "c1.jpg")))
-    }
 
-    @Test
-    fun aCourseWithoutASoftFileHasNone() {
-        assertNull(softFile("c1", setOf("c1.jpg")))
-    }
 }

@@ -17,7 +17,6 @@ internal fun mineScreen(
     update: (Nav) -> Unit,
     onStart: (String) -> Unit,
     onBrowse: () -> Unit,
-    onAbout: () -> Unit,
 ): View = with(context) {
     val recent = MyDrives.recent(this)
     val courses = kit.book.mine(MyDrives.saved(this), recent)
@@ -64,7 +63,7 @@ internal fun mineScreen(
             current = current.copy(atlas = it)
             update(current)
         }
-        atlas.addChrome(0, "내 코스") { showList() }
+        atlas.addChrome(if (third) 0 else Dimens.RAIL_WIDTH + (if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH), "내 코스") { showList() }
         slot.addView(myList(courses, recent, ::pick, onBrowse), matchFrame())
         picked?.let(::showCourse)
 
@@ -75,7 +74,6 @@ internal fun mineScreen(
             addView(identity())
             addSpaced(totals(kit), Dimens.SPACE_4)
             addView(slot, fill().apply { topMargin = dp(Dimens.SPACE_4) })
-            addSpaced(toggles(kit, onAbout), Dimens.SPACE_3)
         }
         val sideSize = if (third) {
             FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = dp(Dimens.THIRD_MINE_ATLAS_HEIGHT) }
@@ -87,7 +85,7 @@ internal fun mineScreen(
 }
 
 private fun Context.identity(): View = row().apply {
-    val mark = label("나", Dimens.HEADING, palette.accent, bold = true).apply {
+    val mark = label("나", Dimens.HEADING, bold = true).apply {
         gravity = Gravity.CENTER
         background = rounded(palette.bgPressed, Dimens.AVATAR_MEDIUM / 2)
     }
@@ -154,7 +152,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
 }
 
 private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<String>, onBack: () -> Unit, onStart: (String) -> Unit): View = column().apply {
-    softBackground(course)
+    background = rounded(palette.bgRaised)
     val edge = dp(Dimens.SPACE_6)
     setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
     val facts = kit.book.facts(course)
@@ -169,48 +167,4 @@ private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<Stri
         addView(primaryButton("내비에 입히기") { onStart(course.id) }, LinearLayout.LayoutParams(0, WRAP, 1f))
     }
     addView(buttons)
-}
-
-private fun Context.toggles(kit: BrowseKit, onAbout: () -> Unit): View {
-    val cells = listOf(
-        toggleRow("차 안 연출", MyDrives.ambienceOn) { MyDrives.ambienceOn = it },
-        toggleRow("음성 안내", MyDrives.voiceOn) { MyDrives.voiceOn = it },
-        toggleRow("음악 앱 재생", MyDrives.musicOn) { MyDrives.musicOn = it },
-        toggleRow("분위기 효과", MyDrives.moodOn) { MyDrives.moodOn = it },
-    )
-    val columns = if (kit.window == WindowClass.FULL) 4 else 2
-    return column().apply {
-        addView(grid(cells, columns, dp(Dimens.TOUCH_MIN), gap = Dimens.SPACE_2))
-        addSpaced(smallButton("앱 정보", onAbout), Dimens.SPACE_2)
-    }
-}
-
-/** 켜고 끄는 줄. 움직임 없이 색과 위치만 바뀐다. */
-private fun Context.toggleRow(title: String, initial: Boolean, onChange: (Boolean) -> Unit): View = row().apply {
-    var on = initial
-    minimumHeight = dp(Dimens.TOUCH_MIN)
-    background = rounded(palette.bgDeep, Dimens.RADIUS_SM)
-    setPadding(dp(Dimens.SPACE_4), 0, dp(Dimens.SPACE_3), 0)
-    val knob = View(context)
-    val pill = FrameLayout(context)
-    fun paint() {
-        pill.background = rounded(if (on) palette.accent else palette.bgPressed, Dimens.TOGGLE_HEIGHT / 2)
-        knob.background = rounded(if (on) palette.onAccent else palette.inkMuted, Dimens.TOGGLE_KNOB / 2)
-        val side = if (on) Gravity.END else Gravity.START
-        knob.layoutParams = FrameLayout.LayoutParams(dp(Dimens.TOGGLE_KNOB), dp(Dimens.TOGGLE_KNOB), side or Gravity.CENTER_VERTICAL).apply {
-            marginStart = dp(Dimens.TOGGLE_INSET)
-            marginEnd = dp(Dimens.TOGGLE_INSET)
-        }
-    }
-    pill.addView(knob)
-    paint()
-    addView(label(title, Dimens.LABEL).atMostLines(1), LinearLayout.LayoutParams(0, WRAP, 1f))
-    addView(pill, LinearLayout.LayoutParams(dp(Dimens.TOGGLE_WIDTH), dp(Dimens.TOGGLE_HEIGHT)))
-    contentDescription = title
-    pressMotion()
-    setOnClickListener {
-        on = !on
-        onChange(on)
-        paint()
-    }
 }

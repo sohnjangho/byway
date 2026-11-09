@@ -36,9 +36,6 @@ fun screenMotion(before: Screen?, after: Screen, beforeCourse: String?, afterCou
 
 private fun Screen.isDriving() = this == Screen.Drive || this == Screen.Waiting
 
-/** 메뉴가 아래로 가면 내용은 아래에서 들어온다. */
-fun enterSign(before: Tab, after: Tab): Int = after.ordinal.compareTo(before.ordinal)
-
 fun staggerDelay(index: Int): Long = min(index * STAGGER_STEP, MotionSpec.LONG2 - MotionSpec.MEDIUM1)
 
 /** 구간 선을 앞에서부터 이어서 그릴 때 선마다 보이는 길이. */

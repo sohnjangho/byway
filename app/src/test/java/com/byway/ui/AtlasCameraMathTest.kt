@@ -8,12 +8,21 @@ import org.junit.Test
 class AtlasCameraMathTest {
     @Test
     fun focusAreasMatchTheMockups() {
-        assertEquals(Box(196f, 40f, 744f, 1104f), atlasFocus(Tab.BROWSE, WindowClass.TWO))
-        assertEquals(Box(196f, 40f, 1324f, 1130f), atlasFocus(Tab.BROWSE, WindowClass.FULL))
+        assertEquals(Box(916f, 40f, 744f, 1104f), atlasFocus(Tab.BROWSE, WindowClass.TWO))
+        assertEquals(Box(1196f, 40f, 1324f, 1130f), atlasFocus(Tab.BROWSE, WindowClass.FULL))
         assertEquals(Box(24f, 116f, 793f, 440f), atlasFocus(Tab.BROWSE, WindowClass.THIRD))
         assertEquals(Box(816f, 96f, 844f, 960f), atlasFocus(Tab.MINE, WindowClass.TWO))
         assertEquals(Box(1316f, 96f, 1204f, 990f), atlasFocus(Tab.MINE, WindowClass.FULL))
         assertEquals(Box(24f, 116f, 793f, 480f), atlasFocus(Tab.MINE, WindowClass.THIRD))
+    }
+
+    /** 고르는 칸이 운전석 쪽(왼쪽)이고 지도는 그 오른쪽이다. */
+    @Test
+    fun theBrowseMapSitsRightOfThePanel() {
+        assertEquals((Dimens.RAIL_WIDTH + Dimens.PANEL_WIDTH + 40).toFloat(), atlasFocus(Tab.BROWSE, WindowClass.TWO).x)
+        assertEquals((Dimens.RAIL_WIDTH + Dimens.PANEL_WIDTH_FULL + 40).toFloat(), atlasFocus(Tab.BROWSE, WindowClass.FULL).x)
+        val two = atlasFocus(Tab.BROWSE, WindowClass.TWO)
+        assertEquals(1700f - 40f, two.x + two.w)
     }
 
     @Test

@@ -17,6 +17,8 @@ object MyDrives {
     private const val VOICE = "voice_on"
     private const val MUSIC = "music_on"
     private const val MOOD = "mood_on"
+    private const val MAP_STYLE = "map_style"
+    private const val DEFAULT_MAP_STYLE = "map"
     private const val RECENT_LIMIT = 10
     private const val SEPARATOR = "\n"
 
@@ -55,6 +57,11 @@ object MyDrives {
             .apply()
     }
 
+    /** 달린 기록, 저장한 코스, 누계를 지운다. 설정은 남긴다. */
+    fun clearRecords(context: Context) {
+        prefs(context).edit().remove(FINISHED).remove(METERS).remove(CURVES).remove(RECENT).remove(SAVED).apply()
+    }
+
     /** 앱 시작 때 한 번 부른다. 아래 설정은 Context 없이 읽으므로 저장된 값을 여기서 되돌린다. */
     fun restore(context: Context) {
         val stored = prefs(context)
@@ -63,7 +70,15 @@ object MyDrives {
         voiceOn = stored.getBoolean(VOICE, true)
         musicOn = stored.getBoolean(MUSIC, true)
         moodOn = stored.getBoolean(MOOD, true)
+        mapStyle = stored.getString(MAP_STYLE, DEFAULT_MAP_STYLE) ?: DEFAULT_MAP_STYLE
     }
+
+    /** 지도 그림의 종류. "map" 또는 "satellite". 화면이 읽을 때 뜻을 정한다. */
+    var mapStyle: String = DEFAULT_MAP_STYLE
+        set(value) {
+            field = value
+            settings?.edit()?.putString(MAP_STYLE, value)?.apply()
+        }
 
     var ambienceOn: Boolean = true
         set(value) {

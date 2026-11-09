@@ -25,6 +25,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
+import com.byway.core.course.Px
 import com.byway.core.course.ScenePlace
 import com.byway.service.SceneCatalog
 import kotlin.math.abs
@@ -34,6 +35,10 @@ private const val NIGHT_OPACITY = 0.66f
 private const val DAY_OPACITY = 0.86f
 private const val PIN_RADIUS = 20f
 private const val GLOW_ALPHA = 0.22f
+private const val MARKER_HALO = 30
+private const val MARKER_HALO_ALPHA = 80
+private const val MARKER_DOT = 12
+private const val MARKER_RING = 4
 private const val SWIPE_DISTANCE_DP = 420
 private const val FLING_FACTOR = 6f
 private const val PICTURE_MIX_SPEED = 1.6f
@@ -43,14 +48,23 @@ private val routeEase = PathInterpolator(0.33f, 0f, 0.2f, 1f)
 
 /** 코스 둘레 위성 그림과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
 @SuppressLint("ViewConstructor")
-internal class SceneView(context: Context, private val window: WindowClass, list: Boolean = false) : FrameLayout(context) {
+internal class SceneView(
+    context: Context,
+    private val window: WindowClass,
+    list: Boolean = false,
+    /** 풍경으로 넘기는 단추를 지도 위에 둘지. 넓은 창의 홈은 버튼 줄에 따로 둔다. */
+    private val hintOnMap: Boolean = true,
+) : FrameLayout(context) {
+    /** 풍경 사진이 보이는지 바뀔 때 부른다. */
+    var onPhoto: (Boolean) -> Unit = {}
+
     private val colors = context.palette
     private val canvasView = SceneCanvas(context, window, list)
     private val fallback = CoursePathView(context)
     private val photo = ScenePhoto(context, window).apply { visibility = GONE }
     private val hint = chip("")
     private val photoCredit = chip("")
-    private val credit = chip(MAP_CREDIT)
+    private val credit = chip(mapCredit(currentMapStyle()))
     private val latest = LatestOnly()
     private val slop = ViewConfiguration.get(context).scaledTouchSlop * SWIPE_FACTOR
     private val fling = ViewConfiguration.get(context).scaledMinimumFlingVelocity * FLING_FACTOR
@@ -71,14 +85,14 @@ internal class SceneView(context: Context, private val window: WindowClass, list
         addView(photo, matchFrame())
         val edge = context.dp(Dimens.SPACE_8)
         val third = window == WindowClass.THIRD
-        // 1/3 창은 위쪽에 메뉴가 얹히므로 풍경 단추는 아래로, 출처는 메뉴 바로 아래로 옮긴다.
-        val hintSize = if (third) {
-            LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.BOTTOM or Gravity.END).apply {
-                bottomMargin = context.dp(Dimens.SPACE_3)
-                marginEnd = context.dp(Dimens.SPACE_6)
-            }
-        } else {
-            LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.TOP or Gravity.END).apply { topMargin = edge; marginEnd = edge }
+        // 풍경 단추는 운전석에서 가까운 왼쪽 아래에 둔다. 넓은 창은 글 칸 바로 옆이다.
+        val hintSize = LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.BOTTOM or Gravity.START).apply {
+            val sideEnd = Dimens.RAIL_WIDTH + if (window == WindowClass.FULL) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH
+            marginStart = context.dp(if (third) Dimens.SPACE_6 else sideEnd + Dimens.SPACE_6)
+            // 1/3 창의 홈은 지도 아래쪽에 훑어보기 띠가 놓이므로 그 위에 둔다.
+            val thirdBottom = if (list) Dimens.SPACE_3 else ScrubStrip.HEIGHT + Dimens.SPACE_6
+            // 목록 화면은 오른쪽 아래 출처가 길게 놓이므로 그 위에 둔다.
+            bottomMargin = context.dp(if (third) thirdBottom else if (list) Dimens.LIST_HINT_BOTTOM else Dimens.SCENE_CREDIT_BOTTOM)
         }
         addView(hint, hintSize)
         credit.maxWidth = context.dp(if (window == WindowClass.TWO) Dimens.SCENE_CREDIT_WIDTH else Int.MAX_VALUE / 4)
@@ -146,7 +160,8 @@ internal class SceneView(context: Context, private val window: WindowClass, list
         photoCredit.visibility = if (onPhoto) VISIBLE else GONE
         credit.visibility = if (onPhoto) GONE else VISIBLE
         hint.text = if (onPhoto) "경로로 돌아가기" else "밀어서 풍경 보기"
-        hint.visibility = if (canShowPhoto) VISIBLE else GONE
+        hint.visibility = if (canShowPhoto && hintOnMap) VISIBLE else GONE
+        this.onPhoto(onPhoto)
     }
 
     /** 사진은 손가락을 따라 옆에서 들어오고 나간다. */
@@ -156,7 +171,15 @@ internal class SceneView(context: Context, private val window: WindowClass, list
         photo.translationX = side * (1f - progress) * swipeDistance
     }
 
-    private fun togglePhoto() {
+    /** 훑어보기에서 고른 지점. 장면 그림 안의 좌표다. */
+    fun setMarker(at: Px?) = canvasView.setMarker(at)
+
+    /** 화면에 함께 보이는 자료가 바뀌면 출처도 바꾼다. */
+    fun setCredit(text: String) {
+        credit.text = text
+    }
+
+    fun togglePhoto() {
         if (!canShowPhoto) return
         side = 1f
         settleTo(!photoShown)
@@ -290,6 +313,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
     private var reveal = 1f
     private var mix = 1f
     private var mover: ValueAnimator? = null
+    private var marker: Px? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val layerPaint = Paint()
     private val fade = Paint()
@@ -315,6 +339,11 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
         picture = null
         this.reveal = if (reveal) 0f else 1f
         mix = if (reveal) 0f else 1f
+        invalidate()
+    }
+
+    fun setMarker(at: Px?) {
+        marker = at
         invalidate()
     }
 
@@ -402,6 +431,18 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
             canvas.drawPath(path, stroke)
         }
         places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal)) }
+        marker?.let { drawMarker(canvas, out.left + it.x * scale, out.top + it.y * scale) }
+    }
+
+    /** 훑어보기에서 고른 지점. 번호 표시와 헷갈리지 않게 주황 점으로 그린다. */
+    private fun drawMarker(canvas: Canvas, x: Float, y: Float) {
+        pinFill.color = NightPalette.accent
+        pinFill.alpha = MARKER_HALO_ALPHA
+        canvas.drawCircle(x, y, context.dp(MARKER_HALO).toFloat(), pinFill)
+        pinFill.color = colors.onPhoto
+        canvas.drawCircle(x, y, context.dp(MARKER_DOT + MARKER_RING).toFloat(), pinFill)
+        pinFill.color = NightPalette.accent
+        canvas.drawCircle(x, y, context.dp(MARKER_DOT).toFloat(), pinFill)
     }
 
     private fun trimmed(paths: List<Path>): List<Path> {
@@ -420,13 +461,16 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
     private fun drawPin(canvas: Canvas, x: Float, y: Float, number: Int, opacity: Float) {
         if (opacity <= 0f) return
         val radius = context.dp(PIN_RADIUS.toInt()).toFloat()
-        pinFill.color = colors.photoScrim
+        val dark = darkPinsOn(currentMapStyle(), night)
+        val face = if (dark) colors.ink else colors.onPhoto
+        val edge = if (dark) colors.bg else colors.photoScrim
+        pinFill.color = edge
         pinFill.alpha = (pinFill.alpha * opacity).toInt()
         canvas.drawCircle(x, y, radius + context.dp(3), pinFill)
-        pinFill.color = colors.onPhoto
+        pinFill.color = face
         pinFill.alpha = (pinFill.alpha * opacity).toInt()
         canvas.drawCircle(x, y, radius, pinFill)
-        pinText.color = colors.photoScrim
+        pinText.color = edge
         pinText.alpha = (pinText.alpha * opacity).toInt()
         pinText.textSize = context.dp(Dimens.LABEL.toInt()).toFloat()
         canvas.drawText("$number", x, y + pinText.textSize * 0.36f, pinText)

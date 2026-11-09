@@ -22,17 +22,21 @@ fun sceneRect(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = f
     else -> SceneRect(viewW - SCENE_WIDTH, viewH / 2 - SCENE_HEIGHT / 2, SCENE_WIDTH, SCENE_HEIGHT)
 }
 
+/**
+ * 지도가 글 칸과 만나는 띠. 넓은 창은 글 칸이 바탕색이고 지도가 그 옆에서 짧게 시작한다.
+ * 1/3 창은 지도가 아래로 길게 옅어져 글 칸과의 경계가 보이지 않는다. 값은 장면 그림 안의 좌표다.
+ */
 fun sceneFade(window: WindowClass, list: Boolean = false): FadeBand = when (window) {
-    WindowClass.TWO -> FadeBand(false, 1280f, 1680f, 0.2f)
-    WindowClass.FULL -> FadeBand(false, 960f, 1420f, 0.2f)
-    WindowClass.THIRD -> if (list) FadeBand(true, 490f, 550f, 1f) else FadeBand(true, 590f, 706f, 1f)
+    WindowClass.TWO -> FadeBand(false, 1460f, 1530f, 0f)
+    WindowClass.FULL -> FadeBand(false, 1140f, 1220f, 0f)
+    WindowClass.THIRD -> if (list) FadeBand(true, 309f, 533f, 1f) else FadeBand(true, 423f, 711f, 1f)
 }
 
-/** 풍경 사진이 정보 칸 아래에서 흐려지는 띠. */
+/** 풍경 사진이 글 칸과 만나는 띠. 값은 화면 좌표다. */
 fun photoFade(window: WindowClass, viewH: Float): FadeBand = when (window) {
-    WindowClass.TWO -> FadeBand(false, 560f, 760f, 0.22f)
-    WindowClass.FULL -> FadeBand(false, 960f, 1420f, 0.2f)
-    WindowClass.THIRD -> FadeBand(true, viewH * 0.8f, viewH, 1f)
+    WindowClass.TWO -> FadeBand(false, 756f, 826f, 0f)
+    WindowClass.FULL -> FadeBand(false, 1256f, 1336f, 0f)
+    WindowClass.THIRD -> FadeBand(true, viewH * 0.5f, viewH * 0.9f, 1f)
 }
 
 /** 뒤에서 읽는 그림 중 가장 나중에 요청한 것만 쓴다. */

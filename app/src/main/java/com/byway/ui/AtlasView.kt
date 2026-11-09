@@ -35,6 +35,7 @@ private const val REGION_LABEL_MAX = 1.6f
 private const val CITY_LABEL_MAX = 14f
 private const val NAMED_MIN = 2.4f
 private const val CLOSE_RATIO = 0.6f
+private const val EDGE_FADE = 0.12f
 
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
 internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float)
@@ -71,26 +72,25 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
         canvasView.moveTo(camera)
     }
 
-    /** 확대 단추, 안내, 위성 출처. [rightDp]는 오른쪽 글 칸이 차지한 폭이다. */
-    fun addChrome(rightDp: Int, resetLabel: String, onReset: () -> Unit) {
-        val edge = context.dp(Dimens.SPACE_6) + context.dp(rightDp)
+    /** 확대 단추와 지도 출처. 단추는 글 칸 바로 옆, 운전석에서 가까운 쪽에 둔다. [leftDp]는 왼쪽 글 칸이 끝나는 자리다. */
+    fun addChrome(leftDp: Int, resetLabel: String, onReset: () -> Unit) {
         val tools = context.column().apply {
             addView(tool("+") { canvasView.zoom(ZOOM_STEP) }, toolSize())
             addSpaced(tool("−") { canvasView.zoom(1 / ZOOM_STEP) }, Dimens.SPACE_2)
             addSpaced(tool(resetLabel, onReset), Dimens.SPACE_2)
         }
-        addView(tools, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
-            marginEnd = edge
+        addView(tools, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.START).apply {
+            marginStart = context.dp(leftDp + Dimens.SPACE_6)
             bottomMargin = context.dp(Dimens.ATLAS_TOOLS_BOTTOM)
         })
-        val credit = context.label(MAP_CREDIT, Dimens.LABEL, colors.onPhoto).apply {
+        val credit = context.label(mapCredit(currentMapStyle()), Dimens.LABEL, colors.onPhoto).apply {
             background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
             val inset = context.dp(Dimens.CREDIT_PADDING)
             setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
             maxWidth = context.dp(Dimens.ATLAS_CREDIT_WIDTH)
         }
         addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
-            marginEnd = edge + context.dp(Dimens.ATLAS_TOOL_ROOM)
+            marginEnd = context.dp(Dimens.SPACE_6)
             bottomMargin = context.dp(Dimens.SPACE_2)
         })
     }
@@ -235,13 +235,13 @@ private class AtlasCanvas(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
-        canvas.drawColor(colors.bgDeep)
+        canvas.drawColor(colors.bg)
         val s = camera.scale
         val origin = toScreen(0f, 0f, camera, focus)
         canvas.save()
         canvas.translate(origin.x * density, origin.y * density)
         canvas.scale(s * density, s * density)
-        ground?.let { canvas.drawBitmap(it, Rect(0, 0, it.width, it.height), RectF(0f, 0f, scene.koreaSize.x, scene.koreaSize.y), picture) }
+        ground?.let { drawGround(canvas, it) }
         val chosenSpot = courses.firstOrNull { it.first.id == chosen }?.second
         val close = chosenSpot != null && s >= courseCamera(chosenSpot, focus).scale * CLOSE_RATIO
         if (close) drawDetail(canvas, chosenSpot!!)
@@ -250,6 +250,20 @@ private class AtlasCanvas(context: Context) : View(context) {
         drawLabels(canvas, s, close)
         drawPins(canvas, s, close)
         shade?.let { drawShade(canvas, it) }
+    }
+
+    /** 지도 그림의 네 변을 바탕으로 녹여 사각 테두리가 보이지 않게 한다. */
+    private fun drawGround(canvas: Canvas, bitmap: Bitmap) {
+        val out = RectF(0f, 0f, scene.koreaSize.x, scene.koreaSize.y)
+        val layer = canvas.saveLayer(out, null)
+        canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), out, picture)
+        val stops = floatArrayOf(0f, EDGE_FADE, 1f - EDGE_FADE, 1f)
+        val edge = intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT)
+        mask.shader = LinearGradient(out.left, 0f, out.right, 0f, edge, stops, Shader.TileMode.CLAMP)
+        canvas.drawRect(out, mask)
+        mask.shader = LinearGradient(0f, out.top, 0f, out.bottom, edge, stops, Shader.TileMode.CLAMP)
+        canvas.drawRect(out, mask)
+        canvas.restoreToCount(layer)
     }
 
     private fun drawDetail(canvas: Canvas, spot: AtlasSpot) {
@@ -323,16 +337,17 @@ private class AtlasCanvas(context: Context) : View(context) {
             fill.alpha = alpha
             canvas.drawRoundRect(body, body.height() / 2, body.height() / 2, fill)
             if (isChosen) {
-                line.color = colors.accent
+                line.color = NightPalette.accent
                 line.alpha = 255
                 line.strokeWidth = 3 * density
                 canvas.drawRoundRect(body, body.height() / 2, body.height() / 2, line)
             }
-            fill.color = colors.accent
+            // 지도 위 표시는 주야가 바뀌어도 같은 밝은 주황이다. 경로 색과 같은 규칙이다.
+            fill.color = NightPalette.accent
             fill.alpha = alpha
             canvas.drawCircle(cx, cy, radius, fill)
             text.textAlign = Paint.Align.CENTER
-            text.color = colors.onAccent
+            text.color = NightPalette.onAccent
             text.alpha = alpha
             canvas.drawText("${i + 1}", cx, cy + text.textSize * 0.36f, text)
             if (showName) {

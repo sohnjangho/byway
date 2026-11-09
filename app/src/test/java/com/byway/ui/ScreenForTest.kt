@@ -45,6 +45,27 @@ class ScreenForTest {
     }
 
     @Test
+    fun parkedWithSettingsOpenIsSettings() {
+        assertEquals(Screen.Settings, screenFor(parked, Nav(settings = true)))
+    }
+
+    /** 앱 정보는 설정에서 연다. 닫으면 설정으로 돌아온다. */
+    @Test
+    fun aboutOpensOverSettings() {
+        assertEquals(Screen.About, screenFor(parked, Nav(settings = true, about = true)))
+    }
+
+    @Test
+    fun movingHidesSettings() {
+        Tab.entries.forEach { assertEquals(Screen.Waiting, screenFor(moving, Nav(tab = it, settings = true))) }
+    }
+
+    @Test
+    fun runningCourseBeatsSettings() {
+        assertEquals(Screen.Drive, screenFor(parked.copy(running = true), Nav(settings = true)))
+    }
+
+    @Test
     fun runningCourseIsDriveWhileMoving() {
         assertEquals(Screen.Drive, screenFor(moving.copy(running = true), Nav()))
     }
