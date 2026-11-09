@@ -40,13 +40,14 @@ class CourseEngine(
     fun snapshot(): RunSnapshot? = run?.snapshot()
 
     override fun onEvent(event: DriveEvent): List<DriveCommand> = when (event) {
-        is DriveEvent.CourseStarted -> start(event.course, event.resumeFrom)
+        is DriveEvent.CourseStarted -> start(event.course, event.resumeFrom, event.at)
         is DriveEvent.LocationUpdated -> run?.onLocation(event.point).orEmpty()
         is DriveEvent.DrivingStateChanged -> {
             parked = event.parked
             run?.onParked().orEmpty()
         }
-        DriveEvent.RouteTakenOver, DriveEvent.RouteCancelled -> run?.pause().orEmpty()
+        DriveEvent.RouteTakenOver, DriveEvent.RouteCancelled -> run?.pause(Messages.PAUSED).orEmpty()
+        DriveEvent.RouteFailed -> run?.pause(Messages.ROUTE_FAILED).orEmpty()
         DriveEvent.DestinationArrived -> run?.onArrived().orEmpty()
         is DriveEvent.Answered -> run?.onAnswer(event.yes).orEmpty()
         DriveEvent.CourseStopped -> {
@@ -56,13 +57,13 @@ class CourseEngine(
         else -> emptyList()
     }
 
-    private fun start(course: Course, resumeFrom: Int): List<DriveCommand> {
+    private fun start(course: Course, resumeFrom: Int, at: GeoPoint?): List<DriveCommand> {
         val planned = stopsOf(course)
         val from = resumeFrom.coerceIn(0, course.path.lastIndex)
         val started = Run(course, if (ability.acceptsWholePath) listOf(planned.last()) else planned, from)
         run = started
-        return listOf(
-            started.routeAhead(),
+        val opening = started.opening(at)
+        return opening + listOf(
             Say(if (from > 0) Messages.courseResumed(course.name) else Messages.courseStart(course.name)),
             Publish(DriveEvent.SectionEntered(started.section)),
         )
@@ -97,6 +98,10 @@ class CourseEngine(
         private var strayFixes = 0
         private var waitedFixes = 0
         private var nearFixes = 0
+        private var insideFixes = 0
+
+        /** 탐색 범위 밖에서 코스를 만난 첫 자리. 코스를 따라 나아가는지 보려고 둔다. */
+        private var joinFrom: Int? = null
 
         /** 복귀 경로의 첫 지점. 운전자가 들르는 중이면 없다. */
         private var target: Stop? = null
@@ -131,6 +136,37 @@ class CourseEngine(
             return (listOfNotNull(first) + ahead).take(ability.maxWaypoints + 1).ifEmpty { listOf(stops.last()) }
         }
 
+        /**
+         * 처음 올리는 경로. 차의 자리를 알면 한 번에 맞게 올린다. 경로를 잇달아 올리면 내비가 앞 경로를 지우는
+         * 이벤트가 운전자 조작처럼 보인다. 모르면 코스 앞쪽을 올리고 첫 위치에서 다시 맞춘다.
+         */
+        fun opening(at: GeoPoint?): List<DriveCommand> {
+            at ?: return listOf(routeAhead())
+            last = at
+            val nearest = nearestIndex(at, lastIndexWithin(tuning.lookaheadMeters))
+            if (nearest.distance <= strayLimit) {
+                phase = Phase.ON_COURSE
+                moveTo(maxOf(progress, nearest.index))
+                return listOf(routeAhead())
+            }
+            approachRouted = true
+            val joined = firstRunNearest(at)
+            if (joined != null) {
+                phase = Phase.ON_COURSE
+                moveTo(joined)
+                return listOf(routeAhead()) + if (from == 0) listOf(Say(Messages.JOINED_MIDWAY)) else emptyList()
+            }
+            if (from > 0) return rejoin(at)
+            return listOf(routeAhead(Stop(Messages.START_POINT, path[from], from)), Say(Messages.TO_START))
+        }
+
+        /** 진행 지점을 옮기고 구간과 저장할 자리를 그에 맞춘다. 안내 없이 옮길 때 쓴다. */
+        private fun moveTo(index: Int) {
+            progress = index
+            checkpoint = index
+            section = sectionAt(index)
+        }
+
         fun onLocation(point: GeoPoint): List<DriveCommand> {
             val jump = last?.distanceTo(point) ?: 0.0
             last = point
@@ -149,7 +185,14 @@ class CourseEngine(
                 phase = Phase.ON_COURSE
                 return whileOnCourse(point, 0.0)
             }
-            if (approachRouted) return emptyList()
+            if (approachRouted) {
+                // 출발점 안내를 무시하고 코스 먼 곳으로 들어와 코스를 따라 달리면 거기서 시작한 것이다.
+                val entered = farJoin(point) ?: return emptyList()
+                phase = Phase.ON_COURSE
+                progress = entered
+                checkpoint = entered
+                return listOf(routeAhead()) + advance(listOf(Say(Messages.JOINED_MIDWAY)))
+            }
             approachRouted = true
             val joined = firstRunNearest(point)
             if (joined != null) {
@@ -245,6 +288,8 @@ class CourseEngine(
                 phase = Phase.AWAY
                 target = null
                 nearFixes = 0
+                insideFixes = 0
+                joinFrom = null
                 unask() + Say(Messages.DETOUR_OK)
             } else {
                 unask() + rejoin(last ?: path[progress])
@@ -257,6 +302,8 @@ class CourseEngine(
         private fun rejoin(point: GeoPoint): List<DriveCommand> {
             phase = Phase.AWAY
             nearFixes = 0
+            insideFixes = 0
+            joinFrom = null
             checkpoint = progress
             val to = rejoinTarget(point)
             target = to
@@ -281,39 +328,68 @@ class CourseEngine(
             val nearest = nearestIndex(point, lastIndexWithin(tuning.lookaheadMeters, to?.pathIndex ?: progress))
             val passed = to != null && nearest.distance <= strayLimit && nearest.index >= to.pathIndex
             nearFixes = if (nearest.distance <= tuning.rejoinMeters) nearFixes + 1 else 0
-            if (!passed && nearFixes < tuning.rejoinFixes) return emptyList()
-            val skipped = course.sections.filter { it.startIndex > progress && it.endIndex < nearest.index }.map { it.name }
+            if (passed || nearFixes >= tuning.rejoinFixes) return cameBack(nearest.index, reroute = false)
+            farJoin(point)?.let { return cameBack(it, reroute = true) }
+            // 내비가 코스와 나란한 큰길로 가면 복귀 기준까지 붙지 않는다. 그대로 두면 경로 교체가 멈춘다.
+            val inside = firstRunNearest(point)
+            insideFixes = if (inside != null) insideFixes + 1 else 0
+            return if (inside != null && insideFixes >= tuning.settleFixes) cameBack(inside, reroute = true) else emptyList()
+        }
+
+        /** 코스로 돌아왔다. 복귀 경로를 벗어나 합류했거나 들르는 동안 경유지를 지나쳤으면 남은 경로를 다시 올린다. */
+        private fun cameBack(index: Int, reroute: Boolean): List<DriveCommand> {
+            val skipped = course.sections.filter { it.startIndex > progress && it.endIndex < index }.map { it.name }
+            val passedStop = target == null && stops.any { it.pathIndex in progress + 1..index }
             phase = Phase.ON_COURSE
             strayFixes = 0
+            insideFixes = 0
+            joinFrom = null
             target = null
-            progress = maxOf(progress, nearest.index)
+            progress = maxOf(progress, index)
             checkpoint = progress
             return advance(
                 buildList {
+                    if (reroute || passedStop) add(routeAhead())
                     add(Say(Messages.REJOINED, alert = true))
                     if (skipped.isNotEmpty()) add(Say(Messages.skipped(skipped)))
                 },
             )
         }
 
+        /**
+         * 탐색 범위 밖까지 남은 코스 전체에서 합류를 찾는다. 코스를 가로지르는 길과 구별하려고
+         * 복귀 기준 안에서 코스를 따라 [DriveTuning.joinAlongMeters]만큼 나아가야 합류로 본다.
+         */
+        private fun farJoin(point: GeoPoint): Int? {
+            val index = firstRunNearest(point, tuning.rejoinMeters)
+            val from = joinFrom
+            if (index == null || from == null || index < from) {
+                joinFrom = index
+                return null
+            }
+            return index.takeIf { travelled[it] - travelled[from] >= tuning.joinAlongMeters }
+        }
+
         /** 운전자가 내비에 다른 목적지를 넣었거나 경로를 껐다. 경로를 올리지 않고 위치만 받는다. */
-        fun pause(): List<DriveCommand> {
-            if (phase == Phase.PAUSED) return emptyList()
+        fun pause(text: String): List<DriveCommand> {
+            // 종점에 닿아 안내가 끝나며 오는 취소는 운전자가 끈 것이 아니다. 멈추면 완주가 막힌다.
+            if (phase == Phase.PAUSED || nearEnd()) return emptyList()
             phase = Phase.PAUSED
             checkpoint = progress
             asked = Prompt.RESUME
-            return listOf(Say(Messages.PAUSED, alert = true), Ask(Prompt.RESUME), Publish(DriveEvent.CoursePaused))
+            return listOf(Say(text, alert = true), Ask(Prompt.RESUME), Publish(DriveEvent.CoursePaused))
         }
 
         fun onArrived(): List<DriveCommand> =
             if (phase == Phase.PAUSED) listOf(Say(Messages.ASK_RESUME, alert = true)) else emptyList()
 
         private fun resume(): List<DriveCommand> {
-            val back = unask() + Publish(DriveEvent.SectionEntered(section))
             val point = last
-            if (point != null && nearestIndex(point, lastIndexWithin(tuning.lookaheadMeters)).distance > strayLimit) {
-                return back + rejoin(point)
-            }
+            // 멈춘 동안 더 달렸을 수 있다. 지금 자리부터 올려야 지난 경유지로 되돌려 보내지 않는다.
+            val here = point?.let { firstRunNearest(it) }
+            if (here != null) moveTo(maxOf(progress, here))
+            val back = unask() + Publish(DriveEvent.SectionEntered(section))
+            if (point != null && here == null) return back + rejoin(point)
             phase = Phase.ON_COURSE
             strayFixes = 0
             return back + routeAhead() + Say(Messages.RESUMING)
@@ -342,10 +418,11 @@ class CourseEngine(
         private fun isFinished() = progress == path.lastIndex || parkedAtEnd()
 
         /** 종점 앞 주차장에 세워도 끝까지 달린 것이다. 종점이 탐색 범위에 들어온 뒤에만 본다. 출발점과 종점이 같은 코스가 있다. */
-        private fun parkedAtEnd(): Boolean {
+        private fun parkedAtEnd(): Boolean = parked && nearEnd()
+
+        private fun nearEnd(): Boolean {
             val point = last ?: return false
-            return parked && lastIndexWithin(tuning.lookaheadMeters) == path.lastIndex &&
-                point.distanceTo(path.last()) <= tuning.finishRadiusMeters
+            return lastIndexWithin(tuning.lookaheadMeters) == path.lastIndex && point.distanceTo(path.last()) <= tuning.finishRadiusMeters
         }
 
         private fun finish(): List<DriveCommand> {
@@ -376,15 +453,17 @@ class CourseEngine(
         }
 
         /**
-         * 코스 전체에서 차와 가까운 자리. 되밟는 코스에서 돌아오는 쪽으로 건너뛰지 않도록,
-         * 진행 지점부터 훑어 처음으로 허용 오차 안에 드는 이어진 구간에서만 고른다.
+         * 남은 코스 전체에서 차와 가까운 자리. 되밟는 코스에서 돌아오는 쪽으로 건너뛰지 않도록,
+         * 진행 지점부터 훑어 처음으로 [limit] 안에 드는 이어진 구간에서만 고른다. 좌표 간격이 넓은 곳이 있어 선분으로 잰다.
          */
-        private fun firstRunNearest(point: GeoPoint): Int? {
+        private fun firstRunNearest(point: GeoPoint, limit: Double = strayLimit): Int? {
             var best: Nearest? = null
-            for (i in progress..path.lastIndex) {
-                val distance = point.distanceTo(path[i])
-                if (distance <= strayLimit) {
-                    if (best == null || distance < best.distance) best = Nearest(i, distance)
+            for (i in progress until path.lastIndex) {
+                val distance = point.distanceToSegment(path[i], path[i + 1])
+                if (distance <= limit) {
+                    if (best == null || distance < best.distance) {
+                        best = Nearest(if (point.distanceTo(path[i]) <= point.distanceTo(path[i + 1])) i else i + 1, distance)
+                    }
                 } else if (best != null) {
                     break
                 }

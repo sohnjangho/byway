@@ -32,8 +32,11 @@ interface RouteFollower {
 
 /** 일어난 일. */
 sealed interface DriveEvent {
-    /** [resumeFrom]은 이어서 달릴 때 코스 위의 지점 번호다. 처음부터면 0 이다. */
-    data class CourseStarted(val course: Course, val resumeFrom: Int = 0) : DriveEvent
+    /**
+     * [resumeFrom]은 이어서 달릴 때 코스 위의 지점 번호다. 처음부터면 0 이다.
+     * [at]은 시작할 때 차의 자리다. 알면 첫 경로를 한 번에 맞게 올리고, 모르면 첫 위치에서 다시 맞춘다.
+     */
+    data class CourseStarted(val course: Course, val resumeFrom: Int = 0, val at: GeoPoint? = null) : DriveEvent
     data class LocationUpdated(val point: GeoPoint) : DriveEvent
     data class SectionEntered(val section: Section) : DriveEvent
     data class DrivingStateChanged(val parked: Boolean) : DriveEvent
@@ -45,6 +48,9 @@ sealed interface DriveEvent {
 
     /** 운전자가 내비의 안내를 껐다. */
     data object RouteCancelled : DriveEvent
+
+    /** 내비가 우리 경로를 받지 못했다. 다시 시도해도 실패했을 때만 온다. */
+    data object RouteFailed : DriveEvent
 
     /** 내비가 운전자가 넣은 목적지에 닿았다고 알렸다. */
     data object DestinationArrived : DriveEvent

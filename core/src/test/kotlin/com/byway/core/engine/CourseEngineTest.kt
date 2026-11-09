@@ -33,6 +33,7 @@ class CourseEngineTest {
         lookaheadMeters = 2_000.0,
         askWaitFixes = 4,
         rejoinMeters = 50.0,
+        settleFixes = 6,
     )
     private fun engine(stops: List<Stop> = this.stops) = CourseEngine(tuning, stopsOf = { stops })
     private fun started(course: Course = this.course) = engine().also { it.onEvent(DriveEvent.CourseStarted(course)) }
@@ -148,6 +149,56 @@ class CourseEngineTest {
     fun joiningARoundTripMidwayStaysOnTheWayOut() {
         val progress = roundTripEngine().onEvent(DriveEvent.LocationUpdated(outAndBack[30])).filterIsInstance<ShowProgress>().single()
         assertEquals(70 * 88.8, progress.remainingMeters, 100.0)
+    }
+
+    // 시작할 때 차의 자리를 아는 경우: 경로를 한 번만 올린다
+
+    private val farAway = GeoPoint(37.2, 127.0)
+
+    /** 경로를 잇달아 두 번 올리면 내비가 앞 경로를 지우는 이벤트가 운전자 조작처럼 보인다. */
+    @Test
+    fun knowingTheCarIsFarOffPutsUpOneRouteToTheStart() {
+        val engine = engine()
+        val commands = engine.onEvent(DriveEvent.CourseStarted(course, at = farAway))
+        assertEquals(listOf(0, 20, 40), commands.routes().single().indexes())
+        assertTrue("코스 출발점으로 안내합니다." in commands.says())
+        assertTrue(engine.onEvent(DriveEvent.LocationUpdated(farAway)).routes().isEmpty())
+    }
+
+    @Test
+    fun knowingTheCarIsAtTheStartNeedsNoSecondRoute() {
+        val engine = engine()
+        assertEquals(listOf(20, 40, 60), engine.onEvent(DriveEvent.CourseStarted(course, at = path[2])).routes().single().indexes())
+        assertTrue(engine.at(3).routes().isEmpty())
+    }
+
+    @Test
+    fun knowingTheCarIsMidCourseJoinsThereOnce() {
+        val engine = engine()
+        val commands = engine.onEvent(DriveEvent.CourseStarted(course, at = path[50]))
+        assertEquals(listOf(60, 80, 100), commands.routes().single().indexes())
+        assertTrue(Publish(DriveEvent.SectionEntered(sections[1])) in commands)
+        assertTrue(engine.at(51).routes().isEmpty())
+    }
+
+    /** 저장한 뒤 더 달렸으면 지나온 경유지를 다시 올리지 않는다. 유턴을 시키게 된다. */
+    @Test
+    fun resumingAheadOfTheSavedPointLeavesPassedStopsOut() {
+        val commands = engine().onEvent(DriveEvent.CourseStarted(course, resumeFrom = 10, at = path[30]))
+        assertEquals(listOf(40, 60, 80), commands.routes().single().indexes())
+    }
+
+    // 접근 중 합류
+
+    /** 출발점 안내를 무시하고 코스 먼 곳으로 들어와 코스를 따라 달리면 거기서 시작한 것이다. */
+    @Test
+    fun anApproachThatFollowsTheCourseFarAlongStartsThere() {
+        val engine = started()
+        engine.offBy(0, degrees = 0.2)
+        assertTrue(engine.at(50).isEmpty())
+        val commands = engine.at(54)
+        assertEquals(listOf(60, 80, 100), commands.routes().single().indexes())
+        assertTrue("코스 중간에서 시작합니다." in commands.says())
     }
 
     // 이어가기 (P2)
@@ -395,7 +446,88 @@ class CourseEngineTest {
         assertFalse("가운데 구간을 건너뛰었습니다." in engine.drive(66..100).says())
     }
 
+    // 코스 밖에서 영영 못 돌아오지 않는다
+
+    /** 들른 뒤 떠난 자리에서 탐색 범위(2km)를 넘겨 합류해도 돌아온 것이다. 지난 경유지는 빼고 다시 올린다. */
+    @Test
+    fun aDetourThatRejoinsFarAheadIsAReturn() {
+        val engine = asked().also { it.answer(true) }
+        assertTrue(engine.at(60).isEmpty())
+        val commands = engine.at(64)
+        assertEquals(listOf(80, 100), commands.routes().single().indexes())
+        assertTrue("코스로 돌아왔습니다." in commands.says())
+        assertTrue(engine.at(65).routes().isEmpty())
+    }
+
+    @Test
+    fun ignoringTheRejoinRouteAndJoiningFarAheadIsAReturn() {
+        val engine = rejoining()
+        engine.at(70)
+        val commands = engine.at(74)
+        assertEquals(listOf(80, 100), commands.routes().single().indexes())
+        assertTrue("코스로 돌아왔습니다." in commands.says())
+    }
+
+    /** 코스를 가로지르는 길에서는 코스를 따라 나아가지 않으므로 돌아온 것이 아니다. */
+    @Test
+    fun crossingTheCourseFarAheadIsNotAReturn() {
+        val engine = asked().also { it.answer(true) }
+        assertTrue((engine.at(60) + engine.offBy(60, degrees = 0.0002) + engine.offBy(60, degrees = -0.0002)).isEmpty())
+    }
+
+    /** 내비가 코스와 나란한 큰길로 안내하면 복귀 기준까지 붙지 않아도 시간이 지나면 코스 위로 본다. */
+    @Test
+    fun stayingInsideTheToleranceSettlesAsAReturn() {
+        val engine = asked().also { it.answer(true) }
+        val commands = (1..6).flatMap { engine.offBy(14 + it, degrees = 0.001) }
+        assertEquals(listOf("코스로 돌아왔습니다."), commands.says())
+    }
+
+    /** 들르는 동안 지나친 경유지는 내비에 남아 있다. 돌아오면 빼고 다시 올린다. */
+    @Test
+    fun comingBackPastAStopFromADetourDropsThatStop() {
+        val engine = asked().also { it.answer(true) }
+        engine.at(22)
+        assertEquals(listOf(40, 60, 80), engine.at(23).routes().single().indexes())
+    }
+
     // 운전자가 넣은 경로 (P1)
+
+    /** 멈춘 동안 더 달렸으면 지금 자리부터 이어간다. 지난 경유지로 되돌려 보내지 않는다. */
+    @Test
+    fun resumingAfterAPauseStartsFromWhereTheCarIsNow() {
+        val engine = started().also { it.drive(1..10) }
+        engine.onEvent(DriveEvent.RouteTakenOver)
+        engine.at(30)
+        assertEquals(listOf(40, 60, 80), engine.answer(true).routes().single().indexes())
+    }
+
+    @Test
+    fun resumingFarAlongTheCourseDoesNotTurnBack() {
+        val engine = started().also { it.drive(1..10) }
+        engine.onEvent(DriveEvent.RouteTakenOver)
+        engine.at(70)
+        val commands = engine.answer(true)
+        assertEquals(listOf(80, 100), commands.routes().single().indexes())
+        assertEquals(listOf("코스를 이어갑니다."), commands.says())
+    }
+
+    /** 종점에 닿아 안내가 끝나며 오는 취소는 운전자가 끈 것이 아니다. 멈추면 완주가 막힌다. */
+    @Test
+    fun aCancelRightAtTheEndDoesNotPause() {
+        val engine = started().also { it.drive(1..98) }
+        assertTrue(engine.onEvent(DriveEvent.RouteCancelled).isEmpty())
+        assertTrue(Publish(DriveEvent.CourseFinished) in engine.park())
+    }
+
+    @Test
+    fun aRouteTheNavigationRefusedAsksToTryAgain() {
+        val engine = started().also { it.drive(1..10) }
+        val commands = engine.onEvent(DriveEvent.RouteFailed)
+        assertEquals(listOf("내비에 경로를 올리지 못했습니다. 코스를 이어가려면 버튼을 눌러 주세요."), commands.says())
+        assertEquals(listOf<Prompt?>(Prompt.RESUME), commands.asks())
+        assertEquals(1, engine.answer(true).routes().size)
+    }
 
     @Test
     fun aDriversOwnDestinationPausesTheCourse() {

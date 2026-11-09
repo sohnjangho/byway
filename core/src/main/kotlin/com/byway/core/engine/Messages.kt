@@ -14,6 +14,7 @@ internal object Messages {
     const val REJOINED = "코스로 돌아왔습니다."
     const val FREE = "내비 경로로 진행합니다."
     const val PAUSED = "코스를 잠시 멈춥니다. 돌아오면 이어갑니다."
+    const val ROUTE_FAILED = "내비에 경로를 올리지 못했습니다. 코스를 이어가려면 버튼을 눌러 주세요."
     const val ASK_RESUME = "코스를 이어갈까요?"
     const val RESUMING = "코스를 이어갑니다."
     const val FINISHED = "코스를 끝까지 달렸습니다."
