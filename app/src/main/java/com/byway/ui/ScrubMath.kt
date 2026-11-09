@@ -28,6 +28,10 @@ fun trackAt(track: List<TrackPoint>, km: Double): Px? {
 fun frameAt(frames: List<FrameInfo>, km: Double): Int =
     frames.indices.minByOrNull { abs(frames[it].km - km) } ?: -1
 
+/** 주행 화면의 위치 점이 놓일 코스 위 거리(km). 첫 위치가 오기 전에는 출발점이다. */
+fun drivenKm(totalKm: Double, remainingMeters: Double?): Double =
+    if (remainingMeters == null) 0.0 else (totalKm - remainingMeters / 1000).coerceIn(0.0, totalKm)
+
 fun scrubKmText(km: Double): String = String.format(Locale.ROOT, "%.1fkm 지점", km)
 
 fun scrubWhere(frame: FrameInfo, placeName: String?): String =

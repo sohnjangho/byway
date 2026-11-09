@@ -31,8 +31,8 @@ import com.byway.service.SceneCatalog
 import kotlin.math.abs
 import kotlin.math.sign
 
-private const val NIGHT_OPACITY = 0.66f
-private const val DAY_OPACITY = 0.86f
+internal const val NIGHT_OPACITY = 0.66f
+internal const val DAY_OPACITY = 0.86f
 private const val PIN_RADIUS = 20f
 private const val GLOW_ALPHA = 0.22f
 private const val MARKER_HALO = 30
@@ -426,36 +426,9 @@ private class SceneCanvas(
         val whole = scene.lines.map { pathOf(it.points.map { p -> Pair(p.x, p.y) }, out, scale) }
         val shown = if (reveal < 1f) trimmed(whole) else whole
         val paths = scene.lines.zip(shown) { sceneLine, path -> sceneLine.mood to path }
-        paths.forEach { (mood, path) ->
-            stroke.color = NightPalette.moodColor(mood)
-            stroke.alpha = (GLOW_ALPHA * 255).toInt()
-            stroke.strokeWidth = line * 3
-            canvas.drawPath(path, stroke)
-        }
-        paths.forEach { (_, path) ->
-            stroke.color = colors.photoScrim
-            stroke.strokeWidth = line + context.dp(6)
-            canvas.drawPath(path, stroke)
-        }
-        paths.forEach { (mood, path) ->
-            stroke.color = NightPalette.moodColor(mood)
-            stroke.alpha = 255
-            stroke.strokeWidth = line
-            canvas.drawPath(path, stroke)
-        }
+        context.drawRouteLayers(canvas, paths, stroke, line)
         places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal)) }
-        marker?.let { drawMarker(canvas, out.left + it.x * scale, out.top + it.y * scale) }
-    }
-
-    /** 훑어보기에서 고른 지점. 번호 표시와 헷갈리지 않게 주황 점으로 그린다. */
-    private fun drawMarker(canvas: Canvas, x: Float, y: Float) {
-        pinFill.color = NightPalette.accent
-        pinFill.alpha = MARKER_HALO_ALPHA
-        canvas.drawCircle(x, y, context.dp(MARKER_HALO).toFloat(), pinFill)
-        pinFill.color = colors.onPhoto
-        canvas.drawCircle(x, y, context.dp(MARKER_DOT + MARKER_RING).toFloat(), pinFill)
-        pinFill.color = NightPalette.accent
-        canvas.drawCircle(x, y, context.dp(MARKER_DOT).toFloat(), pinFill)
+        marker?.let { context.drawRouteMarker(canvas, out.left + it.x * scale, out.top + it.y * scale, pinFill) }
     }
 
     private fun trimmed(paths: List<Path>): List<Path> {
@@ -488,4 +461,36 @@ private class SceneCanvas(
         pinText.textSize = context.dp(Dimens.LABEL.toInt()).toFloat()
         canvas.drawText("$number", x, y + pinText.textSize * 0.36f, pinText)
     }
+}
+
+/** 코스 선 세 겹. 구간 색 번짐, 어두운 테두리, 구간 색 선 순서로 그려 어떤 지도 위에서도 보이게 한다. */
+internal fun Context.drawRouteLayers(canvas: Canvas, paths: List<Pair<String?, Path>>, stroke: Paint, line: Float) {
+    paths.forEach { (mood, path) ->
+        stroke.color = NightPalette.moodColor(mood)
+        stroke.alpha = (GLOW_ALPHA * 255).toInt()
+        stroke.strokeWidth = line * 3
+        canvas.drawPath(path, stroke)
+    }
+    paths.forEach { (_, path) ->
+        stroke.color = palette.photoScrim
+        stroke.strokeWidth = line + dp(6)
+        canvas.drawPath(path, stroke)
+    }
+    paths.forEach { (mood, path) ->
+        stroke.color = NightPalette.moodColor(mood)
+        stroke.alpha = 255
+        stroke.strokeWidth = line
+        canvas.drawPath(path, stroke)
+    }
+}
+
+/** 코스 위의 한 지점. 번호 표시와 헷갈리지 않게 주황 점으로 그린다. 훑어보기와 주행 화면이 쓴다. */
+internal fun Context.drawRouteMarker(canvas: Canvas, x: Float, y: Float, fill: Paint) {
+    fill.color = NightPalette.accent
+    fill.alpha = MARKER_HALO_ALPHA
+    canvas.drawCircle(x, y, dp(MARKER_HALO).toFloat(), fill)
+    fill.color = palette.onPhoto
+    canvas.drawCircle(x, y, dp(MARKER_DOT + MARKER_RING).toFloat(), fill)
+    fill.color = NightPalette.accent
+    canvas.drawCircle(x, y, dp(MARKER_DOT).toFloat(), fill)
 }

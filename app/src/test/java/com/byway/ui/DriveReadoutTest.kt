@@ -62,4 +62,9 @@ class DriveReadoutTest {
     fun aSavedPointPastTheCourseCountsAsTheLastSection() {
         assertEquals(2, sectionNoAt(listOf(Section("숲길", 0, 4), Section("강변", 5, 9)), 99))
     }
+
+    @Test
+    fun theSectionCountStartsAtOne() {
+        assertEquals("구간 2/3", sectionCount(1, 3))
+    }
 }

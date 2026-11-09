@@ -19,6 +19,12 @@ fun shortMapCredit(style: MapStyle): String = when (style) {
     MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors · 사진 띠 Sentinel-2 cloudless · 전체 출처는 앱 정보"
 }
 
+/** 주행 화면 지도의 출처. 글 칸이 좁고 사진 띠가 없어 지도와 길의 권리자만 적는다. 전문은 앱 정보에 있다. */
+fun driveMapCredit(style: MapStyle): String = when (style) {
+    MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors"
+    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors"
+}
+
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",
     SATELLITE,

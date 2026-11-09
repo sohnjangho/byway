@@ -70,4 +70,22 @@ class ScrubMathTest {
         assertEquals(0, filmTravel(count = 1, stepPx = 153))
         assertEquals(0, filmTravel(count = 0, stepPx = 153))
     }
+
+    /** 주행 화면의 점은 남은 거리로 자리를 찾는다. */
+    @Test
+    fun theDrivenDistanceComesFromTheRemainingDistance() {
+        assertEquals(20.0, drivenKm(50.0, 30_000.0), 1e-9)
+    }
+
+    @Test
+    fun beforeTheFirstFixTheCarIsAtTheStart() {
+        assertEquals(0.0, drivenKm(50.0, null), 1e-9)
+    }
+
+    /** 반올림 차이로 남은 거리가 전체보다 커도 코스 밖으로 나가지 않는다. */
+    @Test
+    fun theDrivenDistanceStaysOnTheCourse() {
+        assertEquals(0.0, drivenKm(50.0, 50_400.0), 1e-9)
+        assertEquals(50.0, drivenKm(50.0, -10.0), 1e-9)
+    }
 }

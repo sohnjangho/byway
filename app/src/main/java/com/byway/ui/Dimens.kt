@@ -126,6 +126,8 @@ internal object Dimens {
 
     const val DRIVE_EDGE = 48
     const val DRIVE_BAR_HEIGHT = 10
+    const val DRIVE_NOTE_HEIGHT = 96
+    const val DRIVE_NOTE_MARK = 6
     const val CARD_BAR_HEIGHT = 6
     const val BAR_GAP = 4
 }

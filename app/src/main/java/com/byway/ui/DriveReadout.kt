@@ -24,6 +24,8 @@ private fun filledShares(sectionMeters: List<Double>, travelled: Double): List<F
     }
 }
 
+fun sectionCount(sectionIndex: Int, total: Int): String = "구간 ${sectionIndex + 1}/$total"
+
 /** 엔진의 물음에 답하는 버튼의 글. 물음이 없으면 버튼도 없다. 누르면 그렇다는 답이다. */
 fun promptButton(prompt: Prompt?): String? = when (prompt) {
     Prompt.DETOUR -> "잠깐 들러요"
