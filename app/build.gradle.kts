@@ -68,7 +68,6 @@ dependencies {
     implementation("ai.pleos.playground:NaviHelper:3.0.5")
     implementation("ai.pleos.playground:FusedLocation:1.1.3")
     implementation("ai.pleos.playground:TextToSpeech:3.3.1")
-    implementation("ai.pleos.playground:SpeechToText:3.3.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation(project(":core"))
@@ -76,6 +75,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
 
+    androidTestImplementation("ai.pleos.playground:SpeechToText:3.3.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

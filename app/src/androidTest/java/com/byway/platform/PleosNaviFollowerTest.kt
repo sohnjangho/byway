@@ -14,7 +14,7 @@ class PleosNaviFollowerTest {
     @Test
     fun theBuiltInNaviTakesTwoWaypointsAtATime() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val follower: RouteFollower = PleosNavi(context)
+        val follower: RouteFollower = PleosNavi(context) {}
 
         assertEquals(RouteAbility(maxWaypoints = 2, acceptsWholePath = false), follower.ability)
     }
