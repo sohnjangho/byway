@@ -4,6 +4,8 @@ import ai.pleos.playground.vehicle.Vehicle
 import ai.pleos.playground.vehicle.api.model.area.SeatArea
 import ai.pleos.playground.vehicle.api.model.area.WindowArea
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.byway.core.drive.CabinScene
 
@@ -19,6 +21,10 @@ class PleosCabin(context: Context, private val onRemembered: (String) -> Unit = 
     private var hvacPower: SeatArea? = null
     private var light: SeatArea? = null
     private var memory = CabinMemory()
+    private val main = Handler(Looper.getMainLooper())
+
+    /** 되돌릴 때마다 늘어난다. 되돌린 뒤에 도착한 읽기 결과로 연출을 다시 쓰지 않게 한다. */
+    private var generation = 0
 
     fun start() {
         vehicle.initialize()
@@ -40,6 +46,7 @@ class PleosCabin(context: Context, private val onRemembered: (String) -> Unit = 
     fun restore() {
         val past = memory
         memory = CabinMemory()
+        generation++
         onRemembered("")
         past.items.forEach { item ->
             read(item) { now ->
@@ -57,9 +64,12 @@ class PleosCabin(context: Context, private val onRemembered: (String) -> Unit = 
             write(item, value)
             return
         }
-        read(item, onFailed = { write(item, value) }) { now ->
-            wrote(item, now, value)
-            write(item, value)
+        val asked = generation
+        read(item, onFailed = { if (asked == generation) write(item, value) }) { now ->
+            if (asked == generation) {
+                wrote(item, now, value)
+                write(item, value)
+            }
         }
     }
 
@@ -68,17 +78,19 @@ class PleosCabin(context: Context, private val onRemembered: (String) -> Unit = 
         onRemembered(memory.encode())
     }
 
+    /** SDK 콜백은 다른 스레드로 올 수 있다. 기억을 만지는 일은 메인 스레드에서만 한다. */
     private fun read(item: CabinItem, onFailed: () -> Unit = {}, onValue: (Int) -> Unit) {
+        val none = { main.post { onFailed() }; Unit }
         val fail = { failure: Exception ->
             skip(failure)
-            onFailed()
+            none()
         }
         // 값을 모르면 null 이 온다. 읽지 못한 것과 같다.
-        val got = { value: Int? -> value?.let(onValue) ?: onFailed() }
+        val got = { value: Int? -> main.post { value?.let(onValue) ?: onFailed() }; Unit }
         when (item) {
-            CabinItem.WINDOW -> withWindow(onFailed) { area -> vehicle.getWindow().getCurrentWindowPosition(area, got, fail) }
-            CabinItem.FAN -> withFan(onFailed) { area -> vehicle.getHVAC().getHvacFanSpeed(area, got, fail) }
-            CabinItem.LIGHT -> withLight(onFailed) { area -> vehicle.getLight().getAmbientLightBrightness(area, got, fail) }
+            CabinItem.WINDOW -> withWindow(none) { area -> vehicle.getWindow().getCurrentWindowPosition(area, got, fail) }
+            CabinItem.FAN -> withFan(none) { area -> vehicle.getHVAC().getHvacFanSpeed(area, got, fail) }
+            CabinItem.LIGHT -> withLight(none) { area -> vehicle.getLight().getAmbientLightBrightness(area, got, fail) }
         }
     }
 
@@ -127,7 +139,10 @@ class PleosCabin(context: Context, private val onRemembered: (String) -> Unit = 
         Log.w(TAG, "cabin skipped: $failure")
     }
 
-    fun release() = vehicle.release()
+    fun release() {
+        main.removeCallbacksAndMessages(null)
+        vehicle.release()
+    }
 
     private companion object {
         const val TAG = "DRIVE"

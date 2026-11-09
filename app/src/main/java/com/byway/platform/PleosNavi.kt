@@ -35,13 +35,13 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
     private val ledger = RouteLedger()
     private var connected = false
     private var waiting: Leg? = null
+    private var lastLeg: Leg? = null
 
     /** 이벤트는 다른 스레드로 온다. 판단은 메인 스레드에서만 한다. */
     private val listener = object : NaviHelperEventListener {
         override fun onRouteStarted(routeStartInfo: RouteStartInfo) {
             main.post {
                 Log.i(TAG, "route started ${routeStartInfo.name}")
-                ledger.started()
                 // 시작 이벤트에는 좌표가 없다. 목적지를 물어 누구의 경로인지 본다.
                 navi.getDestinationInfo()
             }
@@ -67,20 +67,19 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
         }
 
         override fun onError(errorCode: NaviErrorCode) {
-            main.post {
-                Log.w(TAG, "navi error $errorCode")
-                ledger.failed()
-            }
+            main.post { failed(errorCode) }
         }
     }
 
     fun connect(onFailed: (Throwable) -> Unit) {
         navi.initialize(
             onConnected = {
-                connected = true
-                navi.addListener(listener)
-                waiting?.let(::show)
-                waiting = null
+                main.post {
+                    connected = true
+                    navi.addListener(listener)
+                    waiting?.let(::show)
+                    waiting = null
+                }
             },
             onFailed = onFailed,
         )
@@ -94,6 +93,7 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
             return
         }
         Log.i(TAG, "show leg via=${leg.waypoints.map { it.pathIndex }} to=${leg.destination.pathIndex}")
+        lastLeg = leg
         ledger.requested(leg.destination.point, SystemClock.elapsedRealtime())
         if (leg.waypoints.isEmpty()) {
             navi.requestRoute(leg.destination.toRouteInfo())
@@ -104,6 +104,17 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
                     waypoints = leg.waypoints.mapIndexed { i, stop -> stop.toWaypoint(INDEXES[i]) },
                 ),
             )
+        }
+    }
+
+    /** 경로를 찾지 못한 오류만 우리 요청의 실패다. 한 번 다시 올리고, 또 실패하면 엔진에 알린다. */
+    private fun failed(errorCode: NaviErrorCode) {
+        Log.w(TAG, "navi error $errorCode")
+        if (errorCode !in ROUTE_ERRORS) return
+        if (ledger.failed()) {
+            main.postDelayed({ lastLeg?.let(::show) }, RETRY_MS)
+        } else {
+            onDriver(DriveEvent.RouteFailed)
         }
     }
 
@@ -134,14 +145,18 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
         }
     }
 
-    /** 운전자가 넣은 경로는 지우지 않는다. */
+    /**
+     * 우리가 올린 경로만 지운다. 운전자가 넣은 경로는 둔다. 서비스를 멈추기 전에 부른다.
+     * 에뮬레이터에서는 이 호출 뒤에도 경로가 남고 이벤트도 오지 않았다(2026-11-09, 원인 미확인). 실차에서 확인한다.
+     */
+    fun clearOurRoute() {
+        Log.i(TAG, "clear route, ours=${ledger.oursIsActive}")
+        if (connected && ledger.oursIsActive) navi.cancelRoute()
+    }
+
     fun release() {
         main.removeCallbacksAndMessages(null)
-        Log.i(TAG, "release navi, our route active=${ledger.oursIsActive}")
-        if (connected) {
-            if (ledger.oursIsActive) navi.cancelRoute()
-            navi.removeListener(listener)
-        }
+        if (connected) navi.removeListener(listener)
         navi.release()
     }
 
@@ -157,6 +172,12 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
     private companion object {
         const val TAG = "DRIVE"
         const val WAYPOINT_ADDED = "ADD"
+        const val RETRY_MS = 3_000L
+        val ROUTE_ERRORS = setOf(
+            NaviErrorCode.CAUSE_SEARCH_ROUTE,
+            NaviErrorCode.CAUSE_SEARCH_ROUTE_OVER_DISTANCE,
+            NaviErrorCode.CAUSE_SEARCH_ROUTE_TOO_SHORT_DISTANCE,
+        )
         val INDEXES = listOf(WaypointIndex.FIRST, WaypointIndex.SECOND)
     }
 }

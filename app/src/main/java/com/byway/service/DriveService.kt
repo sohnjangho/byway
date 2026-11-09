@@ -20,6 +20,7 @@ import com.byway.core.drive.DriveFeature
 import com.byway.core.drive.DriveHost
 import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
+import com.byway.core.geo.GeoPoint
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.feature.music.MusicFeature
 import com.byway.platform.ConnectedMusic
@@ -60,6 +61,11 @@ class DriveService : Service() {
     /** 마지막으로 경로를 올린 때. 그 직후의 음성은 내비 안내 뒤로 미룬다. */
     private var routedAt: Long? = null
     private var chimed = false
+    private var ending = false
+
+    /** 첫 위치를 기다리는 코스. 차의 자리를 알아야 첫 경로를 한 번에 맞게 올린다. */
+    private var waitingFix: DriveEvent.CourseStarted? = null
+    private val startWithoutFix = Runnable { begin(null) }
 
     private val boardListener: (DriveState) -> Unit = { if (it.parked != parked) sendParked(it.parked) }
     private val stopLater = Runnable { stopSelf() }
@@ -76,6 +82,7 @@ class DriveService : Service() {
             if (event is DriveEvent.CourseFinished) {
                 DriveBoard.update { it.copy(finished = it.course, prompt = null, stale = false) }
                 forget()
+                navi.clearOurRoute()
                 main.postDelayed(stopLater, FINISH_DELAY_MS)
             }
             return emptyList()
@@ -95,7 +102,7 @@ class DriveService : Service() {
         }.also { it.start() }
         location = PleosLocation(this) { point ->
             DriveBoard.update { it.copy(position = point) }
-            dispatch(DriveEvent.LocationUpdated(point))
+            if (waitingFix != null) begin(point) else dispatch(DriveEvent.LocationUpdated(point))
         }
         navi.connect { Log.w(TAG, "navi connect failed", it) }
         location.start()
@@ -107,7 +114,7 @@ class DriveService : Service() {
         when (intent?.action) {
             ACTION_START -> startCourse(requireNotNull(intent.getStringExtra(EXTRA_COURSE_ID)), intent.getIntExtra(EXTRA_RESUME_FROM, 0))
             ACTION_STOP -> endCourse()
-            ACTION_ANSWER -> dispatch(DriveEvent.Answered(intent.getBooleanExtra(EXTRA_YES, false)))
+            ACTION_ANSWER -> if (host != null) dispatch(DriveEvent.Answered(intent.getBooleanExtra(EXTRA_YES, false))) else stopSelf()
             ACTION_DISCARD -> discard()
         }
         return START_NOT_STICKY
@@ -116,6 +123,7 @@ class DriveService : Service() {
     private fun startCourse(courseId: String, resumeFrom: Int) {
         // 방금 끝낸 코스의 예약된 종료가 새 코스를 멈추지 않게 한다.
         main.removeCallbacks(stopLater)
+        ending = false
         val course = CourseCatalog.find(this, courseId)
         val started = CourseEngine(ability = route.ability)
         engine = started
@@ -135,16 +143,31 @@ class DriveService : Service() {
             )
         }
         sendParked(DriveBoard.state.parked)
-        dispatch(DriveEvent.CourseStarted(course, resumeFrom))
+        waitingFix = DriveEvent.CourseStarted(course, resumeFrom)
+        val known = location.last
+        if (known != null) begin(known) else main.postDelayed(startWithoutFix, FIRST_FIX_WAIT_MS)
+    }
+
+    /** 위치가 끝내 오지 않으면 자리를 모르는 채로 시작한다. 엔진이 첫 위치에서 다시 맞춘다. */
+    private fun begin(at: GeoPoint?) {
+        val pending = waitingFix ?: return
+        waitingFix = null
+        main.removeCallbacks(startWithoutFix)
+        dispatch(pending.copy(at = at))
     }
 
     /** 운전자가 코스를 끝냈다. 연출을 되돌리는 호출이 나갈 시간을 두고 멈춘다. */
     private fun endCourse() {
+        if (ending) return
         if (host == null) {
             stopSelf()
             return
         }
+        ending = true
+        main.removeCallbacks(startWithoutFix)
+        waitingFix = null
         dispatch(DriveEvent.CourseStopped)
+        navi.clearOurRoute()
         host = null
         engine = null
         forget()
@@ -154,10 +177,16 @@ class DriveService : Service() {
 
     /** 달리다 만 코스를 이어가지 않기로 했다. 그때 바꿔 둔 차 안을 되돌리고 기록을 지운다. */
     private fun discard() {
-        MyDrives.savedRun(this)?.cabin?.let(cabin::remember)
-        cabin.restore()
+        val memory = MyDrives.savedRun(this)?.cabin.orEmpty()
         forget()
-        if (host == null) main.postDelayed(stopLater, STOP_DELAY_MS)
+        // 차량 연결 직후에는 조회가 실패한다. 준비될 시간을 두고 되돌린다.
+        main.postDelayed({
+            if (host == null) {
+                cabin.remember(memory)
+                cabin.restore()
+                main.postDelayed(stopLater, STOP_DELAY_MS)
+            }
+        }, VEHICLE_READY_MS)
     }
 
     private fun forget() {
@@ -242,6 +271,8 @@ class DriveService : Service() {
 
     override fun onDestroy() {
         main.removeCallbacksAndMessages(null)
+        host = null
+        engine = null
         DriveBoard.stopListening(boardListener)
         location.release()
         cabin.release()
@@ -271,6 +302,10 @@ class DriveService : Service() {
         /** 연출을 되돌리는 호출(읽고, 견주고, 쓰기)이 나갈 시간. */
         private const val STOP_DELAY_MS = 2_000L
         private const val WATCH_MS = 2_000L
+        private const val FIRST_FIX_WAIT_MS = 3_000L
+
+        /** 차량 연결이 조회를 받을 수 있게 되는 시간(VehicleControlSpikeTest 와 같은 값). */
+        private const val VEHICLE_READY_MS = 2_000L
         private const val ACTION_START = "com.byway.START"
         private const val ACTION_STOP = "com.byway.STOP"
         private const val ACTION_ANSWER = "com.byway.ANSWER"

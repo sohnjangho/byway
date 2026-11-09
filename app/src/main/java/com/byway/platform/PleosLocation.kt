@@ -14,7 +14,9 @@ import com.byway.core.geo.GeoPoint
 class PleosLocation(context: Context, private val onPoint: (GeoPoint) -> Unit) {
     private val fused = FusedLocation(context)
     private val handler = Handler(Looper.getMainLooper())
-    private var last: GeoPoint? = null
+    /** 마지막으로 받은 자리. 코스를 시작할 때 첫 경로를 맞추는 데 쓴다. */
+    var last: GeoPoint? = null
+        private set
     private var stamp = 0L
     private var stampAt = 0L
 

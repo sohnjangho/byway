@@ -62,8 +62,8 @@ class RouteLedgerTest {
     @Test
     fun aCancelAfterOurRouteStartedIsTheDrivers() {
         val ledger = sent(atMs = 10_000)
-        ledger.started()
-        assertFalse(ledger.cancelIsOurs(60_000))
+        ledger.seen(ours)
+        assertFalse(ledger.cancelIsOurs(11_000))
         assertFalse(ledger.oursIsActive)
     }
 
@@ -78,7 +78,7 @@ class RouteLedgerTest {
     @Test
     fun aCancelRightAfterArrivingAtOurDestinationIsNotTheDrivers() {
         val ledger = sent()
-        ledger.started()
+        ledger.seen(ours)
         ledger.arrived(50_000)
         assertTrue(ledger.cancelIsOurs(51_000))
         assertFalse(ledger.oursIsActive)
@@ -94,10 +94,61 @@ class RouteLedgerTest {
         assertFalse(ledger.oursIsActive)
     }
 
+    /** 두 번째 요청이 첫 경로를 밀어내는 취소는 첫 경로가 시작된 뒤에 온다. 마지막 요청이 확인될 때까지 우리 것이다. */
+    @Test
+    fun aSecondRequestStaysOursUntilItIsConfirmed() {
+        val second = GeoPoint(37.7, 127.3)
+        val ledger = sent(atMs = 0)
+        ledger.requested(second, 1_000)
+        ledger.seen(ours)
+        assertTrue(ledger.cancelIsOurs(2_000))
+        ledger.seen(second)
+        assertFalse(ledger.cancelIsOurs(3_000))
+    }
+
+    @Test
+    fun aFailedRequestIsRetriedOnce() {
+        val ledger = sent()
+        assertTrue(ledger.failed())
+        ledger.requested(ours, 100)
+        assertFalse(ledger.failed())
+    }
+
+    @Test
+    fun aConfirmedRouteEarnsANewRetry() {
+        val ledger = sent()
+        ledger.failed()
+        ledger.requested(ours, 100)
+        ledger.seen(ours)
+        ledger.requested(GeoPoint(37.7, 127.3), 200)
+        assertTrue(ledger.failed())
+    }
+
+    /** 운전자 경로 위에 올린 요청이 실패하면 지금 경로는 여전히 운전자 것이다. 끝낼 때 지우면 안 된다. */
+    @Test
+    fun aFailedRequestOverTheDriversRouteLeavesItTheirs() {
+        val ledger = sent()
+        ledger.seen(ours)
+        ledger.seen(theirs)
+        ledger.requested(ours, 1_000)
+        assertTrue(ledger.oursIsActive)
+        ledger.failed()
+        assertFalse(ledger.oursIsActive)
+    }
+
+    @Test
+    fun aFailedSwapLeavesOurEarlierRouteOurs() {
+        val ledger = sent()
+        ledger.seen(ours)
+        ledger.requested(GeoPoint(37.7, 127.3), 1_000)
+        ledger.failed()
+        assertTrue(ledger.oursIsActive)
+    }
+
     @Test
     fun sendingAgainAfterTheDriversRouteMakesItOurs() {
         val ledger = sent()
-        ledger.started()
+        ledger.seen(ours)
         ledger.seen(theirs)
         ledger.requested(ours, 90_000)
         assertTrue(ledger.oursIsActive)
