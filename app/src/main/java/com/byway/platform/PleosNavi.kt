@@ -8,6 +8,7 @@ import ai.pleos.playground.navi.data.RequestWaypointInfo
 import ai.pleos.playground.navi.data.RouteInfo
 import ai.pleos.playground.navi.data.RouteStartInfo
 import ai.pleos.playground.navi.data.RouteWithWaypointsRequest
+import ai.pleos.playground.navi.data.TBTInfo
 import ai.pleos.playground.navi.data.WaypointChangedInfo
 import ai.pleos.playground.navi.helper.NaviHelper
 import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener
@@ -60,6 +61,15 @@ class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : 
         override fun onWaypointChanged(waypointChangedInfo: WaypointChangedInfo) {
             val added = "${waypointChangedInfo.cmdType}" == WAYPOINT_ADDED
             main.post { if (added) takenOver("waypoint added") }
+        }
+
+        /** 경로가 시작될 때 앞으로의 안내 지점 전체가, 꺼질 때 빈 목록이 온다(실측). distance 는 앞 지점부터의 거리다. */
+        override fun onTBTInfo(tbtInfo: List<TBTInfo>) {
+            val gaps = tbtInfo.map { it.distance.toDouble() }
+            main.post {
+                Log.i(TAG, "route turns ${gaps.size}")
+                onDriver(DriveEvent.RouteTurns(gaps))
+            }
         }
 
         override fun onDestinationArrived(destinationArrivedInfo: DestinationArrivedInfo) {

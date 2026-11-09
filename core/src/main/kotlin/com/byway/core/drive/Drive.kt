@@ -43,6 +43,9 @@ sealed interface DriveEvent {
     data class DriveModeChanged(val mode: DriveMode) : DriveEvent
     data object CourseFinished : DriveEvent
 
+    /** 내비가 알려 온 앞으로의 안내 지점. [gaps]는 차 또는 앞 지점부터 그 지점까지의 거리(m)이고, 경로가 없으면 비어 있다. */
+    data class RouteTurns(val gaps: List<Double>) : DriveEvent
+
     /** 운전자가 내비에 다른 목적지나 경유지를 넣었다. */
     data object RouteTakenOver : DriveEvent
 
