@@ -60,6 +60,8 @@ internal object Dimens {
     const val SIDE_NAME = 52f
     const val THIRD_SCENE_HEIGHT = 732
     const val THIRD_DRIVE_SCENE_HEIGHT = 580
+    const val DRIVE_PHOTO_NIGHT = 0.25f
+    const val DRIVE_PHOTO_DAY = 0.18f
     const val SCENE_CREDIT_BOTTOM = 176
     const val LIST_HINT_BOTTOM = 96
     const val SCENE_CREDIT_WIDTH = 760

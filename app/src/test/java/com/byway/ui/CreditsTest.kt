@@ -94,4 +94,23 @@ class CreditsTest {
     fun theMapSourceIsListedWithALinkBack() {
         assertTrue(lines.any { it.contains("Terrain Light") && it.contains("maps.eox.at") })
     }
+
+    @Test
+    fun theDriveMapCreditKeepsEveryRightsHolderInFewerWords() {
+        val map = driveMapCredit(MapStyle.MAP)
+        assertTrue(map.contains("EOX") && map.contains("OpenStreetMap"))
+        val satellite = driveMapCredit(MapStyle.SATELLITE)
+        assertTrue(satellite.contains("Sentinel-2") && satellite.contains("EOX") && satellite.contains("OpenStreetMap"))
+    }
+
+    @Test
+    fun aBackdropPhotoAddsItsCreditAndSaysItWasChanged() {
+        val text = driveCredit("지도", "사진: 누구 (CC BY-SA 3.0, Wikimedia Commons)")
+        assertEquals("지도 · 배경 사진: 누구 (CC BY-SA 3.0, Wikimedia Commons), 흐리게 변형", text)
+    }
+
+    @Test
+    fun withoutABackdropPhotoOnlyTheMapIsCredited() {
+        assertEquals("지도", driveCredit("지도", null))
+    }
 }

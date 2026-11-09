@@ -15,7 +15,7 @@ import com.byway.service.SceneCatalog
 
 /**
  * 내비 옆 칸의 코스 주행 화면. 홈과 같이 지도 장면을 깔고 글 칸을 경계 없이 잇는다.
- * 글 칸에는 코스와 구간, 남은 거리, 안내 문구, 앞으로 만날 곳을 둔다. 지도에는 경로와 번호, 위치 점이 있다.
+ * 글 칸에는 코스와 구간, 남은 거리, 안내 문구, 앞으로 만날 곳을 두고, 그 뒤에 코스 사진과 구간 색을 깐다. 지도에는 경로와 번호, 위치 점이 있다.
  * 스크롤과 애니메이션, 분위기 효과는 없고 움직이는 것은 위치 점뿐이다.
  */
 @SuppressLint("ViewConstructor")
@@ -37,6 +37,7 @@ internal class DriveScreen(
     // 넓은 창에서 list 는 아래에 사진 띠가 없으니 출처를 아래로 내린다는 뜻이다.
     // 1/3 창은 글 칸에 자리를 내느라 지도 칸이 짧아서, 홈의 사진 띠 화면과 같이 장면을 줄여 경로를 다 담는다.
     private val sceneView = SceneView(context, window, list = !third, hintOnMap = false, strip = third)
+    private val backdrop = DriveBackdrop(context, window)
     private val where = context.label("", Dimens.LABEL, colors.inkSecondary).tabular().fixedLines(1)
     private val section = context.label("", Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
     private val remaining = context.label("", Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
@@ -51,7 +52,12 @@ internal class DriveScreen(
         setBackgroundColor(colors.bg)
         val hasPicture = scene != null && Covers.hasScene(context, course.id, context.night)
         val sideWidth = context.dp(Dimens.RAIL_WIDTH + if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH)
+        val hasPhoto = canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
+        if (hasPhoto) Covers.loadScenery(context, course, backdrop::setPicture)
+        addView(backdrop, matchFrame())
         sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
+        val style = currentMapStyle()
+        sceneView.setCredit(driveCredit(if (third) driveMapCredit(style) else mapCredit(style), course.sceneryCredit.takeIf { hasPhoto }))
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth
@@ -114,6 +120,7 @@ internal class DriveScreen(
         where.text = sectionCount(readout.sectionIndex, course.sections.size)
         section.text = current.name
         section.setTextColor(colors.moodColor(current.mood))
+        backdrop.setTint(colors.airColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
         spoken.text = driveLine(state.line, state.stale)
