@@ -6,7 +6,7 @@ import com.byway.core.course.RankBy
 import com.byway.core.course.Ranked
 import com.byway.core.course.Stop
 import com.byway.core.engine.DriveTuning
-import com.byway.core.engine.planLegs
+import com.byway.core.engine.routeUploads
 import com.byway.core.engine.planStops
 import java.util.Locale
 
@@ -77,4 +77,4 @@ fun naviStops(course: Course) =
     planStops(course, course.toleranceMeters ?: DriveTuning().simplifyToleranceMeters)
 
 fun naviPlanText(course: Course, stops: List<Stop> = naviStops(course)): String =
-    "코스 좌표 ${String.format(Locale.ROOT, "%,d", course.path.size)}개 → 내비 지점 ${stops.size}개 → ${planLegs(stops).size}번에 나눠 안내"
+    "코스 좌표 ${String.format(Locale.ROOT, "%,d", course.path.size)}개 → 내비 지점 ${stops.size}개 → ${routeUploads(stops.size)}번에 나눠 안내"

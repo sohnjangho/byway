@@ -201,6 +201,20 @@ class CourseEngineTest {
         assertEquals(1, started().drive(1..99).routes().size)
     }
 
+    /**
+     * 화면의 "몇 번에 나눠 안내"는 엔진이 실제로 경로를 올리는 횟수와 같아야 한다.
+     * 지점 간격이 교체 거리(1km)보다 넓은 코스에서 그렇다. 실린 코스는 간격이 2.1km 이상이다.
+     */
+    @Test
+    fun theNumberOfRoutesMatchesWhatTheScreenPromises() {
+        val six = listOf(16, 32, 48, 64, 80, 100).map { Stop("지점$it", path[it], it) }
+        listOf(stops, six, stops.takeLast(1)).forEach { planned ->
+            val engine = engine(planned)
+            val routes = (engine.onEvent(DriveEvent.CourseStarted(course)) + engine.drive(1..100)).routes()
+            assertEquals(routeUploads(planned.size), routes.size)
+        }
+    }
+
     @Test
     fun noLegCarriesMoreThanTwoWaypoints() {
         val dense = (1..25).map { Stop("지점", path[it * 4], it * 4) }

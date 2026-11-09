@@ -42,6 +42,24 @@ class LegPlannerTest {
         assertEquals(listOf(3, 3), planLegs(stops(8), maxWaypoints = 3).map { it.waypoints.size })
     }
 
+    /** 경유지 둘과 목적지 하나가 한 번에 올라간다. */
+    @Test
+    fun threeStopsGoUpAtOnce() {
+        assertEquals(1, routeUploads(1))
+        assertEquals(1, routeUploads(3))
+    }
+
+    /** 다음 경로는 앞 경로의 목적지를 첫 경유지로 다시 싣는다. 그래서 한 번에 두 지점씩 나아간다. */
+    @Test
+    fun eachLaterRouteCarriesTheLastStopAgain() {
+        assertEquals(listOf(2, 2, 3, 3, 4), listOf(4, 5, 6, 7, 9).map { routeUploads(it) })
+    }
+
+    @Test
+    fun aRoomierFollowerNeedsFewerRoutes() {
+        assertEquals(3, routeUploads(8, maxWaypoints = 3))
+    }
+
     private val ridgeCourse = Course(
         id = "ridge",
         name = "능선",
