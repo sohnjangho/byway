@@ -100,6 +100,14 @@ class CourseFitTest {
         assertEquals(100, timeFit(listOf("day", "sunset"), 16 * 60 + 30, 90, sun))
     }
 
+    /** 기기 시간대가 달라 일출·일몰이 하루 경계를 넘어도 시간대를 제대로 잰다. */
+    @Test
+    fun aWindowCrossingTheDayBoundaryIsStillCounted() {
+        val utc = SunTimes(riseMinute = -116, setMinute = 507)
+        assertEquals(100, timeFit(listOf("day"), 23 * 60, 30, utc))
+        assertEquals(0, timeFit(listOf("day"), 12 * 60, 30, utc))
+    }
+
     @Test
     fun aCourseWithoutATimeHasNoFit() {
         assertNull(timeFit(emptyList(), 720, 60, sun))
@@ -130,6 +138,12 @@ class CourseFitTest {
         val known = funScore(facts(40.0, 60, 1500, 2.5, 0), hasElevation = true)
         val unknown = funScore(facts(40.0, 60, 0, 2.5, 0), hasElevation = false)
         assertEquals(known, unknown, 3)
+    }
+
+    /** 길이가 0인 코스에서 0으로 나누어 죽지 않는다. */
+    @Test
+    fun aZeroLengthCourseScoresNothing() {
+        assertEquals(0, funScore(CourseFacts(0.0, 0.0, 1.0, 0, 0, 0, emptyMap()), hasElevation = true))
     }
 
     @Test

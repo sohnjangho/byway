@@ -51,7 +51,7 @@ class HomeCopyTest {
     private fun tagged(seasons: List<String> = listOf("autumn"), times: List<String> = listOf("day")) =
         Course("c", "코스", line, listOf(Section("구간", 0, 1, "forest")), tags = CourseTags(seasons = seasons, times = times))
     private fun cells(course: Course = tagged(), energy: EnergyRate? = null) =
-        choiceFacts(course, factsOf(course), lightMinutes = 60, dayOfYear = 298, minuteOfDay = 12 * 60, energy = energy)
+        choiceFacts(course, factsOf(course), lightMinutes = 60, dayOfYear = 298, minuteOfDay = 12 * 60, utcOffsetMinutes = 540, energy = energy)
 
     @Test
     fun theChoiceFactsAreTheOnesThatHelpPickACourse() {
@@ -64,6 +64,15 @@ class HomeCopyTest {
         assertEquals("100%", facts[1].value)
         assertEquals("100%", facts[2].value)
         assertTrue(facts[3].value, facts[3].value.endsWith("점"))
+    }
+
+    /** 기기가 UTC 로 맞춰져 있어도 한낮은 한낮이다. 일출·일몰을 기기 시간대로 계산한다. */
+    @Test
+    fun theTimeFitFollowsTheDeviceTimeZone() {
+        val course = tagged()
+        val noonInUtc = 3 * 60
+        val fact = choiceFacts(course, factsOf(course), 60, 298, noonInUtc, utcOffsetMinutes = 0, energy = null)
+        assertEquals("100%", fact.first { it.name == "시간 적합" }.value)
     }
 
     @Test

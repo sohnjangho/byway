@@ -9,7 +9,6 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.byway.BuildConfig
 import com.byway.core.course.Course
-import com.byway.core.course.EnergyRate
 import com.byway.core.course.Weather
 import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
@@ -37,7 +36,6 @@ class MainActivity : AppCompatActivity() {
     private var builtPalette: Palette? = null
     private var builtPosition = railPosition(nav)
     private var builtCourse: String? = null
-    private var builtEnergy: EnergyRate? = null
     private val render: (DriveState) -> Unit = ::render
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         val saved = savedRun()
         val next = screenFor(state, nav, resumable = saved != null)
         val width = widthDp()
-        if (next != current || width != builtWidth || palette != builtPalette || stale || state.energy != builtEnergy) {
+        if (next != current || width != builtWidth || palette != builtPalette || stale) {
             val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
             val sign = railPosition(nav).compareTo(builtPosition)
             val reveal = motion != ScreenMotion.NONE && next == Screen.Browse(Tab.HOME) && nav.courseId != builtCourse
@@ -125,7 +123,6 @@ class MainActivity : AppCompatActivity() {
             builtPalette = palette
             builtPosition = railPosition(nav)
             builtCourse = nav.courseId
-            builtEnergy = state.energy
             window.setBackgroundDrawable(ColorDrawable(palette.bg))
             root.setBackgroundColor(palette.bg)
             place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal, saved)
@@ -182,7 +179,6 @@ class MainActivity : AppCompatActivity() {
             weather = demoWeather(),
             stripX = nav.stripX,
             reveal = reveal,
-            energy = DriveBoard.state.energy,
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
         )

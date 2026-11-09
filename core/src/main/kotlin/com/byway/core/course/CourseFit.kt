@@ -47,7 +47,8 @@ fun seasonFit(seasons: List<String>, dayOfYear: Int): Int? =
 
 /** 지금 출발해 달리는 시간 중 코스의 추천 시간대와 겹치는 비율(%). 시간대가 없으면 null 이다. */
 fun timeFit(times: List<String>, startMinute: Int, durationMinutes: Int, sun: SunTimes): Int? {
-    val windows = times.mapNotNull { timeWindow(it, sun) }
+    // 시간대에 따라 일출·일몰이 하루 경계를 넘을 수 있어 하루 안의 분으로 맞춘다.
+    val windows = times.mapNotNull { timeWindow(it, sun) }.map { (from, to) -> from.mod(MINUTES_IN_DAY) to to.mod(MINUTES_IN_DAY) }
     if (windows.isEmpty() || durationMinutes <= 0) return null
     val inside = (0 until durationMinutes).count { offset ->
         val minute = (startMinute + offset) % MINUTES_IN_DAY
@@ -81,6 +82,7 @@ private const val FULL_DETOUR = 2.0
  */
 fun funScore(facts: CourseFacts, hasElevation: Boolean): Int {
     val km = facts.meters / 1000
+    if (km <= 0) return 0
     val parts = buildList {
         add(CURVE_WEIGHT to min(facts.curves / km / FULL_CURVES_PER_KM, 1.0))
         if (hasElevation) add(CLIMB_WEIGHT to min(facts.climbMeters / km / FULL_CLIMB_PER_KM, 1.0))

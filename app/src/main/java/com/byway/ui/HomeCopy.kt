@@ -73,9 +73,17 @@ fun sceneryControl(window: WindowClass, home: Boolean): SceneryControl =
     if (home && window != WindowClass.THIRD) SceneryControl.BUTTON else SceneryControl.CHIP
 
 /** 코스를 고를 때 보는 칸. 값을 낼 수 없는 칸은 빠진다. [lightMinutes]는 쉬지 않고 달리는 시간이다. */
-internal fun choiceFacts(course: Course, facts: CourseFacts, lightMinutes: Int, dayOfYear: Int, minuteOfDay: Int, energy: EnergyRate?): List<Fact> {
+internal fun choiceFacts(
+    course: Course,
+    facts: CourseFacts,
+    lightMinutes: Int,
+    dayOfYear: Int,
+    minuteOfDay: Int,
+    utcOffsetMinutes: Int,
+    energy: EnergyRate?,
+): List<Fact> {
     val start = course.path.first()
-    val sun = sunTimes(dayOfYear, start.lat, start.lon)
+    val sun = sunTimes(dayOfYear, start.lat, start.lon, utcOffsetMinutes)
     return listOfNotNull(
         Fact(kmText(facts.meters), "거리"),
         seasonFit(course.tags.seasons, dayOfYear)?.let { Fact("$it%", "계절 적합") },
