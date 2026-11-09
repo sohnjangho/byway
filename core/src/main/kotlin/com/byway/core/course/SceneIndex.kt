@@ -24,7 +24,20 @@ data class ScenePlace(
 /** 한국 지도 위 코스 자리. [frame]은 장면 그림이 겹치는 자리다. */
 data class AtlasSpot(val x: Float, val y: Float, val box: Box, val frame: Box, val lines: List<SceneLine>)
 
-data class CourseScene(val lines: List<SceneLine>, val places: List<ScenePlace>, val atlas: AtlasSpot)
+/** 장면 그림 위의 코스 자리와 그때까지 달린 거리. 훑어보기에서 점을 옮길 때 쓴다. */
+data class TrackPoint(val x: Float, val y: Float, val km: Double)
+
+/** 훑어보기 사진 한 장이 가리키는 지점. [placeNo]는 가까운 코스 주변 정보의 번호다. */
+data class FrameInfo(val km: Double, val section: String, val mood: String, val elev: Int?, val placeNo: Int?)
+
+data class CourseScene(
+    val lines: List<SceneLine>,
+    val places: List<ScenePlace>,
+    val atlas: AtlasSpot,
+    val track: List<TrackPoint> = emptyList(),
+    val frames: List<FrameInfo> = emptyList(),
+    val totalKm: Double = 0.0,
+)
 
 data class AtlasLabel(val name: String, val kind: String, val x: Float, val y: Float)
 
@@ -80,7 +93,17 @@ private data class LookFile(
 )
 
 @Serializable
-private data class SceneCourseFile(val lines: List<LineFile>, val places: List<PlaceFile>, val atlas: AtlasFile)
+private data class SceneCourseFile(
+    val lines: List<LineFile>,
+    val places: List<PlaceFile>,
+    val atlas: AtlasFile,
+    val track: List<List<Double>> = emptyList(),
+    val frames: List<FrameFile> = emptyList(),
+    val totalKm: Double = 0.0,
+)
+
+@Serializable
+private data class FrameFile(val km: Double, val section: String, val mood: String? = null, val elev: Int? = null, val placeNo: Int? = null)
 
 @Serializable
 private data class LineFile(val mood: String, val name: String = "", val points: List<List<Float>>)
@@ -126,4 +149,7 @@ private fun SceneCourseFile.toScene() = CourseScene(
     lines = lines.map { it.toLine() },
     places = places.map { ScenePlace(it.no, it.name, it.kind, it.label, it.note, it.km, it.x, it.y) },
     atlas = AtlasSpot(atlas.x, atlas.y, atlas.box.toBox(), atlas.frame.toBox(), atlas.lines.map { it.toLine() }),
+    track = track.map { TrackPoint(it[0].toFloat(), it[1].toFloat(), it[2]) },
+    frames = frames.map { FrameInfo(it.km, it.section, it.mood.orEmpty(), it.elev, it.placeNo) },
+    totalKm = totalKm,
 )

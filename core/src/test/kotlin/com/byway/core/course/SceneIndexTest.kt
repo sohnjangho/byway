@@ -49,4 +49,29 @@ class SceneIndexTest {
     fun emptyIndexHasNoCourses() {
         assertEquals(emptyMap<String, CourseScene>(), SceneIndex.EMPTY.courses)
     }
+
+    private fun indexWith(extra: String) = parseSceneIndex(
+        """{"sceneSize":[2404,1210],"koreaSize":[10,10],"labels":[],"moods":{},"courses":{"c":{"lines":[],"places":[],
+        "atlas":{"x":1,"y":2,"box":{"x":0,"y":0,"w":1,"h":1},"frame":{"x":0,"y":0,"w":1,"h":1},"lines":[]}$extra}}}""",
+    )
+
+    @Test
+    fun aCourseCarriesItsTrackAndFrames() {
+        val scene = indexWith(
+            ""","totalKm":12.3,"track":[[1,2,0],[3.5,4,12.3]],
+            "frames":[{"km":0.0,"section":"숲길","mood":"forest","elev":120,"placeNo":2},{"km":12.3,"section":"강변","mood":"river","elev":null,"placeNo":null}]""",
+        ).courses.getValue("c")
+        assertEquals(12.3, scene.totalKm, 0.0)
+        assertEquals(listOf(TrackPoint(1f, 2f, 0.0), TrackPoint(3.5f, 4f, 12.3)), scene.track)
+        assertEquals(FrameInfo(0.0, "숲길", "forest", 120, 2), scene.frames[0])
+        assertEquals(FrameInfo(12.3, "강변", "river", null, null), scene.frames[1])
+    }
+
+    /** 훑어보기 자료가 아직 없는 코스도 읽힌다. */
+    @Test
+    fun aCourseWithoutFramesHasNothingToScrub() {
+        val scene = indexWith("").courses.getValue("c")
+        assertEquals(emptyList<TrackPoint>(), scene.track)
+        assertEquals(emptyList<FrameInfo>(), scene.frames)
+    }
 }
