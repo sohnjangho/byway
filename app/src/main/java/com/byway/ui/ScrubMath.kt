@@ -9,9 +9,8 @@ import kotlin.math.abs
 /** 홈 아래 띠가 보여 주는 것. */
 enum class StripMode { SCRUB, COURSES }
 
-/** 훑어보기 자료가 없는 코스는 다른 코스 목록만 보인다. */
-fun stripMode(wantsScrub: Boolean, hasFrames: Boolean): StripMode =
-    if (wantsScrub && hasFrames) StripMode.SCRUB else StripMode.COURSES
+/** 띠는 언제나 지금 고른 코스를 훑어본다. 훑어보기 자료가 없는 코스에서만 다른 코스 목록이 그 자리를 채운다. */
+fun stripMode(hasFrames: Boolean): StripMode = if (hasFrames) StripMode.SCRUB else StripMode.COURSES
 
 /** 사진 띠를 민 거리에서 코스 위 거리(km)를 구한다. [filmPx]는 사진 띠 전체 길이다. */
 fun scrubKm(scrollX: Int, filmPx: Int, totalKm: Double): Double =

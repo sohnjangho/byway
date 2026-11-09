@@ -56,11 +56,10 @@ class ScrubMathTest {
         assertEquals("강변", scrubWhere(FrameInfo(40.0, "강변", "river", null, null), null))
     }
 
-    /** 훑어보기 자료가 없는 코스는 다른 코스 띠만 보인다. */
+    /** 띠는 언제나 지금 고른 코스다. 훑어보기 자료가 없는 코스에서만 다른 코스 띠가 그 자리를 채운다. */
     @Test
-    fun aCourseWithoutFramesShowsOnlyTheCourseStrip() {
-        assertEquals(StripMode.SCRUB, stripMode(wantsScrub = true, hasFrames = true))
-        assertEquals(StripMode.COURSES, stripMode(wantsScrub = true, hasFrames = false))
-        assertEquals(StripMode.COURSES, stripMode(wantsScrub = false, hasFrames = true))
+    fun theStripAlwaysShowsTheChosenCourseWhenItHasFrames() {
+        assertEquals(StripMode.SCRUB, stripMode(hasFrames = true))
+        assertEquals(StripMode.COURSES, stripMode(hasFrames = false))
     }
 }

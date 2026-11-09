@@ -86,6 +86,7 @@ internal object Dimens {
     const val STRIP_CARD_HEIGHT = 112
     const val STRIP_THUMB = 96
     const val STRIP_MODE_WIDTH = 100
+    const val DRAWER_SHEET_TOP = 300
     const val PLACE_NUMBER = 36
     const val AVATAR_SMALL = 60
     const val AVATAR_LARGE = 104

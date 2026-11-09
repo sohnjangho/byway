@@ -14,6 +14,10 @@ private const val NO_VALUE = "-"
 
 fun kmText(meters: Double): String = String.format(Locale.ROOT, "%.1fkm", meters / 1_000)
 
+/** 코스 카드의 둘째 줄. 지역, 거리, 대표 추천을 잇고 없는 것은 뺀다. */
+fun courseLine(region: String, meters: Double, pick: String): String =
+    listOf(region, kmText(meters), pick).filter { it.isNotBlank() }.joinToString(" · ")
+
 fun ratioText(facts: CourseFacts): String = String.format(Locale.ROOT, "%.1f배", facts.eumRatio)
 
 /** 고도 자료가 없는 코스는 0m 로 쓰지 않는다. 평지처럼 보이면 거짓 수치가 된다. */

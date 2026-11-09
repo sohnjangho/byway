@@ -129,7 +129,7 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
             val text = column().apply {
                 setPadding(dp(Dimens.SPACE_3), dp(Dimens.SPACE_2), dp(Dimens.SPACE_3), dp(Dimens.SPACE_3))
                 addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
-                val line = listOf(course.region, kmText(kit.book.facts(course).meters), pickLabels(course.tags).firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")
+                val line = courseLine(course.region, kit.book.facts(course).meters, pickLabels(course.tags).firstOrNull().orEmpty())
                 addView(label(line, Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text)

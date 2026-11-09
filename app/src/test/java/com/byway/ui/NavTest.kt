@@ -25,7 +25,6 @@ class NavTest {
             picked = "c2",
             stripX = 7,
             settings = true,
-            scrub = false,
         )
         val bytes = ByteArrayOutputStream().also { out -> ObjectOutputStream(out).use { it.writeObject(nav) } }
         val restored = ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() }

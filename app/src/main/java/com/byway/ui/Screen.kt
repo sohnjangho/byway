@@ -44,8 +44,6 @@ data class Nav(
     /** 홈 코스 띠를 넘겨 둔 자리(px). */
     val stripX: Int? = null,
     val settings: Boolean = false,
-    /** 홈 아래 띠에서 이 코스를 훑어보는 중인지. 아니면 다른 코스 목록이다. */
-    val scrub: Boolean = true,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */

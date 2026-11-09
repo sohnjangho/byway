@@ -30,11 +30,8 @@ internal fun homeScreen(
     weather: Weather,
     stripX: Int?,
     reveal: Boolean,
-    scrub: Boolean,
-    onMode: (Boolean) -> Unit,
     onPick: (Course, Int) -> Unit,
     onStart: (String) -> Unit,
-    onBrowse: () -> Unit,
 ): View = with(context) {
     val now = Calendar.getInstance()
     val hour = now.get(Calendar.HOUR_OF_DAY)
@@ -66,11 +63,11 @@ internal fun homeScreen(
         val pace = paceOf(kit.book.facts(course).meters, kit.book.facts(course).curves, scene?.places.orEmpty().map { it.kind })
         val info = infoColumn(kit, course, kickFor(mood), pace)
         val badges = mutableMapOf<Int, TextView>()
-        val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, onBrowse)
+        val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
+        val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
         val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
-        val mode = stripMode(scrub, hasFrames)
-        val scrubbing = scene != null && (mode == StripMode.SCRUB || (third && hasFrames))
-        sceneView.setCredit(mapCredit(currentMapStyle(), withFrames = scrubbing))
+        val mode = stripMode(hasFrames)
+        sceneView.setCredit(mapCredit(currentMapStyle(), withFrames = hasFrames))
         fun onScrub(km: Double, frame: FrameInfo) {
             sceneView.setMarker(trackAt(scene?.track.orEmpty(), km))
             badges.forEach { (no, badge) -> paintBadge(badge, no == frame.placeNo) }
@@ -101,7 +98,7 @@ internal fun homeScreen(
 
         val left = dp(Dimens.RAIL_WIDTH + Dimens.SPACE_8)
         when {
-            // 1/3 창은 다른 코스 띠가 없다. 훑어보기만 지도 아래쪽에 얹는다.
+            // 1/3 창은 띠 옆에 버튼을 둘 자리가 없다. 훑어보기만 지도 아래쪽에 얹고 서랍은 버튼 줄에서 연다.
             third -> if (scene != null && hasFrames) {
                 addView(
                     ScrubStrip(context, course.id, scene, null, ::onScrub),
@@ -112,34 +109,27 @@ internal fun homeScreen(
                 )
             }
             scene != null && mode == StripMode.SCRUB -> addView(
-                ScrubStrip(context, course.id, scene, modeButton("다른\n코스") { onMode(false) }, ::onScrub),
+                ScrubStrip(context, course.id, scene, drawerButton(drawer::open), ::onScrub),
                 FrameLayout.LayoutParams(MATCH, WRAP, Gravity.BOTTOM).apply {
                     leftMargin = left
                     bottomMargin = dp(Dimens.SPACE_2)
                 },
             )
-            else -> {
-                val band = LinearLayout(context).apply {
-                    if (hasFrames) {
-                        addView(modeButton("훑어\n보기") { onMode(true) }, LinearLayout.LayoutParams(dp(Dimens.STRIP_MODE_WIDTH), MATCH).apply { marginEnd = dp(Dimens.SPACE_3) })
-                    }
-                    addView(courseStrip(kit, course, stripX, onPick), LinearLayout.LayoutParams(0, MATCH, 1f))
-                }
-                addView(
-                    band,
-                    FrameLayout.LayoutParams(MATCH, dp(Dimens.STRIP_CARD_HEIGHT), Gravity.BOTTOM).apply {
-                        leftMargin = left
-                        bottomMargin = dp(Dimens.SPACE_6)
-                    },
-                )
-            }
+            else -> addView(
+                courseStrip(kit, course, stripX, onPick),
+                FrameLayout.LayoutParams(MATCH, dp(Dimens.STRIP_CARD_HEIGHT), Gravity.BOTTOM).apply {
+                    leftMargin = left
+                    bottomMargin = dp(Dimens.SPACE_6)
+                },
+            )
         }
+        addView(drawer, matchFrame())
     }
 }
 
-/** 홈 아래 띠를 훑어보기와 다른 코스 목록 사이에서 바꾸는 버튼. 운전석에서 가까운 띠의 왼쪽 끝에 둔다. */
-private fun Context.modeButton(title: String, onClick: () -> Unit): View =
-    quietButton(title, onClick).apply {
+/** 다른 코스 서랍을 여는 버튼. 운전석에서 가까운 띠의 왼쪽 끝에 둔다. */
+private fun Context.drawerButton(onClick: () -> Unit): View =
+    quietButton("다른\n코스", onClick).apply {
         textSize = Dimens.LABEL
         setPadding(0, 0, 0, 0)
     }
@@ -202,7 +192,7 @@ private fun Context.nearColumn(
     badges: MutableMap<Int, TextView>,
     sceneryButton: View?,
     onStart: (String) -> Unit,
-    onBrowse: () -> Unit,
+    onOthers: () -> Unit,
 ): View = column().apply {
     val third = kit.window == WindowClass.THIRD
     if (!third && places.isNotEmpty()) addView(label("코스 주변", Dimens.SMALL, bold = true))
@@ -218,7 +208,7 @@ private fun Context.nearColumn(
     val buttons = LinearLayout(context).apply {
         addView(start, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
         if (third) {
-            addView(quietButton("코스 바꾸기", onBrowse), LinearLayout.LayoutParams(WRAP, MATCH).apply { marginEnd = dp(Dimens.SPACE_3) })
+            addView(quietButton("코스 바꾸기", onOthers), LinearLayout.LayoutParams(WRAP, MATCH).apply { marginEnd = dp(Dimens.SPACE_3) })
         }
         sceneryButton?.let { addView(it, LinearLayout.LayoutParams(WRAP, MATCH).apply { marginEnd = dp(Dimens.SPACE_3) }) }
         val save = if (third) saveToggle(course, Context::quietButton) else saveToggle(course, Context::compactButton, save = "저장")

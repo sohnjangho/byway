@@ -155,11 +155,8 @@ class MainActivity : AppCompatActivity() {
             weather = demoWeather(),
             stripX = nav.stripX,
             reveal = reveal,
-            scrub = nav.scrub,
-            onMode = { go(nav.copy(scrub = it)) },
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
-            onBrowse = { openTab(Tab.BROWSE) },
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
