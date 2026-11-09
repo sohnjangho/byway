@@ -27,3 +27,7 @@ fun keyPointIndexes(path: List<GeoPoint>, toleranceMeters: Double): List<Int> {
     }
     return kept.toList()
 }
+
+/** [first]와 [last]를 이은 직선에서 가장 멀리 벗어난 사이 점과 그 거리(m). 사이에 점이 없으면 null 이다. */
+fun farthestFromChord(path: List<GeoPoint>, first: Int, last: Int): Pair<Int, Double>? =
+    (first + 1 until last).map { it to path[it].distanceToSegment(path[first], path[last]) }.maxByOrNull { it.second }

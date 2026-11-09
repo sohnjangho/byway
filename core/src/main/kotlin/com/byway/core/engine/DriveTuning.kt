@@ -7,4 +7,17 @@ data class DriveTuning(
     val offCourseMeters: Double = 1_300.0,
     val offCourseFixes: Int = 3,
     val lookaheadMeters: Double = 3_000.0,
+    /** 목적지에 닿기 전에 다음 경로로 잇는 거리. 내비가 "목적지 도착"으로 안내를 끝내지 않게 한다. */
+    val legSwapAheadMeters: Double = 1_000.0,
+    /** 벗어났을 때 묻고 답을 기다리는 위치 횟수. 위치는 달리는 동안 1초에 한 번쯤 온다. */
+    val askWaitFixes: Int = 15,
+    /** 복귀 지점은 차 옆 자리에서 이만큼 앞이다. 바로 뒤를 가리켜 유턴시키지 않고, 멀리 건너뛰지도 않는다. */
+    val rejoinAheadMeters: Double = 500.0,
+    /** 복귀는 이탈 기준보다 안쪽으로 들어와 연속으로 잡혀야 인정한다. 경계를 오가며 안내가 되풀이되지 않게 한다. */
+    val rejoinMeters: Double = 300.0,
+    val rejoinFixes: Int = 2,
+    /** 종점에서 이 안에 세우면 끝까지 달린 것으로 본다. */
+    val finishRadiusMeters: Double = 300.0,
+    /** 연속한 두 위치가 이보다 멀면 그 사이 위치가 끊긴 것으로 보고 넓게 다시 찾는다. */
+    val gapJumpMeters: Double = 500.0,
 )
