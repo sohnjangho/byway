@@ -42,7 +42,6 @@
         </div>
       </div>
     </div>
-    <img class="side-soft" src="{{ c.soft }}" alt="">
     <div class="side side-list">
       <span class="side-kick t-small">랭킹 · 코스 선에서 잰 값</span>
       <h1 class="side-head">{{ head }}</h1>
@@ -76,7 +75,7 @@ const COVER = "coverDay";
 const NIGHT = COVER === 'coverNight';
 /* 오른쪽 장면에 그릴 코스 */
 const scene = (course) => ({
-  name: course.name, soft: course.soft, photo: course.photo, credit: course.credit,
+  name: course.name, photo: course.photo, credit: course.credit,
   ground: NIGHT ? course.scene.night : course.scene.day, lines: course.scene.sections,
 });
 const KINDS = [

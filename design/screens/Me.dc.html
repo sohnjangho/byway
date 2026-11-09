@@ -57,7 +57,7 @@
         </sc-for>
       </dl>
       <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}">
-        <div class="mine-card soft">
+        <div class="mine-card">
           <span class="t-label">{{ d.note }}</span>
           <h2 class="side-head">{{ d.name }}</h2>
           <div class="picks"><sc-for list="{{ d.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for></div>

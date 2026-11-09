@@ -50,7 +50,6 @@
         </sc-if>
       </div>
     </div>
-    <img class="side-soft" src="{{ c.soft }}" alt="">
     <div class="scene-mood"></div>
     <div class="side">
       <div class="side-info">
@@ -133,7 +132,7 @@ class Component extends DCLogic {
     return {
       kick: KICKS[MOOD],
       c: {
-        name: course.name, summary: course.summary, soft: course.soft, photo: course.photo, credit: course.credit,
+        name: course.name, summary: course.summary, photo: course.photo, credit: course.credit,
         ground: NIGHT ? course.scene.night : course.scene.day,
         lines: course.scene.sections, pins: places,
         list: places.map((p) => ({ no: p.no, name: p.name, line: [p.label, p.note, p.km + 'km 지점'].filter(Boolean).join(' · ') })),
