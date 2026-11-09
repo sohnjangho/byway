@@ -13,6 +13,12 @@ fun mapCredit(style: MapStyle, withFrames: Boolean = false): String = when {
     else -> TERRAIN
 }
 
+/** 지도 칸이 좁은 화면의 출처. 권리자는 모두 남기고 전문은 앱 정보([creditLines])에 둔다. 사진 띠가 있는 1/3 창 홈이 쓴다. */
+fun shortMapCredit(style: MapStyle): String = when (style) {
+    MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors · 전체 출처는 앱 정보"
+    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors · 사진 띠 Sentinel-2 cloudless · 전체 출처는 앱 정보"
+}
+
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",
     SATELLITE,

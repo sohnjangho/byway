@@ -67,7 +67,8 @@ internal fun homeScreen(
         val badges = mutableMapOf<Int, TextView>()
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
-        sceneView.setCredit(mapCredit(currentMapStyle(), withFrames = hasFrames))
+        // 1/3 창은 사진 띠 때문에 지도 칸이 좁다. 긴 출처가 경로를 가리지 않게 짧게 적는다.
+        sceneView.setCredit(if (third && hasFrames) shortMapCredit(currentMapStyle()) else mapCredit(currentMapStyle(), withFrames = hasFrames))
         // 훑어보기 자료의 장소 번호는 도구가 매긴 것이다. 목록의 번호로 바꿔서 쓴다.
         fun nearNo(frame: FrameInfo): Int? = frame.placeNo?.let { shownNo[it] }
         fun nearName(frame: FrameInfo): String? = nearNo(frame)?.let { no -> places.firstOrNull { it.no == no }?.name }
