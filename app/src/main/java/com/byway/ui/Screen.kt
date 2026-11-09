@@ -66,16 +66,21 @@ sealed interface Screen {
     data object Waiting : Screen
     data object About : Screen
     data object Settings : Screen
+
+    /** 달리다 만 코스를 이어갈지 묻는다. */
+    data object Resume : Screen
 }
 
 /**
  * 어떤 화면을 보여 줄지 정하는 유일한 곳. 주행 규제가 여기에 걸려 있다.
  * P 단이 아니면 주행 화면과 대기 화면만 나온다. 탭과 정차 화면은 그 아래에서만 고른다.
+ * [resumable]은 달리다 만 코스가 저장되어 있다는 뜻이다. 정차 화면보다 먼저 이어갈지 묻는다.
  */
-fun screenFor(state: DriveState, nav: Nav): Screen {
+fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
     if (state.running) return Screen.Drive
     if (!state.parked) return Screen.Waiting
     state.finished?.let { return Screen.Summary(it) }
+    if (resumable) return Screen.Resume
     if (nav.about) return Screen.About
     if (nav.settings) return Screen.Settings
     return Screen.Browse(nav.tab)

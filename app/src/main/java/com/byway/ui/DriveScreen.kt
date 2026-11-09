@@ -11,7 +11,7 @@ import com.byway.service.DriveState
 /**
  * 내비 옆 칸의 코스 주행 화면. 코스 이름과 구간 번호, 구간 이름, 남은 거리, 구간 막대, 한 줄 안내,
  * 코스 그림과 위치 점, 코스 끝내기만 둔다. 스크롤과 애니메이션은 없고 움직이는 것은 현재 위치 점뿐이다.
- * 구간이 바뀌면 배경색이 그 자리에서 바뀐다.
+ * 구간이 바뀌면 배경색이 그 자리에서 바뀐다. 엔진이 묻는 동안에는 답 버튼 하나가 그 자리에 나타난다.
  */
 @SuppressLint("ViewConstructor")
 internal class DriveScreen(
@@ -19,6 +19,7 @@ internal class DriveScreen(
     book: CourseBook,
     private val course: Course,
     wide: Boolean,
+    onAnswer: () -> Unit,
     onEnd: () -> Unit,
 ) : FrameLayout(context) {
     private val colors = context.palette
@@ -28,6 +29,7 @@ internal class DriveScreen(
     private val remaining = context.label("", Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
     private val bar = context.sectionBar(book, course)
     private val spoken = context.label("", Dimens.DRIVE_LINE).fixedLines(2)
+    private val answer = context.outlineButton("", onAnswer).apply { visibility = GONE }
     private val map = CoursePathView(context).apply {
         background = context.rounded(colors.bgRaised)
         show(course, book.stops(course))
@@ -57,7 +59,8 @@ internal class DriveScreen(
                 val left = context.column().apply {
                     addView(text)
                     addView(Space(context), fill())
-                    addView(end)
+                    addView(answer)
+                    addSpaced(end, Dimens.SPACE_3)
                 }
                 addView(left, LinearLayout.LayoutParams(0, MATCH, 1f).apply { marginEnd = context.dp(Dimens.DRIVE_EDGE) })
                 addView(map, LinearLayout.LayoutParams(0, MATCH, 1f))
@@ -66,7 +69,8 @@ internal class DriveScreen(
             context.column().apply {
                 addView(text)
                 addView(map, fill().apply { topMargin = context.dp(Dimens.SPACE_6) })
-                addSpaced(end, Dimens.SPACE_6)
+                addSpaced(answer, Dimens.SPACE_6)
+                addSpaced(end, Dimens.SPACE_3)
             }
         }
         val edge = context.dp(Dimens.DRIVE_EDGE)
@@ -83,7 +87,10 @@ internal class DriveScreen(
         section.setTextColor(colors.moodColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
-        spoken.text = state.line
+        spoken.text = driveLine(state.line, state.stale)
+        val title = promptButton(state.prompt)
+        answer.text = title.orEmpty()
+        answer.visibility = if (title == null) GONE else VISIBLE
         map.moveTo(state.position)
     }
 }

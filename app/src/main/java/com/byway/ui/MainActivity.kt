@@ -14,6 +14,8 @@ import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import com.byway.service.MyDrives
+import com.byway.service.SavedRun
 
 /**
  * 상태를 받아 화면을 바꾸기만 한다. 어떤 화면인지는 [screenFor]가 정한다.
@@ -24,7 +26,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var book: CourseBook
     private lateinit var root: FrameLayout
     private var nav = Nav()
-    private var pendingStart: String? = null
+    private var pendingStart: Pair<String, Int>? = null
+
+    /** 이어가지 않기로 한 뒤에는 저장이 지워지는 동안에도 다시 묻지 않는다. */
+    private var declined = false
     private var stale = false
     private var current: Screen? = null
     private var builtWidth = 0
@@ -80,19 +85,23 @@ class MainActivity : AppCompatActivity() {
         if (DriveBoard.state.finished != null) DriveBoard.update { it.copy(finished = null) }
     }
 
-    private fun start(courseId: String) {
+    private fun start(courseId: String, resumeFrom: Int = 0) {
         if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            DriveService.start(this, courseId)
+            DriveService.start(this, courseId, resumeFrom)
         } else {
-            pendingStart = courseId
+            pendingStart = courseId to resumeFrom
             requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
         }
     }
 
+    /** 달리다 만 코스. 코스 목록에 없는 것은 묻지 않는다. */
+    private fun savedRun(): SavedRun? =
+        MyDrives.savedRun(this)?.takeIf { run -> !declined && book.courses.any { it.id == run.courseId } }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, results: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            pendingStart?.let { DriveService.start(this, it) }
+            pendingStart?.let { (courseId, resumeFrom) -> DriveService.start(this, courseId, resumeFrom) }
         }
     }
 
@@ -101,7 +110,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(state: DriveState) {
         if (state.running) nav = nav.whileDriving()
-        val next = screenFor(state, nav)
+        val saved = savedRun()
+        val next = screenFor(state, nav, resumable = saved != null)
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette || stale) {
             val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
@@ -115,7 +125,7 @@ class MainActivity : AppCompatActivity() {
             builtCourse = nav.courseId
             window.setBackgroundDrawable(ColorDrawable(palette.bg))
             root.setBackgroundColor(palette.bg)
-            place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal)
+            place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal, saved)
         }
         (root.getChildAt(0) as? DriveScreen)?.show(state)
     }
@@ -123,7 +133,7 @@ class MainActivity : AppCompatActivity() {
     private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
 
     /** 메뉴가 있는 정차 화면끼리는 메뉴를 두고 내용만 바꾼다. 주행 화면은 움직임 없이 그 자리에서 바꾼다. */
-    private fun place(screen: Screen, state: DriveState, kit: BrowseKit, motion: ScreenMotion, sign: Int, reveal: Boolean) {
+    private fun place(screen: Screen, state: DriveState, kit: BrowseKit, motion: ScreenMotion, sign: Int, reveal: Boolean, saved: SavedRun?) {
         val over = screen !is Screen.About
         val content = when (screen) {
             is Screen.Browse -> browse(screen.tab, kit, reveal)
@@ -141,7 +151,21 @@ class MainActivity : AppCompatActivity() {
             when {
                 content != null -> RailFrame(this, markedTab(nav), kit.window, ::openTab, { go(nav.copy(settings = true, about = false)) }, content, over)
                 screen is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
-                screen == Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
+                screen == Screen.Drive -> DriveScreen(
+                    this, book, requireNotNull(state.course), kit.wide,
+                    onAnswer = { DriveService.answer(this, yes = true) },
+                    onEnd = { DriveService.stop(this) },
+                )
+                screen == Screen.Resume && saved != null -> resumeScreen(
+                    this, kit, book.courses.first { it.id == saved.courseId }, saved.progress,
+                    onResume = { start(saved.courseId, saved.progress) },
+                    onDiscard = {
+                        declined = true
+                        DriveService.discard(this)
+                        stale = true
+                        render(DriveBoard.state)
+                    },
+                )
                 else -> waitingScreen(this)
             },
         )
