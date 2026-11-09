@@ -23,14 +23,22 @@ fun kickFor(mood: SceneMood): String = when (mood) {
 private const val PER_KIND = 2
 
 /** 코스 주변 목록. 경치, 명소, 음식을 종류마다 둘까지 두고 번호를 다시 매긴다. */
-fun shownPlaces(places: List<ScenePlace>): List<ScenePlace> {
+fun shownPlaces(places: List<ScenePlace>): List<ScenePlace> = kept(places).mapIndexed { i, place -> place.copy(no = i + 1) }
+
+/**
+ * 도구가 매긴 장소 번호에서 목록에 보이는 번호로 가는 대응. 목록에서 빠진 장소는 없다.
+ * 훑어보기 자료는 도구의 번호로 장소를 가리키므로, 번호 표시와 "근처" 글은 이 대응을 거친다.
+ */
+fun shownNumbers(places: List<ScenePlace>): Map<Int, Int> = kept(places).mapIndexed { i, place -> place.no to i + 1 }.toMap()
+
+private fun kept(places: List<ScenePlace>): List<ScenePlace> {
     val used = mutableMapOf<String, Int>()
     return places.filter { place ->
         val kind = if (place.kind == "photo") "view" else place.kind
         val count = used.getOrDefault(kind, 0)
         used[kind] = count + 1
         count < PER_KIND
-    }.mapIndexed { i, place -> place.copy(no = i + 1) }
+    }
 }
 
 fun placeLine(place: ScenePlace): String {

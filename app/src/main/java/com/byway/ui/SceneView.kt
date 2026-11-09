@@ -46,7 +46,7 @@ private const val PICTURE_MIX_SPEED = 1.6f
 /** 경로는 한눈에 끝나지 않고 앞에서부터 그려져 보이도록 천천히 시작한다. */
 private val routeEase = PathInterpolator(0.33f, 0f, 0.2f, 1f)
 
-/** 코스 둘레 위성 그림과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
+/** 코스 둘레 지도 그림(일반 지도나 위성)과 경로. 밀면 풍경 사진으로 바뀐다. 그림이 없으면 코스 그림으로 대신한다. */
 @SuppressLint("ViewConstructor")
 internal class SceneView(
     context: Context,
@@ -54,12 +54,14 @@ internal class SceneView(
     list: Boolean = false,
     /** 풍경으로 넘기는 단추를 지도 위에 둘지. 넓은 창의 홈은 버튼 줄에 따로 둔다. */
     private val hintOnMap: Boolean = true,
+    /** 1/3 창에서 지도 아래쪽에 훑어보기 사진 띠가 놓이는지. 경로가 띠 뒤로 들어가지 않게 장면을 줄인다. */
+    strip: Boolean = false,
 ) : FrameLayout(context) {
     /** 풍경 사진이 보이는지 바뀔 때 부른다. */
     var onPhoto: (Boolean) -> Unit = {}
 
     private val colors = context.palette
-    private val canvasView = SceneCanvas(context, window, list)
+    private val canvasView = SceneCanvas(context, window, list, strip)
     private val fallback = CoursePathView(context)
     private val photo = ScenePhoto(context, window).apply { visibility = GONE }
     private val hint = chip("")
@@ -89,13 +91,19 @@ internal class SceneView(
         val hintSize = LayoutParams(WRAP, context.dp(Dimens.TOUCH_MIN), Gravity.BOTTOM or Gravity.START).apply {
             val sideEnd = Dimens.RAIL_WIDTH + if (window == WindowClass.FULL) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH
             marginStart = context.dp(if (third) Dimens.SPACE_6 else sideEnd + Dimens.SPACE_6)
-            // 1/3 창의 홈은 지도 아래쪽에 훑어보기 띠가 놓이므로 그 위에 둔다.
-            val thirdBottom = if (list) Dimens.SPACE_3 else ScrubStrip.HEIGHT + Dimens.SPACE_6
+            // 1/3 창의 지도 아래쪽에 훑어보기 띠가 놓이면 그 위에 둔다.
+            val thirdBottom = if (strip) ScrubStrip.HEIGHT + Dimens.SPACE_6 else Dimens.SPACE_3
             // 목록 화면은 오른쪽 아래 출처가 길게 놓이므로 그 위에 둔다.
             bottomMargin = context.dp(if (third) thirdBottom else if (list) Dimens.LIST_HINT_BOTTOM else Dimens.SCENE_CREDIT_BOTTOM)
         }
         addView(hint, hintSize)
-        credit.maxWidth = context.dp(if (window == WindowClass.TWO) Dimens.SCENE_CREDIT_WIDTH else Int.MAX_VALUE / 4)
+        // 넓은 창은 출처가 글 칸 아래까지 뻗지 않게 폭을 묶는다. 1/3 창은 창 폭이 한도인데,
+        // 사진 띠 때문에 장면을 줄인 화면은 경로 왼쪽의 빈자리에 좁게 세워 경로를 가리지 않는다.
+        credit.maxWidth = when {
+            third && strip -> context.dp(Dimens.THIRD_CREDIT_WIDTH)
+            third -> Int.MAX_VALUE
+            else -> context.dp(Dimens.SCENE_CREDIT_WIDTH)
+        }
         photoCredit.maxWidth = credit.maxWidth
         val creditSize = {
             if (third) {
@@ -301,7 +309,12 @@ private class ScenePhoto(context: Context, private val window: WindowClass) : Vi
 }
 
 /** 그림은 그대로 두고 경로는 그 위에 그린다. 지도 라이브러리와 네트워크가 필요 없다. */
-private class SceneCanvas(context: Context, private val window: WindowClass, private val list: Boolean) : View(context) {
+private class SceneCanvas(
+    context: Context,
+    private val window: WindowClass,
+    private val list: Boolean,
+    private val strip: Boolean,
+) : View(context) {
     private val colors = context.palette
     private var picture: Bitmap? = null
     private var scene: CourseScene? = null
@@ -373,7 +386,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
     override fun onDraw(canvas: Canvas) {
         if (picture == null && outgoing == null) return
         val density = resources.displayMetrics.density
-        val rect = sceneRect(window, width / density, height / density, list)
+        val rect = sceneRect(window, width / density, height / density, list, strip)
         val out = RectF(rect.left * density, rect.top * density, (rect.left + rect.width) * density, (rect.top + rect.height) * density)
         drawPicture(canvas, out, density)
         if (picture != null) scene?.let { drawRoute(canvas, it, out) }
@@ -392,7 +405,7 @@ private class SceneCanvas(context: Context, private val window: WindowClass, pri
             paint.alpha = (mix * 255).toInt()
             canvas.drawBitmap(it, Rect(0, 0, it.width, it.height), out, paint)
         }
-        val band = sceneFade(window, list)
+        val band = sceneFade(window, list, strip)
         val from = band.from * density
         val to = band.to * density
         val startColor = android.graphics.Color.argb((band.alphaFrom * 255).toInt(), 0, 0, 0)

@@ -30,6 +30,9 @@ internal class CourseDrawer(
     private val scroll = ScrollView(context)
     private var sliding: ValueAnimator? = null
 
+    /** 열려 있거나 열리는 중인지. 닫히는 도중에 다시 열면 그 자리에서 되돌아 나온다. */
+    private var wanted = false
+
     init {
         // 닫혀 있어도 크기를 재 두어야 열 때 밀려 나올 거리를 안다. 보이지 않는 동안에는 터치를 받지 않는다.
         visibility = INVISIBLE
@@ -66,19 +69,38 @@ internal class CourseDrawer(
     }
 
     fun open() {
-        if (visibility == VISIBLE) return
-        // 지금 코스가 맨 위에 있으므로 열 때마다 처음부터 보여 준다.
-        scroll.scrollTo(0, 0)
-        place(0f)
+        if (wanted) return
+        wanted = true
+        if (sliding == null) {
+            // 지금 코스가 맨 위에 있으므로 열 때마다 처음부터 보여 준다.
+            scroll.scrollTo(0, 0)
+            place(0f)
+        }
         visibility = VISIBLE
         slide(1f) {}
     }
 
-    fun close() = slide(0f) { visibility = INVISIBLE }
+    fun close() {
+        if (!wanted) return
+        wanted = false
+        slide(0f) { visibility = INVISIBLE }
+    }
+
+    override fun onDetachedFromWindow() {
+        stopSliding()
+        super.onDetachedFromWindow()
+    }
+
+    /** 취소해도 끝났을 때의 일이 불리므로 먼저 떼어 낸다. 닫히다 만 서랍이 갑자기 사라지지 않게 한다. */
+    private fun stopSliding() {
+        sliding?.removeAllListeners()
+        sliding?.cancel()
+        sliding = null
+    }
 
     private fun slide(to: Float, onEnd: () -> Unit) {
-        val from = scrim.alpha.takeIf { sliding != null } ?: (1f - to)
-        sliding?.cancel()
+        val from = if (sliding != null) scrim.alpha else 1f - to
+        stopSliding()
         sliding = ValueAnimator.ofFloat(from, to).apply {
             duration = MotionSpec.MEDIUM2
             interpolator = motionEase

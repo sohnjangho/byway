@@ -4,6 +4,7 @@
 사용: python3 tools/make-frames.py"""
 import importlib.util
 import json
+import math
 from pathlib import Path
 
 from PIL import Image
@@ -18,6 +19,7 @@ SIZE = (320, 200)
 TRACK_POINTS = 200
 # 사진 지점에서 이 거리 안에 코스 주변 정보가 있으면 그 번호를 함께 적는다.
 NEAR_KM = 1.2
+EARTH_RADIUS_METERS = 6_371_000.0
 spec = importlib.util.spec_from_file_location("make_screen_data", Path(__file__).parent / "make-screen-data.py")
 data = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data)
@@ -25,11 +27,18 @@ scenes = data.scenes
 covers = scenes.covers
 
 
+def metres(a, b):
+    """두 좌표 사이 거리(m). 앱(core 의 Geo.kt)과 같은 식을 써야 홈의 거리와 띠 끝의 km가 같다."""
+    lat1, lon1, lat2, lon2 = (math.radians(value) for value in (a[0], a[1], b[0], b[1]))
+    h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+    return 2 * EARTH_RADIUS_METERS * math.asin(math.sqrt(h))
+
+
 def distances(path):
     """출발점에서 각 지점까지 달린 거리(m)."""
     along = [0.0]
     for a, b in zip(path, path[1:]):
-        along.append(along[-1] + data.metres(a, b))
+        along.append(along[-1] + metres(a, b))
     return along
 
 
@@ -57,12 +66,14 @@ def track(path, along, project, points):
     return result
 
 
-def info(course, places, index, km, path_length):
+def info(course, places, index, km, total_km):
     sections = course["sections"]
     section = next((s for s in sections if s["startIndex"] <= index <= s["endIndex"]), sections[-1])
     near = min(places, key=lambda place: abs(place["km"] - km), default=None)
     heights = course.get("elevation") or []
-    height = round(heights[min(len(heights) - 1, round(index * (len(heights) - 1) / max(1, path_length - 1)))]) if heights else None
+    # 고도는 코스를 따라 거리가 고른 표본이다(make-course.py). 좌표 번호가 아니라 달린 거리로 찾는다.
+    sample = round(km / total_km * (len(heights) - 1)) if total_km > 0 else 0
+    height = round(heights[min(len(heights) - 1, sample)]) if heights else None
     return {
         "km": round(km, 1), "section": section["name"], "mood": section.get("mood"), "elev": height,
         "placeNo": near["no"] if near and abs(near["km"] - km) <= NEAR_KM else None,
@@ -97,7 +108,7 @@ def main():
                 picture(path[index]).save(target, quality=78)
         result[entry["id"]] = {
             "total": round(along[-1] / 1000, 1),
-            "frames": [info(course, entry["places"], index, along[index] / 1000, len(path)) for index in chosen],
+            "frames": [info(course, entry["places"], index, along[index] / 1000, along[-1] / 1000) for index in chosen],
             "track": track(path, along, lambda point: scenes.project(point, view), TRACK_POINTS),
         }
         print(entry["id"], len(chosen), flush=True)

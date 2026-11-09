@@ -22,7 +22,7 @@ import com.byway.service.MyDrives
 import com.byway.service.SceneCatalog
 import java.util.Calendar
 
-/** 정차 중 첫 화면. 왼쪽은 코스 이름과 설명, 주변 정보이고 오른쪽은 위성 장면과 경로다. */
+/** 정차 중 첫 화면. 왼쪽은 코스 이름과 설명, 주변 정보이고 오른쪽은 지도 장면과 경로다. */
 internal fun homeScreen(
     context: Context,
     kit: BrowseKit,
@@ -39,6 +39,7 @@ internal fun homeScreen(
     val course = kit.book.courses.firstOrNull { it.id == courseId } ?: kit.book.suggested(mood, hour)
     val scene = SceneCatalog.of(this, course.id)
     val places = shownPlaces(scene?.places.orEmpty())
+    val shownNo = shownNumbers(scene?.places.orEmpty())
     val third = kit.window == WindowClass.THIRD
     val full = kit.window == WindowClass.FULL
 
@@ -46,7 +47,8 @@ internal fun homeScreen(
         setBackgroundColor(palette.bg)
         val hasScenery = canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
         val control = sceneryControl(kit.window, home = true)
-        val sceneView = SceneView(context, kit.window, hintOnMap = control == SceneryControl.CHIP)
+        val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
+        val sceneView = SceneView(context, kit.window, hintOnMap = control == SceneryControl.CHIP, strip = third && hasFrames)
         val sceneryButton = if (hasScenery && control == SceneryControl.BUTTON) compactButton("풍경") { sceneView.togglePhoto() } else null
         sceneView.onPhoto = { shown -> sceneryButton?.text = if (shown) "경로" else "풍경" }
         sceneView.show(course, scene, places, night, hasScenery, reveal)
@@ -65,12 +67,14 @@ internal fun homeScreen(
         val badges = mutableMapOf<Int, TextView>()
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
-        val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
-        val mode = stripMode(hasFrames)
         sceneView.setCredit(mapCredit(currentMapStyle(), withFrames = hasFrames))
+        // 훑어보기 자료의 장소 번호는 도구가 매긴 것이다. 목록의 번호로 바꿔서 쓴다.
+        fun nearNo(frame: FrameInfo): Int? = frame.placeNo?.let { shownNo[it] }
+        fun nearName(frame: FrameInfo): String? = nearNo(frame)?.let { no -> places.firstOrNull { it.no == no }?.name }
         fun onScrub(km: Double, frame: FrameInfo) {
             sceneView.setMarker(trackAt(scene?.track.orEmpty(), km))
-            badges.forEach { (no, badge) -> paintBadge(badge, no == frame.placeNo) }
+            val near = nearNo(frame)
+            badges.forEach { (no, badge) -> paintBadge(badge, no == near) }
         }
         val side = when {
             full -> LinearLayout(context).apply {
@@ -101,15 +105,15 @@ internal fun homeScreen(
             // 1/3 창은 띠 옆에 버튼을 둘 자리가 없다. 훑어보기만 지도 아래쪽에 얹고 서랍은 버튼 줄에서 연다.
             third -> if (scene != null && hasFrames) {
                 addView(
-                    ScrubStrip(context, course.id, scene, null, ::onScrub),
+                    ScrubStrip(context, course.id, scene, null, ::nearName, ::onScrub),
                     FrameLayout.LayoutParams(MATCH, WRAP).apply {
                         topMargin = dp(Dimens.THIRD_SCENE_HEIGHT - ScrubStrip.HEIGHT - Dimens.SPACE_3)
                         leftMargin = dp(Dimens.SPACE_6)
                     },
                 )
             }
-            scene != null && mode == StripMode.SCRUB -> addView(
-                ScrubStrip(context, course.id, scene, drawerButton(drawer::open), ::onScrub),
+            scene != null && hasFrames -> addView(
+                ScrubStrip(context, course.id, scene, drawerButton(drawer::open), ::nearName, ::onScrub),
                 FrameLayout.LayoutParams(MATCH, WRAP, Gravity.BOTTOM).apply {
                     leftMargin = left
                     bottomMargin = dp(Dimens.SPACE_2)

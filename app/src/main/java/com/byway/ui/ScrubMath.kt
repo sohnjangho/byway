@@ -6,13 +6,10 @@ import com.byway.core.course.TrackPoint
 import java.util.Locale
 import kotlin.math.abs
 
-/** 홈 아래 띠가 보여 주는 것. */
-enum class StripMode { SCRUB, COURSES }
+/** 사진 띠를 끝까지 밀 수 있는 거리. 첫 사진의 가운데에서 끝 사진의 가운데까지다. [stepPx]는 사진 한 장과 틈의 폭이다. */
+fun filmTravel(count: Int, stepPx: Int): Int = maxOf(0, count - 1) * stepPx
 
-/** 띠는 언제나 지금 고른 코스를 훑어본다. 훑어보기 자료가 없는 코스에서만 다른 코스 목록이 그 자리를 채운다. */
-fun stripMode(hasFrames: Boolean): StripMode = if (hasFrames) StripMode.SCRUB else StripMode.COURSES
-
-/** 사진 띠를 민 거리에서 코스 위 거리(km)를 구한다. [filmPx]는 사진 띠 전체 길이다. */
+/** 사진 띠를 민 거리에서 코스 위 거리(km)를 구한다. [filmPx]는 [filmTravel]이다. */
 fun scrubKm(scrollX: Int, filmPx: Int, totalKm: Double): Double =
     if (filmPx <= 0) 0.0 else (scrollX.toDouble() / filmPx).coerceIn(0.0, 1.0) * totalKm
 

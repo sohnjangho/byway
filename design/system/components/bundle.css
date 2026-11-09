@@ -159,11 +159,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
   pointer-events: none;
 }
 
-/* 흐린 배경: 코스 풍경을 흐리게 깔고 테마 바닥색 막을 덮는다. 이 위 글자는 ink 만 쓴다 */
-.soft { position: relative; overflow: hidden; isolation: isolate; }
-.soft-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
-.soft .ink-2 { color: var(--ink); }
-.soft::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--soft-wash); pointer-events: none; }
 
 /* 추천 표시: 터치 대상이 아니라 코스를 고를 이유를 보여 주는 표시다 */
 .picks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
@@ -502,7 +497,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .pin text { fill: var(--photo-scrim); font-size: 24px; font-weight: 700; }
 .scene-swipe .swipe-hint { top: var(--space-8); right: var(--space-8); bottom: auto; }
 .scene-credit { position: absolute; right: var(--space-8); bottom: 176px; margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--photo-scrim); color: var(--on-photo); }
-.side-soft { position: absolute; top: 0; left: 0; width: 760px; height: 640px; object-fit: cover; opacity: 0.4; pointer-events: none; -webkit-mask-image: linear-gradient(to right, #000 45%, transparent), linear-gradient(to top, transparent 0, #000 45%); -webkit-mask-composite: source-in; mask-composite: intersect; }
 .side { position: absolute; top: 0; left: 0; bottom: 152px; display: flex; flex-direction: column; gap: var(--space-3); width: 620px; padding: var(--space-8) var(--space-8) var(--space-4); }
 .side .ink-2 { color: var(--ink); }
 .side-kick { color: var(--accent); }
@@ -527,7 +521,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .stage[data-window="full"] .screen { width: var(--window-full-width); height: var(--window-tall-height); }
 .stage[data-window="full"] .scene-img { -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.2) 960px, #000 1420px); mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.2) 960px, #000 1420px); }
 .stage[data-window="full"] .scene-photo { -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.2) 960px, #000 1420px); mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.2) 960px, #000 1420px); }
-.stage[data-window="full"] .side-soft { width: 1240px; }
 .stage[data-window="full"] .side { flex-direction: row; gap: var(--space-10); width: 1120px; }
 .stage[data-window="full"] .side-info { flex: none; width: 540px; }
 .stage[data-window="third"] .screen { flex-direction: column; width: var(--window-split-width); height: var(--window-tall-height); }
@@ -540,7 +533,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .stage[data-window="third"] .swipe-page .scene-img, .stage[data-window="third"] .swipe-page .scene-line { top: -66px; width: 1683px; height: 847px; margin-top: 0; }
 .stage[data-window="third"] .scene-img { -webkit-mask-image: linear-gradient(to bottom, #000 590px, transparent 706px); mask-image: linear-gradient(to bottom, #000 590px, transparent 706px); }
 .stage[data-window="third"] .scene-photo { -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent); mask-image: linear-gradient(to bottom, #000 80%, transparent); }
-.stage[data-window="third"] .side-soft { top: auto; bottom: 0; width: 100%; height: 520px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%); mask-image: linear-gradient(to bottom, transparent, #000 30%); -webkit-mask-composite: initial; mask-composite: initial; }
 .stage[data-window="third"] .side { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; padding: var(--space-2) var(--space-6) var(--space-6); }
 .stage[data-window="third"] .side-kick, .stage[data-window="third"] .side p, .stage[data-window="third"] .strip, .stage[data-window="third"] .side h2 { display: none; }
 .stage[data-window="third"] .side-name { font-size: 52px; line-height: 64px; }
@@ -548,10 +540,10 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 /* 홈은 메뉴를 지도 위에 얹는다. 메뉴 바탕은 반투명이라 지도가 밑까지 이어진다 */
 .screen-over .rail { position: absolute; top: 0; left: 0; bottom: 0; z-index: 3; background: var(--soft-wash); }
 .screen-over .rail-item { color: var(--ink); }
-.screen-over .side, .screen-over .side-soft { left: 156px; }
+.screen-over .side { left: 156px; }
 .screen-over .strip { left: calc(156px + var(--space-8)); }
 .stage[data-window="third"] .screen-over .rail { right: 0; bottom: auto; }
-.stage[data-window="third"] .screen-over .side, .stage[data-window="third"] .screen-over .side-soft { left: 0; }
+.stage[data-window="third"] .screen-over .side { left: 0; }
 .stage[data-window="third"] .screen-over .scene-swipe { height: 732px; }
 .stage[data-window="third"] .screen-over .swipe-page .scene-img, .stage[data-window="third"] .screen-over .swipe-page .scene-line { top: 26px; }
 .stage[data-window="third"] .screen-over .scene-img { -webkit-mask-image: linear-gradient(to bottom, #000 590px, transparent 706px); mask-image: linear-gradient(to bottom, #000 590px, transparent 706px); }

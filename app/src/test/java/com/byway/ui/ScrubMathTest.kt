@@ -56,10 +56,18 @@ class ScrubMathTest {
         assertEquals("강변", scrubWhere(FrameInfo(40.0, "강변", "river", null, null), null))
     }
 
-    /** 띠는 언제나 지금 고른 코스다. 훑어보기 자료가 없는 코스에서만 다른 코스 띠가 그 자리를 채운다. */
+    /** 사진의 가운데가 기준선 밑에 올 때 그 사진의 지점이 읽힌다. 사진 16장은 코스를 15칸으로 나눈다. */
     @Test
-    fun theStripAlwaysShowsTheChosenCourseWhenItHasFrames() {
-        assertEquals(StripMode.SCRUB, stripMode(hasFrames = true))
-        assertEquals(StripMode.COURSES, stripMode(hasFrames = false))
+    fun eachPhotoIsReadWhenItsCentreIsUnderTheLine() {
+        val step = 153
+        val travel = filmTravel(count = 16, stepPx = step)
+        assertEquals(15 * 153, travel)
+        (0..15).forEach { i -> assertEquals(45.0 * i / 15, scrubKm(i * step, travel, 45.0), 1e-9) }
+    }
+
+    @Test
+    fun aSinglePhotoDoesNotScroll() {
+        assertEquals(0, filmTravel(count = 1, stepPx = 153))
+        assertEquals(0, filmTravel(count = 0, stepPx = 153))
     }
 }

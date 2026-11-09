@@ -27,7 +27,6 @@ Pleos Connect 앱 창 시안이다. 2/3 창 1700×1184, 전체 2560×1210, 1/3 �
 - 지도 바탕과 코스 선 SVG는 `.map-canvas` 한 박스를 같이 쓴다. `.map`의 `aspect-ratio`는 `viewBox`와 같아야 한다.
 - `support.js`는 브라우저에서 `.dc.html`을 돌리는 렌더러다.
 - 코스 커버는 `images/covers`다. 앱의 `app/src/main/assets/covers`를 가리키는 링크라 복사본이 없다. `tools/make-covers.py`만 돌리면 앱과 시안이 함께 바뀐다.
-- 코스 설명 뒤의 흐린 배경은 `.soft`와 `.soft-img`로 쓴다. 이 위 글자는 `ink`만 쓴다. 파일은 `images/covers/<id>-soft.jpg`다.
 - 추천 표시는 `.picks`와 `.pick`이다. 값은 코스 파일의 `tags.seasons`, `tags.ages`, `tags.moods`다.
 - 밀어서 넘기는 칸은 `.swipe`와 `.swipe-page`다. 첫 장은 경로, 다음 장은 풍경이다. 스크립트 없이 CSS 스크롤로 넘어간다. 메인은 같은 방식을 `.scene-swipe`로 쓴다.
 - 메인 바탕은 `images/scene/<id>(-night).jpg`다. `tools/make-scenes.py`가 위성 사진을 경로 칸에 맞춰 만들고, 경로 선은 `courses.js`의 `scene.sections`로 그린다.

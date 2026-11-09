@@ -18,6 +18,7 @@
 
 시연 코스 도로 좌표: © OpenStreetMap contributors (ODbL)
 위성 그림: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+일반 지도: Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX (https://maps.eox.at)
 고도: Open-Meteo, Copernicus DEM
 풍경 사진과 오픈소스 목록은 앱 정보 화면과 `docs/권리점검.md`에 있습니다.
 

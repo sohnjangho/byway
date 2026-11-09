@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""시안의 한국 전체 지도를 만든다. 위성 바탕 한 장과, 그 위에 그릴 코스 선, 지역 이름 자리를 함께 낸다.
+"""시안의 한국 전체 지도를 만든다. 바탕 그림(위성과 일반 지도)과, 그 위에 그릴 코스 선, 지역 이름 자리를 함께 낸다.
 둘러보기와 내 코스는 이 지도를 코스나 지역으로 확대해 보이고, 랭킹은 작게 줄여 코스 위치를 짚는다.
-위성 출처는 장면과 같다: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+출처는 장면과 같다. 위성: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+일반 지도: Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX
 사용: python3 tools/make-atlas.py"""
 import importlib.util
 import json

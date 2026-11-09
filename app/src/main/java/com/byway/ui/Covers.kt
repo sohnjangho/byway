@@ -8,6 +8,7 @@ import android.os.Looper
 import android.util.LruCache
 import com.byway.core.course.Course
 import java.util.concurrent.Executors
+import java.util.Locale
 
 /**
  * 지도 그림 파일을 고른다. 커버, 장면, 한국 지도가 같은 규칙을 쓴다.
@@ -98,7 +99,7 @@ internal object Covers {
     /** 훑어보기 사진. tools/make-frames.py 가 코스마다 00.jpg 부터 차례로 만든다. */
     fun loadFrame(context: Context, courseId: String, index: Int, onLoaded: (Bitmap) -> Unit) {
         val folder = "$FRAMES_FOLDER/$courseId"
-        val file = "%02d.jpg".format(index)
+        val file = String.format(Locale.ROOT, "%02d.jpg", index)
         if (file in files(context, folder)) read(context, folder, file, FRAME_SIZE, onLoaded)
     }
 

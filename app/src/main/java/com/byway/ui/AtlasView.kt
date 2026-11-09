@@ -40,7 +40,7 @@ private const val EDGE_FADE = 0.12f
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
 internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float)
 
-/** 한국 위성 지도. 코스를 고르면 그 자리로 확대되고 코스 장면이 제자리에 겹친다. */
+/** 한국 지도(일반 지도나 위성). 코스를 고르면 그 자리로 확대되고 코스 장면이 제자리에 겹친다. */
 @SuppressLint("ViewConstructor")
 internal class AtlasView(context: Context) : FrameLayout(context) {
     private val canvasView = AtlasCanvas(context)
@@ -83,6 +83,11 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
             marginStart = context.dp(leftDp + Dimens.SPACE_6)
             bottomMargin = context.dp(Dimens.ATLAS_TOOLS_BOTTOM)
         })
+        addCredit()
+    }
+
+    /** 지도 출처. 지도가 보이는 화면에는 확대 단추가 없어도 둔다. */
+    fun addCredit() {
         val credit = context.label(mapCredit(currentMapStyle()), Dimens.LABEL, colors.onPhoto).apply {
             background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
             val inset = context.dp(Dimens.CREDIT_PADDING)

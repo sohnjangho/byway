@@ -22,6 +22,4 @@ class SceneryTest {
     fun aCreditWithoutAPhotoShowsNothing() {
         assertNull(sceneryFile("c1", "사진 작가 (CC BY 4.0)", emptySet()))
     }
-
-
 }

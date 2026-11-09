@@ -32,6 +32,19 @@ class HomeCopyTest {
         assertEquals((1..6).toList(), shown.map { it.no })
     }
 
+    /** 훑어보기 자료는 도구가 매긴 번호로 장소를 가리킨다. 목록은 번호를 다시 매기므로 그 대응을 따로 준다. */
+    @Test
+    fun shownNumbersMapTheOriginalNumbersToTheListNumbers() {
+        val places = listOf("view", "view", "view", "food").mapIndexed { i, kind -> place(kind).copy(no = i + 1) }
+        assertEquals(mapOf(1 to 1, 2 to 2, 4 to 3), shownNumbers(places))
+    }
+
+    @Test
+    fun aPlaceLeftOutOfTheListHasNoNumber() {
+        val places = listOf("view", "view", "view").mapIndexed { i, kind -> place(kind).copy(no = i + 1) }
+        assertEquals(null, shownNumbers(places)[3])
+    }
+
     @Test
     fun photoSpotsCountAsViews() {
         assertEquals(2, shownPlaces(listOf(place("view"), place("photo"), place("view"))).size)

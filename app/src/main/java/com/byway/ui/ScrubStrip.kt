@@ -20,7 +20,8 @@ private const val HEAD = 128
 
 /**
  * 코스 훑어보기. 코스를 따라 고른 지점의 사진 띠다. 띠를 밀면 [onScrub]으로 코스 위 거리(km)와 그 지점의 사진 정보를 알린다.
- * 기준선은 운전석 쪽에 고정되어 있고 띠가 그 밑으로 지나간다. [leading]은 띠 왼쪽에 두는 버튼이다.
+ * 기준선은 운전석 쪽에 고정되어 있고 띠가 그 밑으로 지나간다. [leading]은 띠 왼쪽에 두는 버튼이고,
+ * [nearName]은 그 지점 가까이에 있는, 목록에 보이는 장소의 이름이다.
  * 사진은 지금 위성 조각이다. 차량 카메라 사진이 생기면 같은 이름의 파일만 바꾼다.
  */
 @SuppressLint("ViewConstructor")
@@ -29,12 +30,13 @@ internal class ScrubStrip(
     courseId: String,
     private val scene: CourseScene,
     leading: View?,
+    private val nearName: (FrameInfo) -> String?,
     private val onScrub: (Double, FrameInfo) -> Unit,
 ) : LinearLayout(context) {
     private val colors = context.palette
     private val km = context.label("", Dimens.SMALL, bold = true).tabular().atMostLines(1)
     private val where = context.label("", Dimens.LABEL).atMostLines(1)
-    private val filmPx = context.dp(scene.frames.size * FRAME_WIDTH + (scene.frames.size - 1) * FRAME_GAP)
+    private val filmPx = filmTravel(scene.frames.size, context.dp(FRAME_WIDTH) + context.dp(FRAME_GAP))
 
     init {
         orientation = VERTICAL
@@ -60,12 +62,15 @@ internal class ScrubStrip(
         val film = FrameLayout(context).apply {
             addView(scroller, matchFrame())
             addView(playhead, FrameLayout.LayoutParams(context.dp(PLAYHEAD_WIDTH), MATCH).apply { leftMargin = head - context.dp(PLAYHEAD_WIDTH) / 2 })
-            // 첫 사진과 끝 사진이 기준선까지 올 수 있게 양쪽을 비운다.
-            addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ -> row.setPadding(head, 0, maxOf(0, view.width - head), 0) }
+            // 첫 사진과 끝 사진의 가운데가 기준선까지 올 수 있게 양쪽을 비운다. 폭이 정해진 뒤 한 번만 넣는다.
+            val half = context.dp(FRAME_WIDTH) / 2
+            addOnLayoutChangeListener { view, left, _, right, _, oldLeft, _, oldRight, _ ->
+                if (right - left != oldRight - oldLeft) view.post { row.setPadding(head - half, 0, maxOf(0, view.width - head - half), 0) }
+            }
         }
         val band = LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
-            leading?.let { addView(it, LayoutParams(context.dp(Dimens.STRIP_MODE_WIDTH), MATCH).apply { marginEnd = context.dp(Dimens.SPACE_3) }) }
+            leading?.let { addView(it, LayoutParams(context.dp(Dimens.DRAWER_BUTTON_WIDTH), MATCH).apply { marginEnd = context.dp(Dimens.SPACE_3) }) }
             addView(film, LayoutParams(0, MATCH, 1f))
         }
         addView(band, LayoutParams(MATCH, context.dp(FILM_HEIGHT)))
@@ -76,7 +81,7 @@ internal class ScrubStrip(
         val at = scrubKm(scrollX, filmPx, scene.totalKm)
         val frame = scene.frames[frameAt(scene.frames, at)]
         km.text = scrubKmText(at)
-        where.text = scrubWhere(frame, scene.places.firstOrNull { it.no == frame.placeNo }?.name)
+        where.text = scrubWhere(frame, nearName(frame))
         onScrub(at, frame)
     }
 

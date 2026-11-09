@@ -20,6 +20,7 @@ internal fun settingsScreen(context: Context, kit: BrowseKit, onAbout: () -> Uni
             val shade = if (full) AtlasShade(false, 1220f, 1440f) else AtlasShade(false, 700f, 920f)
             val atlas = AtlasView(context)
             atlas.show(Tab.BROWSE, kit.window, kit.book.courses, null, null, night, shade)
+            atlas.addCredit()
             addView(atlas, matchFrame())
         }
         val side = column().apply {
