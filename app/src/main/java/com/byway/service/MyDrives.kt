@@ -6,6 +6,12 @@ import android.content.SharedPreferences
 /** 이 차에 저장되는 내 기록과 설정. 서버가 생기기 전까지 계정 없이 쓴다. */
 data class DriveTotals(val finishedCourses: Int = 0, val meters: Double = 0.0, val curves: Int = 0)
 
+/**
+ * 달리다 만 코스. 시동을 끄거나 앱이 꺼져도 남아, 다시 켰을 때 이어갈지 묻는다.
+ * [progress]는 코스 위의 지점 번호이고 [cabin]은 연출이 손대기 전의 차 안 값이다(platform 의 CabinMemory 가 쓴 글자).
+ */
+data class SavedRun(val courseId: String, val progress: Int, val cabin: String = "")
+
 object MyDrives {
     private const val FILE = "my_drives"
     private const val FINISHED = "finished_courses"
@@ -18,6 +24,9 @@ object MyDrives {
     private const val MUSIC = "music_on"
     private const val MOOD = "mood_on"
     private const val MAP_STYLE = "map_style"
+    private const val RUN_COURSE = "run_course"
+    private const val RUN_PROGRESS = "run_progress"
+    private const val RUN_CABIN = "run_cabin"
     private const val DEFAULT_MAP_STYLE = "map"
     private const val RECENT_LIMIT = 10
     private const val SEPARATOR = "\n"
@@ -55,6 +64,20 @@ object MyDrives {
             .putInt(CURVES, totals.curves + curves)
             .putString(RECENT, recent.joinToString(SEPARATOR))
             .apply()
+    }
+
+    fun savedRun(context: Context): SavedRun? {
+        val stored = prefs(context)
+        val courseId = stored.getString(RUN_COURSE, null) ?: return null
+        return SavedRun(courseId, stored.getInt(RUN_PROGRESS, 0), stored.getString(RUN_CABIN, "").orEmpty())
+    }
+
+    fun saveRun(context: Context, run: SavedRun) {
+        prefs(context).edit().putString(RUN_COURSE, run.courseId).putInt(RUN_PROGRESS, run.progress).putString(RUN_CABIN, run.cabin).apply()
+    }
+
+    fun clearRun(context: Context) {
+        prefs(context).edit().remove(RUN_COURSE).remove(RUN_PROGRESS).remove(RUN_CABIN).apply()
     }
 
     /** 달린 기록, 저장한 코스, 누계를 지운다. 설정은 남긴다. */
