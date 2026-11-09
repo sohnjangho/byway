@@ -157,7 +157,8 @@ internal class MoodEffectView(context: Context, private val below: Boolean) : Vi
                     cubicTo(-9f, 0f, -7f, -8f, 0f, -12f)
                     close()
                 }
-                opacity(0.7f, 1f)
+                // 글 칸 뒤로 지나가므로 글자가 먼저 읽히게 옅게 둔다.
+                opacity(0.2f, 0.4f)
                 canvas.save()
                 canvas.translate(x(24), y(24))
                 canvas.rotate(r.nextInt(0, 360).toFloat())

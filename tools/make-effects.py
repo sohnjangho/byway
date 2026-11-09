@@ -28,7 +28,7 @@ def petal(r, colour):
 def leaf(r, colour):
     x, y, size = r.randint(24, WIDTH - 24), r.randint(24, HEIGHT - 24), r.uniform(0.8, 1.5)
     shape = "M0-12C7-8 9 0 0 12C-9 0-7-8 0-12Z"
-    return f'<path d="{shape}" fill="{colour}" opacity="{r.uniform(0.7, 1):.2f}" transform="translate({x} {y}) rotate({r.randint(0, 359)}) scale({size:.2f})"/>'
+    return f'<path d="{shape}" fill="{colour}" opacity="{r.uniform(0.2, 0.4):.2f}" transform="translate({x} {y}) rotate({r.randint(0, 359)}) scale({size:.2f})"/>'
 
 
 def star(r, colour):
