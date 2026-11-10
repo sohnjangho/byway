@@ -11,8 +11,8 @@ import android.graphics.Path
 import android.graphics.Shader
 import com.byway.core.geo.GeoPoint
 
-/** 지도에 찍을 파티 멤버 하나. [avatar]는 앱에 든 그림 이름이다. */
-data class MapPin(val id: String, val point: GeoPoint, val avatar: String)
+/** 지도에 찍을 파티 멤버 하나. [avatar]는 앱에 든 그림 이름이고, [name]은 확대 지도에서 핀 아래에 적는 닉네임이다. */
+data class MapPin(val id: String, val point: GeoPoint, val avatar: String, val name: String = "")
 
 /** 물방울 핀의 자리. 끝([tipX], [tipY])이 위치를 가리키고, 아바타 원은 그 위에 뜬다. */
 data class PinGeometry(val centerX: Float, val centerY: Float, val avatarRadius: Float, val outerRadius: Float)

@@ -10,6 +10,9 @@ import android.widget.Space
 import android.widget.TextView
 import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
+import com.byway.core.geo.GeoFrame
+import com.byway.core.geo.GeoPoint
+import com.byway.core.geo.partyFrame
 import com.byway.service.DriveState
 import com.byway.service.SceneCatalog
 
@@ -17,6 +20,7 @@ import com.byway.service.SceneCatalog
  * 내비 옆 칸의 코스 주행 화면. 홈과 같이 지도 장면을 깔고 글 칸을 경계 없이 잇는다.
  * 글 칸에는 코스와 구간, 남은 거리, 안내 문구, 앞으로 만날 곳을 두고, 그 뒤에 코스 사진과 구간 색을 깐다. 지도에는 경로와 번호, 위치 점이 있다.
  * 스크롤과 애니메이션, 분위기 효과는 없고 움직이는 것은 위치 점뿐이다.
+ * 파티로 달릴 때 내 차 5km 안에 멤버가 있으면 지도 자리에 확대 지도를 덮는다(주행 화면 3분할 설계 3절). 범위는 점이 가장자리로 나갈 때만 한 번에 바뀐다.
  */
 @SuppressLint("ViewConstructor")
 internal class DriveScreen(
@@ -48,6 +52,10 @@ internal class DriveScreen(
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
     private val end = context.outlineButton("코스 끝내기", onEnd)
 
+    /** 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다. */
+    private val zoomView = CoursePathView(context).apply { visibility = INVISIBLE }
+    private var zoomFrame: GeoFrame? = null
+
     init {
         setBackgroundColor(colors.bg)
         val hasPicture = scene != null && Covers.hasScene(context, course.id, context.night)
@@ -61,6 +69,10 @@ internal class DriveScreen(
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth
+        })
+        zoomView.show(course, emptyList())
+        addView(zoomView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
+            if (!third) leftMargin = sideWidth
         })
 
         val info = infoColumn()
@@ -131,7 +143,21 @@ internal class DriveScreen(
         showAhead(driven)
         scene?.let { sceneView.setMarker(trackAt(it.track, driven)) }
         sceneView.moveFallbackTo(state.position)
-        sceneView.setPins(partyPins(state))
+        val pins = partyPins(state)
+        sceneView.setPins(pins)
+        showZoom(state.position, pins)
+    }
+
+    /** 내 위치와 칸 크기를 알고 5km 안에 멤버가 있을 때만 확대 지도를 보인다. 아니면 코스 장면이 그대로 보인다. */
+    private fun showZoom(me: GeoPoint?, pins: List<com.byway.ui.party.MapPin>) {
+        val zoom = me?.takeIf { zoomView.width > 0 && zoomView.height > 0 }
+            ?.let { partyFrame(it, pins.map { pin -> pin.point }, zoomView.width.toDouble() / zoomView.height, zoomFrame) }
+        zoomFrame = zoom?.frame
+        zoomView.visibility = if (zoom == null) INVISIBLE else VISIBLE
+        if (zoom == null) return
+        zoomView.zoom(zoom.frame, zoom.far)
+        zoomView.moveTo(me)
+        zoomView.setPins(pins)
     }
 
     /** 줄 수를 고정해 지나온 곳이 빠져도 아래 글이 움직이지 않는다. 가장 가까운 곳의 번호는 주황이다. */
@@ -179,6 +205,6 @@ private class AheadRow(private val context: Context) {
 internal fun partyPins(state: com.byway.service.DriveState): List<com.byway.ui.party.MapPin> {
     val party = state.party ?: return emptyList()
     return com.byway.service.livePins(party).mapNotNull { pin ->
-        party.members.firstOrNull { it.id == pin.memberId }?.let { com.byway.ui.party.MapPin(pin.memberId, com.byway.core.geo.GeoPoint(pin.lat, pin.lon), it.avatar) }
+        party.members.firstOrNull { it.id == pin.memberId }?.let { com.byway.ui.party.MapPin(pin.memberId, com.byway.core.geo.GeoPoint(pin.lat, pin.lon), it.avatar, it.nickname) }
     }
 }
