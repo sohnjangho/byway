@@ -17,7 +17,8 @@ data class CourseRow(
     val hidden: Boolean,
 )
 
-data class PartyRow(val code: String, val name: String, val courseId: String, val owner: String, val open: Boolean)
+/** [openedAt]은 파티를 열거나 다시 연 때다. 가상 멤버가 이때부터 움직인다. */
+data class PartyRow(val code: String, val name: String, val courseId: String, val owner: String, val open: Boolean, val openedAt: Long = 0)
 
 data class MemberRow(val partyCode: String, val device: String, val nickname: String, val avatar: String, val sharing: Boolean, val starred: Boolean)
 
@@ -101,15 +102,19 @@ class Store private constructor(private val db: Connection) {
         update("INSERT INTO party(code, name, course_id, owner, open, created_at) VALUES(?, ?, ?, ?, ?, ?)", row.code, row.name, row.courseId, row.owner, row.open.bit, now)
 
     @Synchronized
-    fun party(code: String): PartyRow? =
-        query("SELECT code, name, course_id, owner, open FROM party WHERE code = ?", code) { PartyRow(it.getString(1), it.getString(2), it.getString(3), it.getString(4), it.getInt(5) == 1) }
-            .firstOrNull()
+    fun party(code: String): PartyRow? = query("SELECT code, name, course_id, owner, open, created_at FROM party WHERE code = ?", code) {
+        PartyRow(it.getString(1), it.getString(2), it.getString(3), it.getString(4), it.getInt(5) == 1, it.getLong(6))
+    }.firstOrNull()
 
     @Synchronized
-    fun setPartyOpen(code: String, open: Boolean, courseId: String? = null) {
-        update("UPDATE party SET open = ? WHERE code = ?", open.bit, code)
-        courseId?.let { update("UPDATE party SET course_id = ? WHERE code = ?", it, code) }
-    }
+    fun closeParty(code: String) = update("UPDATE party SET open = 0 WHERE code = ?", code)
+
+    @Synchronized
+    fun reopenParty(code: String, courseId: String, now: Long) =
+        update("UPDATE party SET open = 1, course_id = ?, created_at = ? WHERE code = ?", courseId, now, code)
+
+    @Synchronized
+    fun setOwner(code: String, device: String) = update("UPDATE party SET owner = ? WHERE code = ?", device, code)
 
     @Synchronized
     fun deleteParty(code: String) {

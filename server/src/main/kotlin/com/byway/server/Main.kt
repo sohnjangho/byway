@@ -19,7 +19,9 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 /** 요청을 처리하는 데 필요한 것 한 묶음. [builtIn]은 앱에 든 코스다(파티 코스로 쓸 수 있다). */
-class Server(val store: Store, val builtIn: List<Course>, val clock: () -> Long, val demoMembers: Int)
+class Server(val store: Store, val builtIn: List<Course>, val clock: () -> Long, val demoMembers: Int) {
+    val positions = Positions(clock)
+}
 
 fun Application.byway(store: Store, builtIn: List<Course>, clock: () -> Long = System::currentTimeMillis, demoMembers: Int = 0) {
     val server = Server(store, builtIn, clock, demoMembers)
@@ -30,6 +32,7 @@ fun Application.byway(store: Store, builtIn: List<Course>, clock: () -> Long = S
     }
     routing {
         courseRoutes(server)
+        partyRoutes(server)
     }
 }
 

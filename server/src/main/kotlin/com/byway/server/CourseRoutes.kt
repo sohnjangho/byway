@@ -83,6 +83,8 @@ fun Route.courseRoutes(server: Server) {
 
     delete("/v1/me") {
         val me = call.device(store) ?: return@delete
+        store.partiesOf(me).forEach { server.leaveParty(it, me) }
+        server.positions.forget(me)
         store.deleteDevice(me)
         call.respond(HttpStatusCode.NoContent)
     }
