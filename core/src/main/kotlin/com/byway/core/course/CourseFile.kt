@@ -76,6 +76,27 @@ fun parseCourse(text: String): Course {
     )
 }
 
+/** 코스 형식 v2로 쓴다. 내가 만든 코스를 저장하고 서버에 올릴 때 쓴다. [parseCourse]로 다시 읽으면 같은 코스다. */
+fun writeCourse(course: Course): String = json.encodeToString(
+    CourseFile.serializer(),
+    CourseFile(
+        schemaVersion = 2,
+        id = course.id,
+        name = course.name,
+        attribution = course.attribution,
+        path = course.path.map { listOf(it.lat, it.lon) },
+        sections = course.sections.map { SectionFile(it.name, it.startIndex, it.endIndex, it.mood) },
+        summary = course.summary,
+        toleranceMeters = course.toleranceMeters,
+        tags = course.tags.let { TagsFile(it.themes, it.moods, it.times, it.seasons, it.ages) },
+        sceneryCredit = course.sceneryCredit,
+        sceneryDetail = course.sceneryDetail,
+        spots = course.spots.map { SpotFile(it.name, it.kind, it.point.lat, it.point.lon, it.pathIndex) },
+        region = course.region,
+        elevation = course.elevation,
+    ),
+)
+
 private fun requireContinuous(sections: List<Section>, lastIndex: Int) {
     require(sections.first().startIndex == 0 && sections.last().endIndex == lastIndex) { "구간이 코스 전체를 덮지 않음" }
     sections.zipWithNext { a, b ->
