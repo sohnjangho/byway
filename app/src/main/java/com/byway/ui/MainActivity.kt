@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.byway.BuildConfig
 import com.byway.core.course.Course
 import com.byway.core.course.Weather
+import com.byway.platform.showNavigation
 import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
@@ -104,11 +105,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun start(courseId: String, resumeFrom: Int = 0) {
         if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            DriveService.start(this, courseId, resumeFrom)
+            begin(courseId, resumeFrom)
         } else {
             pendingStart = courseId to resumeFrom
             requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
         }
+    }
+
+    /**
+     * 설정한 주행 화면 배치대로 출발한다(주행 화면 3분할 설계 2절). 3분할인데 에움길 창이 1/3이 아니면
+     * 화면을 나누라고 안내하고, 사용자가 나누면 [render]가 이어서 출발한다.
+     */
+    private fun begin(courseId: String, resumeFrom: Int) {
+        val request = StartRequest(courseId, resumeFrom)
+        when (startPlan(currentDriveLayout(), windowClassOf(widthDp()))) {
+            StartPlan.GO -> launch(request)
+            StartPlan.GUIDE -> go(nav.copy(splitGuide = request))
+        }
+    }
+
+    /** 코스를 시작하고 내비를 띄운다. 3분할이면 내비가 가운데로 가고 에움길은 오른쪽 칸으로 간다. */
+    private fun launch(request: StartRequest) {
+        DriveService.start(this, request.courseId, request.resumeFrom)
+        showNavigation(this)
     }
 
     /** 달리다 만 코스. 코스 목록에 없는 것은 묻지 않는다. */
@@ -118,7 +137,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, results: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            pendingStart?.let { (courseId, resumeFrom) -> DriveService.start(this, courseId, resumeFrom) }
+            pendingStart?.let { (courseId, resumeFrom) -> begin(courseId, resumeFrom) }
             if (pendingRecord) DriveService.recordStart(this)
         }
     }
@@ -128,6 +147,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(state: DriveState) {
         if (state.running) nav = nav.whileDriving()
+        // 안내 중 기어를 바꾸면 안내를 닫는다. 화면이 나뉘었으면(1/3 창) 기다리던 출발을 한 번만 시작한다.
+        if (!state.parked && nav.splitGuide != null) nav = nav.copy(splitGuide = null)
+        val (guided, ready) = takeGuide(nav, windowClassOf(widthDp()), state.parked)
+        nav = guided
+        ready?.let(::launch)
         // 내 코스를 저장했거나 서버 목록을 받으면 코스 책을 다시 만든다.
         if (bookVersion != CourseCatalog.version) {
             book = currentBook()
@@ -181,6 +205,15 @@ class MainActivity : AppCompatActivity() {
                     this, book, requireNotNull(state.course), kit.window,
                     onAnswer = { DriveService.answer(this, yes = true) },
                     onEnd = { DriveService.stop(this) },
+                )
+                screen == Screen.SplitGuide -> splitGuideScreen(
+                    this, kit,
+                    onPlain = {
+                        val request = nav.splitGuide
+                        go(nav.copy(splitGuide = null))
+                        request?.let(::launch)
+                    },
+                    onClose = { go(nav.copy(splitGuide = null)) },
                 )
                 screen == Screen.Resume && saved != null -> resumeScreen(
                     this, kit, book.courses.first { it.id == saved.courseId }, saved.progress,

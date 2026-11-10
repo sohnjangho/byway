@@ -26,3 +26,18 @@ enum class StartPlan { GO, GUIDE }
 /** 앱은 화면을 직접 나눌 수 없다. 3분할 설정인데 에움길이 1/3 칸이 아니면 사용자가 나누도록 안내한다. */
 fun startPlan(layout: DriveLayout, window: WindowClass): StartPlan =
     if (layout == DriveLayout.SPLIT && window != WindowClass.THIRD) StartPlan.GUIDE else StartPlan.GO
+
+const val SPLIT_GUIDE_TITLE = "주행 화면을 셋으로 나눕니다"
+const val SPLIT_GUIDE_BODY = "오른쪽 끝 ⋮을 왼쪽으로 끌면 화면이 셋으로 나뉘고 바로 출발합니다"
+const val SPLIT_GUIDE_PLAIN = "나누지 않고 출발"
+const val SPLIT_GUIDE_CLOSE = "닫기"
+
+/**
+ * 안내 중인 출발을 지금 시작할 수 있으면 꺼낸다. 에움길 창이 1/3이 되었고(사용자가 나눔) 정차 중일 때다.
+ * 돌려주는 [Nav]에서는 안내가 지워져 있어, 폭 변화가 여러 번 들어와도 한 번만 출발한다.
+ */
+fun takeGuide(nav: Nav, window: WindowClass, parked: Boolean): Pair<Nav, StartRequest?> {
+    val request = nav.splitGuide
+    if (request == null || window != WindowClass.THIRD || !parked) return nav to null
+    return nav.copy(splitGuide = null) to request
+}

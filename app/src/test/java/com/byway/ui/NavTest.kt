@@ -3,6 +3,7 @@ package com.byway.ui
 import com.byway.core.course.RankBy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
@@ -73,5 +74,16 @@ class NavTest {
     @Test
     fun fullPaneIsWide() {
         assertTrue(isWide(1682))
+    }
+
+    /** 출발하면 나누기 안내는 닫힌다. */
+    @Test
+    fun drivingClosesSplitGuide() {
+        assertNull(Nav(splitGuide = StartRequest("c1", 0)).whileDriving().splitGuide)
+    }
+
+    @Test
+    fun tabClosesSplitGuide() {
+        assertNull(Nav(splitGuide = StartRequest("c1", 0)).toTab(Tab.HOME).splitGuide)
     }
 }
