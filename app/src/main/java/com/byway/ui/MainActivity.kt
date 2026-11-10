@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
         (savedInstanceState?.getSerializable(NAV) as? Nav)?.let { nav = it }
-        book = sharedBook ?: CourseBook(CourseCatalog.all(this)).also { sharedBook = it }
+        book = currentBook()
         root = FrameLayout(this)
         root.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
             if (widthDp() != builtWidth) view.post { render(DriveBoard.state) }
@@ -110,6 +110,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(state: DriveState) {
         if (state.running) nav = nav.whileDriving()
+        // 내 코스를 저장했거나 서버 목록을 받으면 코스 책을 다시 만든다.
+        if (bookVersion != CourseCatalog.version) {
+            book = currentBook()
+            stale = true
+        }
         val saved = savedRun()
         val next = screenFor(state, nav, resumable = saved != null)
         val width = widthDp()
@@ -208,5 +213,12 @@ class MainActivity : AppCompatActivity() {
 
         /** 창 크기가 바뀌어 Activity 가 다시 만들어져도 코스 수치를 다시 계산하지 않는다. */
         var sharedBook: CourseBook? = null
+        var bookVersion = -1
     }
+
+    private fun currentBook(): CourseBook = sharedBook?.takeIf { bookVersion == CourseCatalog.version }
+        ?: CourseBook(CourseCatalog.all(this)).also {
+            sharedBook = it
+            bookVersion = CourseCatalog.version
+        }
 }

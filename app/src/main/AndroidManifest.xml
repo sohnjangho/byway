@@ -15,6 +15,8 @@
     <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 코스 공유와 파티. 서버 주소가 없는 빌드에서는 요청을 보내지 않는다. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- 차에 연결된 음악 앱을 찾는다. -->
     <queries>
@@ -28,6 +30,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="에움길"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
