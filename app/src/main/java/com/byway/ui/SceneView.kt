@@ -69,8 +69,8 @@ internal class SceneView(
     private val fallback = CoursePathView(context)
     private val photo = ScenePhoto(context, window).apply { visibility = GONE }
     private val hint = chip("")
-    private val photoCredit = chip("")
-    private val credit = chip(mapCredit(currentMapStyle()))
+    private val photoCredit = creditChip("")
+    private val credit = creditChip(mapCreditLine(currentMapStyle()))
     private val latest = LatestOnly()
     private val slop = ViewConfiguration.get(context).scaledTouchSlop * SWIPE_FACTOR
     private val fling = ViewConfiguration.get(context).scaledMinimumFlingVelocity * FLING_FACTOR
@@ -101,18 +101,14 @@ internal class SceneView(
             bottomMargin = context.dp(if (third) thirdBottom else if (list) Dimens.LIST_HINT_BOTTOM else Dimens.SCENE_CREDIT_BOTTOM)
         }
         addView(hint, hintSize)
-        // 넓은 창은 출처가 글 칸 아래까지 뻗지 않게 폭을 묶는다. 1/3 창은 창 폭이 한도인데,
-        // 사진 띠 때문에 장면을 줄인 화면은 경로 왼쪽의 빈자리에 좁게 세워 경로를 가리지 않는다.
-        credit.maxWidth = when {
-            third && strip -> context.dp(Dimens.THIRD_CREDIT_WIDTH)
-            third -> Int.MAX_VALUE
-            else -> context.dp(Dimens.SCENE_CREDIT_WIDTH)
-        }
+        // 출처는 한 줄로 지도 오른쪽 아래 모서리에 둔다(화면 다듬기 설계 5절). 넓은 창은 글 칸 아래까지 뻗지 않게 폭을 묶는다.
+        credit.maxWidth = if (third) Int.MAX_VALUE else context.dp(Dimens.SCENE_CREDIT_WIDTH)
         photoCredit.maxWidth = credit.maxWidth
         val creditSize = {
             if (third) {
-                LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
-                    topMargin = context.dp(Dimens.RAIL_TOP_HEIGHT + Dimens.SPACE_2)
+                // 1/3 창은 지도 칸 아래 모서리다. 훑어보기 띠와 풍경 단추가 있으면 그 위에 둔다.
+                LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
+                    bottomMargin = context.dp(if (strip) ScrubStrip.HEIGHT + Dimens.SPACE_6 + Dimens.TOUCH_MIN + Dimens.SPACE_2 else Dimens.SPACE_3)
                     marginStart = context.dp(Dimens.SPACE_3)
                     marginEnd = context.dp(Dimens.SPACE_3)
                 }
@@ -128,6 +124,13 @@ internal class SceneView(
         addView(credit, creditSize())
         hint.pressMotion()
         hint.setOnClickListener { togglePhoto() }
+    }
+
+    /** 출처 칩. 가장 작은 글(Dimens.CREDIT)에 여백도 좁혀 그림을 덜 가린다. */
+    private fun creditChip(text: String): TextView = context.label(text, Dimens.CREDIT, colors.onPhoto).apply {
+        background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
+        val inset = context.dp(Dimens.CREDIT_PADDING)
+        setPadding(context.dp(Dimens.SPACE_2), inset, context.dp(Dimens.SPACE_2), inset)
     }
 
     private fun chip(text: String): TextView = context.label(text, Dimens.LABEL, colors.onPhoto).apply {
@@ -157,7 +160,7 @@ internal class SceneView(
         photo.setPicture(null)
         if (sceneryAvailable) {
             Covers.loadScenery(context, course) { if (latest.isCurrent(token)) photo.setPicture(it) }
-            photoCredit.text = course.sceneryCredit
+            photoCredit.text = photoCreditLine(course.sceneryCredit)
         }
     }
 

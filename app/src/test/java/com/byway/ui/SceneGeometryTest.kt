@@ -61,16 +61,6 @@ class SceneGeometryTest {
         assertEquals(2404f / 1210f, rect.width / rect.height, 0.01f)
     }
 
-    /** 줄인 장면의 왼쪽은 경로가 오지 않는 자리다. 출처를 거기에 두어 경로와 번호를 가리지 않는다. */
-    @Test
-    fun theCreditSitsBesideTheRouteInTheShrunkThirdWindow() {
-        val routeBoxLeft = 1540f
-        val pin = 24f
-        val rect = sceneRect(WindowClass.THIRD, 841f, 1210f, strip = true)
-        val routeLeft = rect.left + routeBoxLeft * rect.width / 2404f
-        assertTrue(Dimens.SPACE_3 + Dimens.THIRD_CREDIT_WIDTH + pin <= routeLeft)
-    }
-
     /** 사진 띠가 없는 코스는 장면을 줄이지 않는다. */
     @Test
     fun withoutAScrubStripTheThirdWindowIsNotShrunk() {

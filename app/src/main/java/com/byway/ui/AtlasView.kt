@@ -89,10 +89,10 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
 
     /** 지도 출처. 지도가 보이는 화면에는 확대 단추가 없어도 둔다. */
     fun addCredit() {
-        val credit = context.label(mapCredit(currentMapStyle()), Dimens.LABEL, colors.onPhoto).apply {
+        val credit = context.label(mapCreditLine(currentMapStyle()), Dimens.CREDIT, colors.onPhoto).apply {
             background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
             val inset = context.dp(Dimens.CREDIT_PADDING)
-            setPadding(context.dp(Dimens.SPACE_3), inset, context.dp(Dimens.SPACE_3), inset)
+            setPadding(context.dp(Dimens.SPACE_2), inset, context.dp(Dimens.SPACE_2), inset)
             maxWidth = context.dp(Dimens.ATLAS_CREDIT_WIDTH)
         }
         addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {

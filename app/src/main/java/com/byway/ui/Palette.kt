@@ -117,5 +117,7 @@ object Tokens {
     const val TEXT_BODY = 28f
     const val TEXT_SMALL = 26f
     const val TEXT_LABEL = 24f
+    /** 지도·사진 출처. 운전 정보가 아니라 가장 작은 글이다. */
+    const val TEXT_CREDIT = 20f
     const val TEXT_BRAND = 40f
 }

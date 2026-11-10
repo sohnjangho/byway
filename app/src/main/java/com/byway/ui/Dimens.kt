@@ -17,6 +17,7 @@ internal object Dimens {
     const val BODY = Tokens.TEXT_BODY
     const val SMALL = Tokens.TEXT_SMALL
     const val LABEL = Tokens.TEXT_LABEL
+    const val CREDIT = Tokens.TEXT_CREDIT
     const val BRAND = Tokens.TEXT_BRAND
 
     const val SPACE_2 = Tokens.SPACE_2
@@ -67,7 +68,6 @@ internal object Dimens {
     const val SCENE_CREDIT_WIDTH = 760
 
     /** 1/3 창에서 장면을 줄였을 때 경로 왼쪽에 남는 자리의 폭. */
-    const val THIRD_CREDIT_WIDTH = 340
     const val EFFECT_WIDTH = 920
     const val THIRD_LIST_SCENE_HEIGHT = 620
     const val THIRD_MINE_ATLAS_HEIGHT = 620

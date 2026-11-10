@@ -65,7 +65,8 @@ internal class DriveScreen(
         addView(backdrop, matchFrame())
         sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
         val style = currentMapStyle()
-        sceneView.setCredit(driveCredit(if (third) driveMapCredit(style) else mapCredit(style), course.sceneryCredit.takeIf { hasPhoto }))
+        // 지도 출처 한 줄, 글 칸 배경에 코스 사진을 흐리게 깔면 그 사진 출처 한 줄이다.
+        sceneView.setCredit(listOfNotNull(mapCreditLine(style), course.sceneryCredit.takeIf { hasPhoto }?.let { photoCreditLine(it, changed = true) }).joinToString("\n"))
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth

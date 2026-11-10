@@ -6,28 +6,28 @@ private const val SATELLITE = "Sentinel-2 cloudless by EOX IT Services GmbH (Con
 
 private const val TERRAIN = "Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX"
 
-/** 지도와 코스 선이 보이는 화면의 출처. 훑어보기 사진 띠는 위성이라 [withFrames]면 위성 출처를 함께 적는다. */
-fun mapCredit(style: MapStyle, withFrames: Boolean = false): String = when {
-    style == MapStyle.SATELLITE -> "$SATELLITE · 코스 © OpenStreetMap contributors"
-    withFrames -> "$TERRAIN · 사진 띠: $SATELLITE"
-    else -> TERRAIN
-}
-
-/** 지도 칸이 좁은 화면의 출처. 권리자는 모두 남기고 전문은 앱 정보([creditLines])에 둔다. 사진 띠가 있는 1/3 창 홈이 쓴다. */
-fun shortMapCredit(style: MapStyle): String = when (style) {
-    MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors · 전체 출처는 앱 정보"
-    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors · 사진 띠 Sentinel-2 cloudless · 전체 출처는 앱 정보"
-}
-
-/** 지도 칸이 좁은 1/3 창 주행 화면의 지도 출처. 사진 띠가 없어 지도와 길의 권리자만 적는다. 전문은 앱 정보에 있다. */
-fun driveMapCredit(style: MapStyle): String = when (style) {
+/**
+ * 지도 위에 적는 한 줄 출처(화면 다듬기 설계 5절). 권리자(EOX, OpenStreetMap)를 모두 남기고 전문은 앱 정보([creditLines])에 둔다.
+ * 훑어보기 사진 띠는 위성이라 [withFrames]면 일반 지도 화면에도 위성 권리자를 붙인다.
+ */
+fun mapCreditLine(style: MapStyle, withFrames: Boolean = false): String = when (style) {
     MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors"
-    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors"
+    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors" + if (withFrames) " · 사진 띠 Sentinel-2 cloudless © EOX" else ""
 }
 
-/** 주행 화면의 출처. 글 칸 배경에 코스 사진을 쓰면 그 출처와 흐리게 바꿨다는 사실을 함께 적는다. */
-fun driveCredit(map: String, backdropCredit: String?): String =
-    if (backdropCredit == null) map else "$map · 배경 $backdropCredit, 흐리게 변형"
+private val PHOTO_CREDIT = Regex("""^(?:사진\s*:?\s*)?(.+?)\s*\(([^,)]+)(?:,[^)]*)?\)\s*$""")
+
+/**
+ * 사진 위에 적는 짧은 출처. "사진: 작가 (라이선스, 출처)"를 "사진 작가 · 라이선스"로 줄인다.
+ * CC BY 계열 사진을 흐리게 바꿔 쓰면([changed]) 변형을 밝힌다. CC0 와 퍼블릭 도메인은 밝힐 의무가 없다. 전문과 주소는 앱 정보에 있다.
+ */
+fun photoCreditLine(credit: String, changed: Boolean = false): String {
+    if (credit.isBlank()) return ""
+    val match = PHOTO_CREDIT.find(credit.trim()) ?: return "사진 " + credit.trim().removePrefix("사진:").removePrefix("사진").trim()
+    val (author, licence) = match.destructured
+    val altered = changed && licence.trim().startsWith("CC BY")
+    return "사진 ${author.trim()} · ${licence.trim()}" + if (altered) " · 변형" else ""
+}
 
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",

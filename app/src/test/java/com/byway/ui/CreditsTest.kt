@@ -47,54 +47,46 @@ class CreditsTest {
         OPEN_SOURCE_NOTICES.forEach { assertTrue(it, it.contains("Apache")) }
     }
 
-    private val satellite = "Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)"
-
+    /** 지도 위 출처는 한 줄이다. 권리자(EOX, OpenStreetMap)는 모두 남기고 전문은 앱 정보에 둔다. */
     @Test
-    fun theSatelliteCreditNamesSatelliteAndRoads() {
-        val credit = mapCredit(MapStyle.SATELLITE)
-        assertTrue(credit.contains(satellite))
-        assertTrue(credit.contains("OpenStreetMap"))
+    fun mapCreditIsOneShortLine() {
+        assertEquals("Terrain Light © EOX · © OpenStreetMap contributors", mapCreditLine(MapStyle.MAP))
+        assertEquals("Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors", mapCreditLine(MapStyle.SATELLITE))
+        MapStyle.entries.forEach { assertTrue(mapCreditLine(it).length <= 60) }
     }
 
-    @Test
-    fun theMapCreditNamesTheMapAndItsData() {
-        val credit = mapCredit(MapStyle.MAP)
-        assertTrue(credit.contains("Terrain Light"))
-        assertTrue(credit.contains("OpenStreetMap contributors"))
-        assertTrue(credit.contains("EOX"))
-        assertTrue(!credit.contains("Sentinel"))
-    }
-
-    /** 훑어보기 사진 띠는 위성이라 일반 지도 화면에서도 위성 출처를 적는다. */
+    /** 훑어보기 사진 띠는 위성이라 일반 지도 화면에서도 위성 권리자를 적는다. */
     @Test
     fun aMapScreenWithFramesAlsoNamesTheSatellite() {
-        val credit = mapCredit(MapStyle.MAP, withFrames = true)
-        assertTrue(credit.contains("Terrain Light"))
-        assertTrue(credit.contains(satellite))
+        val credit = mapCreditLine(MapStyle.MAP, withFrames = true)
+        assertTrue(credit.contains("Terrain Light") && credit.contains("Sentinel-2 cloudless"))
+        assertEquals(mapCreditLine(MapStyle.SATELLITE), mapCreditLine(MapStyle.SATELLITE, withFrames = true))
     }
 
-    /** 1/3 창은 지도 칸이 좁아 짧게 적는다. 줄여도 권리자는 모두 남기고 전문이 있는 곳을 알린다. */
+    /** 사진 출처는 작가와 라이선스만 짧게 적는다. CC BY 계열을 흐리게 바꿔 쓰면 변형을 밝힌다. */
     @Test
-    fun theShortCreditStillNamesEveryRightsHolder() {
-        listOf(MapStyle.MAP, MapStyle.SATELLITE).forEach { style ->
-            val short = shortMapCredit(style)
-            assertTrue(short, short.contains("© OpenStreetMap contributors"))
-            assertTrue(short, short.contains("EOX"))
-            assertTrue(short, short.contains("Sentinel-2 cloudless"))
-            assertTrue(short, short.contains("앱 정보"))
-        }
-        assertTrue(shortMapCredit(MapStyle.MAP).contains("Terrain Light"))
+    fun photoCreditKeepsAuthorAndLicence() {
+        assertEquals("사진 Katsujiro Maekawa · CC0", photoCreditLine("사진: Katsujiro Maekawa (CC0, Wikimedia Commons)"))
+        assertEquals("사진 Katsujiro Maekawa · CC0", photoCreditLine("사진: Katsujiro Maekawa (CC0, Wikimedia Commons)", changed = true))
+        assertEquals("사진 Ronnie Dayo · CC BY-SA 4.0 · 변형", photoCreditLine("사진: Ronnie Dayo (CC BY-SA 4.0, Wikimedia Commons)", changed = true))
+        assertEquals("사진 Ronnie Dayo · CC BY-SA 4.0", photoCreditLine("사진: Ronnie Dayo (CC BY-SA 4.0, Wikimedia Commons)"))
+        assertEquals("사진 누구", photoCreditLine("누구"))
+        assertEquals("", photoCreditLine(""))
     }
 
+    /** 1/3 칸(841dp)에서도 한 줄 출처는 한 줄, 사진 띠 출처를 더해도 두 줄 안이다. 글자 폭은 크기의 0.55배로 어림한다. */
     @Test
-    fun theShortCreditIsAboutHalfTheFullOne() {
-        assertTrue(shortMapCredit(MapStyle.MAP).length * 3 <= mapCredit(MapStyle.MAP, withFrames = true).length * 2)
-        assertTrue(shortMapCredit(MapStyle.SATELLITE).length <= mapCredit(MapStyle.SATELLITE).length)
+    fun creditsFitTwoLinesInTheThirdWindow() {
+        val room = 841 - 48
+        val width = { text: String -> text.length * Dimens.CREDIT * 0.55f }
+        MapStyle.entries.forEach { assertTrue(width(mapCreditLine(it)) <= room) }
+        assertTrue(width(mapCreditLine(MapStyle.MAP, withFrames = true)) <= 2 * room)
+        assertTrue(width("사진 H. Y. Shin 000 · CC0") <= room)
     }
 
     /** 짧게 적은 화면의 전문은 앱 정보에 있어야 한다. */
     @Test
-    fun theFullTextOfTheShortCreditIsInAppInfo() {
+    fun everyRightsHolderIsStillInAppInfo() {
         assertTrue(lines.any { it.contains("Contains modified Copernicus Sentinel data 2016") })
         assertTrue(lines.any { it.contains("Data © OpenStreetMap contributors and others · Rendering © EOX") })
     }
@@ -102,24 +94,5 @@ class CreditsTest {
     @Test
     fun theMapSourceIsListedWithALinkBack() {
         assertTrue(lines.any { it.contains("Terrain Light") && it.contains("maps.eox.at") })
-    }
-
-    @Test
-    fun theDriveMapCreditKeepsEveryRightsHolderInFewerWords() {
-        val map = driveMapCredit(MapStyle.MAP)
-        assertTrue(map.contains("EOX") && map.contains("OpenStreetMap"))
-        val satellite = driveMapCredit(MapStyle.SATELLITE)
-        assertTrue(satellite.contains("Sentinel-2") && satellite.contains("EOX") && satellite.contains("OpenStreetMap"))
-    }
-
-    @Test
-    fun aBackdropPhotoAddsItsCreditAndSaysItWasChanged() {
-        val text = driveCredit("지도", "사진: 누구 (CC BY-SA 3.0, Wikimedia Commons)")
-        assertEquals("지도 · 배경 사진: 누구 (CC BY-SA 3.0, Wikimedia Commons), 흐리게 변형", text)
-    }
-
-    @Test
-    fun withoutABackdropPhotoOnlyTheMapIsCredited() {
-        assertEquals("지도", driveCredit("지도", null))
     }
 }
