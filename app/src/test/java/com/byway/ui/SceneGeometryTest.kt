@@ -29,24 +29,37 @@ class SceneGeometryTest {
 
     @Test
     fun fadeBands() {
-        assertEquals(FadeBand(false, 1460f, 1530f, 0f), sceneFade(WindowClass.TWO))
-        assertEquals(FadeBand(false, 1140f, 1220f, 0f), sceneFade(WindowClass.FULL))
+        assertEquals(FadeBand(false, 1180f, 1530f, 0.16f), sceneFade(WindowClass.TWO))
+        assertEquals(FadeBand(false, 820f, 1170f, 0.16f), sceneFade(WindowClass.FULL))
         assertEquals(FadeBand(true, 423f, 711f, 1f), sceneFade(WindowClass.THIRD))
     }
 
-    /** 글 칸은 바탕색이고 지도는 그 오른쪽에서 짧게 시작한다. 경로가 놓이는 자리 전에 다 드러난다. */
+    /**
+     * 지도는 글 칸 아래까지 옅게(16%) 깔리고, 글 칸 끝 300dp 앞에서부터 짙어져 칸 끝 바로 뒤에서 다 드러난다(화면 다듬기 설계 1절).
+     * 경계 띠가 보이지 않고, 경로가 놓이는 자리 전에는 다 드러난다.
+     */
     @Test
-    fun theMapStartsBesideTheTextColumnAndIsClearBeforeTheRoute() {
+    fun theMapReachesUnderTheTextColumnAndIsClearBeforeTheRoute() {
         val routeLeft = 1540f
         listOf(WindowClass.TWO to (1700f to Dimens.SIDE_WIDTH), WindowClass.FULL to (2560f to Dimens.SIDE_WIDTH_FULL)).forEach { (window, size) ->
             val (viewW, side) = size
             val left = sceneRect(window, viewW, 1210f).left
             val band = sceneFade(window)
             val columnEnd = (Dimens.RAIL_WIDTH + side).toFloat()
-            assertEquals(0f, band.alphaFrom)
-            assertTrue("$window 시작", left + band.from in columnEnd - 40f..columnEnd + 40f)
-            assertTrue("$window 끝", band.to <= routeLeft)
+            assertEquals(MAP_UNDER_TEXT, band.alphaFrom)
+            assertEquals("$window 시작", columnEnd - 300f, left + band.from, 24f)
+            assertTrue("$window 끝", left + band.to in columnEnd..columnEnd + 80f)
+            assertTrue("$window 경로", band.to <= routeLeft)
         }
+    }
+
+    /** 한국 지도도 장면과 같은 띠로 글 칸 아래에 깔린다. */
+    @Test
+    fun theAtlasIsVeiledLikeTheScene() {
+        val shade = panelShade(776f)
+        assertEquals(476f, shade.solid)
+        assertEquals(826f, shade.clear)
+        assertEquals(1f - MAP_UNDER_TEXT, shade.veil)
     }
 
     /** 1/3 창의 홈은 지도 아래쪽에 훑어보기 사진 띠를 얹는다. 경로와 번호가 띠 뒤로 들어가지 않게 장면을 줄인다. */
@@ -105,7 +118,7 @@ class SceneGeometryTest {
     fun theDriveBackdropMeetsTheMapWhereTheMapFadesInWideWindows() {
         val band = sceneFadeOnScreen(WindowClass.TWO, 1680f, 1210f)
         assertEquals(false, band.vertical)
-        assertEquals(736f, band.from)
+        assertEquals(456f, band.from)
         assertEquals(806f, band.to)
     }
 

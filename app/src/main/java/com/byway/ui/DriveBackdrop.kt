@@ -16,8 +16,6 @@ import android.view.View
 private const val HALVINGS = 4
 private const val DOUBLINGS = 2
 
-/** 글 칸 오른쪽에서 미리 옅어지기 시작하는 길이(dp). 어두운 지도와 만나도 세로 경계가 보이지 않는다. */
-private const val SIDE_FADE_LEAD = 260f
 
 /**
  * 주행 화면 글 칸의 배경. 구간 색 위에 코스 사진을 흐리고 옅게 깔아 코스의 분위기를 낸다. 사진이 없는 코스는 구간 색만 쓴다.
@@ -66,7 +64,8 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass) 
         mask.shader = if (band.vertical) {
             LinearGradient(0f, from, 0f, to, Color.TRANSPARENT, Color.BLACK, Shader.TileMode.CLAMP)
         } else {
-            LinearGradient(from - SIDE_FADE_LEAD * density, 0f, to, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            // 지도가 짙어지는 띠와 같은 자리에서 옅어진다. 띠가 글 칸 앞 300dp에서 시작하므로 따로 앞당기지 않는다.
+            LinearGradient(from, 0f, to, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mask)
         canvas.restoreToCount(layer)

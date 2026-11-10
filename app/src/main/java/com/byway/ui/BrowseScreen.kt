@@ -40,7 +40,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
         setBackgroundColor(palette.bg)
         val atlas = AtlasView(context)
         val panelEnd = Dimens.RAIL_WIDTH + panel
-        val shade = if (third) null else AtlasShade(false, panelEnd - 40f, panelEnd + 140f)
+        val shade = if (third) null else panelShade(panelEnd.toFloat())
         val picked = nav.picked?.takeIf { id -> shown.any { it.id == id } }
         atlas.show(Tab.BROWSE, kit.window, shown, picked, nav.atlas, night, shade)
         addView(atlas, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_ATLAS_HEIGHT) else MATCH))

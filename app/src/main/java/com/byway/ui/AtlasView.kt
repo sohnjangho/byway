@@ -39,7 +39,10 @@ private const val CLOSE_RATIO = 0.6f
 private const val EDGE_FADE = 0.12f
 
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
-internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float)
+internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float, val veil: Float = 1f)
+
+/** 넓은 창의 글 칸 쪽 가림. 장면 지도와 같은 띠로 글 칸 아래에 지도를 옅게 깐다([panelEnd]는 글 칸 끝, dp). */
+internal fun panelShade(panelEnd: Float): AtlasShade = AtlasShade(false, panelEnd - 300f, panelEnd + 50f, veil = 1f - MAP_UNDER_TEXT)
 
 /** 한국 지도(일반 지도나 위성). 코스를 고르면 그 자리로 확대되고 코스 장면이 제자리에 겹친다. */
 @SuppressLint("ViewConstructor")
@@ -373,7 +376,7 @@ private class AtlasCanvas(context: Context) : View(context) {
         val w = width.toFloat()
         val solid = shade.solid * density
         val clear = shade.clear * density
-        val base = colors.bg
+        val base = Color.argb((shade.veil * 255).toInt(), Color.red(colors.bg), Color.green(colors.bg), Color.blue(colors.bg))
         val none = Color.argb(0, Color.red(base), Color.green(base), Color.blue(base))
         shadePaint.shader = if (shade.fromRight) {
             LinearGradient(w - solid, 0f, w - clear, 0f, base, none, Shader.TileMode.CLAMP)

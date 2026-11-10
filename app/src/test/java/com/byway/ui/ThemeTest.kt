@@ -89,4 +89,14 @@ class ThemeTest {
     fun dayTextStaysReadableOverABlackBackdropPhoto() {
         assertReadableOverPhoto(DayPalette, 0xFF000000.toInt(), Dimens.DRIVE_PHOTO_DAY)
     }
+
+    /** 글 칸 아래에 지도가 옅게 깔려도 글자 대비는 4.5:1 이상이다. 낮은 가장 어두운 지도(검정), 밤은 가장 밝은 지도(흰색)로 잰다. */
+    @Test
+    fun textStaysReadableOverTheVeiledMap() {
+        val under = sceneFade(WindowClass.TWO).alphaFrom
+        val day = mix(DayPalette.bg, 0xFF000000.toInt(), under)
+        val night = mix(NightPalette.bg, 0xFFFFFFFF.toInt(), under)
+        listOf(DayPalette.ink, DayPalette.inkSecondary).forEach { assertTrue(contrast(it, day) >= 4.5) }
+        listOf(NightPalette.ink, NightPalette.inkSecondary).forEach { assertTrue(contrast(it, night) >= 4.5) }
+    }
 }
