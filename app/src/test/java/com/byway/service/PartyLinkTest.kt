@@ -20,6 +20,13 @@ class PartyLinkTest {
         assertEquals(PartyTick.Ended, tick)
     }
 
+    /** 주인이 끝낸 파티는 별표한 멤버에게도 끝난 것이다. 다시 열기는 파티 밖 화면의 즐겨찾는 파티에서 한다. */
+    @Test
+    fun closedPartyCountsAsEnded() {
+        val tick = partyTick(null, sharing = false, send = { Result.success(Unit) }, fetch = { Result.success(view().copy(open = false)) })
+        assertEquals(PartyTick.Ended, tick)
+    }
+
     @Test
     fun unreachableKeepsTheParty() {
         val tick = partyTick(null, sharing = false, send = { Result.success(Unit) }, fetch = { Result.failure(ShareError.Offline()) })

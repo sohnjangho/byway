@@ -8,8 +8,10 @@ import android.widget.LinearLayout
 import com.byway.service.CourseCatalog
 import com.byway.service.CourseStore
 import com.byway.service.MyDrives
+import com.byway.service.MyParty
 import com.byway.service.MyProfile
 import com.byway.service.Share
+import com.byway.service.ShareSync
 
 /**
  * 설정. 지도 보기, 달릴 때 켜고 끄는 것, 앱 정보, 내 기록 지우기를 한 화면에 둔다. 대화상자는 쓰지 않는다.
@@ -86,6 +88,8 @@ private fun clearMyData(context: Context) {
     MyDrives.clearRecords(context)
     CourseStore.clearAll(context)
     MyProfile.set(context, null)
+    MyParty.set(context, null)
     CourseCatalog.invalidate()
-    if (Share.available) Share.io.execute { Share.client(context).deleteMe() }
+    // 서버 자료는 서버에 닿을 때 지운다. 실패하면 다음에 공유 서버에 닿을 때 다시 지운다(ShareSync).
+    if (Share.available) ShareSync.deleteMeLater(context)
 }

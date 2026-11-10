@@ -233,6 +233,33 @@ class PartyRoutesTest {
         assertEquals(alongOf(car) - 1_000.0, following.getValue(first.members[2].id), 150.0)
     }
 
+    /** 끝난 파티를 다시 열면 위치 공유를 다시 동의해야 한다. */
+    @Test
+    fun endTurnsSharingOffForStarredMembers() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.newParty(a).code
+        client.star(a, code)
+        client.sharing(a, code, true)
+        client.end(a, code)
+        client.send("/v1/parties/$code/reopen", a, Json.encodeToString(Reopen(river.id)))
+        assertFalse(client.seen(a, code).members.single { it.me }.sharing)
+        assertEquals(HttpStatusCode.Conflict, client.at(a, code, river.path[10]).status)
+    }
+
+    /** 끝난 파티에서 별표를 끄면 내 닉네임·아바타를 지운다. 아무도 남지 않으면 파티도 지운다. */
+    @Test
+    fun unstarringAnEndedPartyForgetsMe() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.newParty(a).code
+        client.star(a, code)
+        client.end(a, code)
+        assertEquals(HttpStatusCode.NoContent, client.send("/v1/parties/$code/star", a, Json.encodeToString(Toggle(false)), "PUT").status)
+        assertEquals(HttpStatusCode.NotFound, client.view(a, code).status)
+        assertTrue(Json.decodeFromString<List<PartyView>>(client.authed("/v1/parties", a).bodyAsText()).isEmpty())
+    }
+
     @Test
     fun pinsCarryTheirAge() = testApplication {
         startParty()

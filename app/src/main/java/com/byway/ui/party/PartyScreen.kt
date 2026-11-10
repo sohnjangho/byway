@@ -17,6 +17,7 @@ import com.byway.core.share.PartyView
 import com.byway.core.share.Profile
 import com.byway.core.share.Visibility
 import com.byway.core.share.isCode
+import com.byway.service.CourseCatalog
 import com.byway.service.CourseStore
 import com.byway.service.MyParty
 import com.byway.service.MyProfile
@@ -68,7 +69,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
     lateinit var render: () -> Unit
 
     /** 파티 코스. 내가 올린 공유본이면 기기에는 내 코스(m-)로 있다. */
-    fun localCourse(id: String): Course? = kit.book.courses.firstOrNull { it.id == id }
+    fun localCourse(id: String): Course? = CourseCatalog.all(context).firstOrNull { it.id == id }
         ?: CourseStore.files(context).mine().firstOrNull { CourseStore.uploadOf(context, it.id) == id }
 
     fun call(work: () -> Result<*>, then: (Result<*>) -> Unit) {
@@ -82,12 +83,18 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         }
     }
 
+    var polling = false
     val poll = object : Runnable {
         override fun run() {
             val code = MyParty.code(context) ?: return
+            text.postDelayed(this, POLL_MS)
+            // 앞 요청이 아직 돌면 건너뛴다. 서버가 늦어도 요청이 쌓여 철회·나가기가 밀리지 않게 한다.
+            if (polling) return
+            polling = true
             Share.io.execute {
                 val tick = partyTick(null, sharing = false, send = { Result.success(Unit) }, fetch = { Share.client(context).party(code) })
                 text.post {
+                    polling = false
                     when (tick) {
                         is PartyTick.Seen -> {
                             val first = view == null || view?.members != tick.view.members || view?.open != tick.view.open
@@ -103,7 +110,6 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
                     }
                 }
             }
-            text.postDelayed(this, POLL_MS)
         }
     }
 
@@ -120,23 +126,25 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
         val profile = MyProfile.get(context)
         val hidden = CourseStore.files(context).shared().filter { it.visibility == Visibility.PARTY && !it.mine }.map { it.id }.toSet()
-        val choices = kit.book.courses.filter { !it.id.startsWith("m-") && it.id !in hidden }
-        var picked = choices.firstOrNull()?.id
+        val all = CourseCatalog.all(context)
+        val uploads = all.filter { it.id.startsWith("m-") }.mapNotNull { course -> CourseStore.uploadOf(context, course.id)?.let { course.id to it } }.toMap()
+        val choices = partyCourseChoices(all, hidden, uploads)
+        var picked = choices.firstOrNull()?.first
         picked?.let { id -> localCourse(id)?.let { drawing.show(it, emptyList()) } }
         text.addSpaced(label("파티 만들기", Dimens.SMALL, bold = true), Dimens.SPACE_6)
         text.addSpaced(label("내가 만든 코스는 먼저 공유하면 고를 수 있습니다", Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
-        text.addSpaced(chipRow(choices.map { Choice(it.id, it.name) }, picked, Dimens.SMALL) { id ->
+        text.addSpaced(chipRow(choices.map { Choice(it.first, it.second) }, picked, Dimens.SMALL) { id ->
             picked = id
             localCourse(id)?.let { drawing.show(it, emptyList()) }
         }, Dimens.SPACE_2)
-        text.addSpaced(primaryButton("이 코스로 파티 만들기") {
+        PARTY_JOIN_CONSENT.forEach { text.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+        text.addSpaced(primaryButton(CREATE_BUTTON) {
             val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
             val courseId = picked ?: return@primaryButton
             call({ Share.client(context).createParty(NewParty(courseId, "", me)) }) { result ->
                 (result.getOrNull() as? PartyView)?.let {
                     MyParty.set(context, it.code)
-                    view = it
-                    render()
+                    refreshNow()
                 }
             }
         }, Dimens.SPACE_3)
@@ -144,17 +152,16 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         val field = textField("파티 코드 6자리", 6, code = true)
         text.addSpaced(row().apply {
             addView(field, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
-            addView(smallButton("참여") {
+            addView(smallButton(JOIN_BUTTON) {
                 val me = profile ?: return@smallButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
                 val code = field.text.toString().trim().uppercase()
                 if (!isCode(code)) return@smallButton run { note.text = "코드는 숫자와 영문 6자리입니다" }
                 call({ Share.client(context).join(code, me) }) { result ->
                     (result.getOrNull() as? PartyView)?.let {
                         MyParty.set(context, it.code)
-                        view = it
                         // 파티 코스가 기기에 없으면 서버 목록에서 함께 받는다.
-                        ShareSync.refresh(context, force = true) { render() }
-                        render()
+                        ShareSync.refresh(context, force = true) { refreshNow() }
+                        refreshNow()
                     }
                 }
             })
@@ -174,8 +181,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
                             call({ Share.client(context).reopen(party.code, courseId) }) { result ->
                                 (result.getOrNull() as? PartyView)?.let {
                                     MyParty.set(context, it.code)
-                                    view = it
-                                    render()
+                                    refreshNow()
                                 }
                             }
                         })
@@ -226,7 +232,9 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         }, Dimens.SPACE_6)
         val start = primaryButton("내비에 코스 입히기") { course?.let { onStart(it.id) } ?: run { note.text = "코스를 받는 중입니다" } }
         val leave = quietButton(if (party.owner) "파티 끝내기" else "나가기") {
-            call({ if (party.owner) Share.client(context).end(code) else Share.client(context).leave(code) }) {
+            call({ if (party.owner) Share.client(context).end(code) else Share.client(context).leave(code) }) { result ->
+                // 실패하면 파티를 그대로 둔다. 이미 없는 파티(404)는 끝난 것으로 본다.
+                if (result.isFailure && (result.exceptionOrNull() as? ShareError.Http)?.code != 404) return@call
                 MyParty.set(context, null)
                 view = null
                 render()

@@ -23,6 +23,27 @@ object ShareSync {
     @Volatile var offline = !Share.available
         private set
 
+    private const val PREFS = "share"
+    private const val PENDING_DELETE = "pending_delete_me"
+
+    /**
+     * "내 데이터 지우기"의 서버 쪽. 지금 지워 보고, 서버에 닿지 못하면 표시를 남겨 다음 [refresh] 때 다시 지운다.
+     * 기기 토큰은 서버에서 지운 뒤에만 버린다. 먼저 버리면 서버 자료를 지울 길이 없어진다.
+     */
+    fun deleteMeLater(context: Context) {
+        val app = context.applicationContext
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(PENDING_DELETE, true).apply()
+        Share.io.execute { retryDeleteMe(app) }
+    }
+
+    private fun retryDeleteMe(app: Context) {
+        val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!prefs.getBoolean(PENDING_DELETE, false)) return
+        val result = Share.client(app).deleteMe()
+        val gone = result.isSuccess || (result.exceptionOrNull() as? ShareError.Http)?.code == 401
+        if (gone) prefs.edit().remove(PENDING_DELETE).apply()
+    }
+
     fun refresh(context: Context, force: Boolean = false, onChanged: () -> Unit) {
         if (!Share.available) return
         val now = SystemClock.elapsedRealtime()
@@ -30,6 +51,7 @@ object ShareSync {
         lastAt = now
         val app = context.applicationContext
         Share.io.execute {
+            retryDeleteMe(app)
             val client = Share.client(app)
             val files = CourseStore.files(app)
             val fresh = client.courses()

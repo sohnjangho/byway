@@ -94,7 +94,13 @@ fun Route.partyRoutes(server: Server) {
         val me = call.device(store) ?: return@put
         val on = call.receive<Toggle>().on
         val member = member(server, me) ?: return@put call.notFound()
-        store.putMember(member.copy(starred = on))
+        if (!on && store.party(member.partyCode)?.open == false) {
+            // 끝난 파티에서 별표를 끄면 그 파티에 남겨 둔 내 닉네임·아바타를 지운다(STAR_NOTE 약속).
+            store.deleteMember(member.partyCode, me)
+            if (store.members(member.partyCode).isEmpty()) store.deleteParty(member.partyCode)
+        } else {
+            store.putMember(member.copy(starred = on))
+        }
         call.respond(HttpStatusCode.NoContent)
     }
 
@@ -127,10 +133,13 @@ fun Route.partyRoutes(server: Server) {
     }
 }
 
-/** 파티가 끝나면 위치를 모두 지우고, 스스로 별표한 멤버만 남긴다. 아무도 없으면 파티도 지운다. */
+/**
+ * 파티가 끝나면 위치를 모두 지우고, 스스로 별표한 멤버만 남긴다. 아무도 없으면 파티도 지운다.
+ * 남는 멤버도 위치 공유를 끈다. 다시 열면 다시 동의해야 위치가 나간다.
+ */
 internal fun Server.endParty(code: String) {
     positions.clearParty(code)
-    store.members(code).filterNot { it.starred }.forEach { store.deleteMember(code, it.device) }
+    store.members(code).forEach { if (it.starred) store.putMember(it.copy(sharing = false)) else store.deleteMember(code, it.device) }
     if (store.members(code).isEmpty()) store.deleteParty(code) else store.closeParty(code)
 }
 

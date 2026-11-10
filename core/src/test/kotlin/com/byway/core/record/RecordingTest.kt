@@ -49,6 +49,17 @@ class RecordingTest {
         assertEquals(course, parseCourse(writeCourse(course)))
     }
 
+    /** 지하 주차장이나 첫 위치가 수백 m 튀어도 집(두 번째 점)이 남지 않는다. */
+    @Test
+    fun aJumpAtTheEndsDoesNotSaveHome() {
+        val home = GeoPoint(37.5, 127.0)
+        val bogus = GeoPoint(37.5 + 900.0 / 111_000.0, 127.0)
+        val path = listOf(bogus) + straight(8_000.0) + listOf(GeoPoint(37.5 - 900.0 / 111_000.0, 127.0 + 8_000.0 / 88_200.0))
+        val trimmed = trimEnds(path, 500.0)
+        assertTrue(trimmed.isNotEmpty())
+        assertTrue(trimmed.all { it.distanceTo(home) >= 499.0 && it.distanceTo(path[path.lastIndex - 1]) >= 499.0 })
+    }
+
     @Test
     fun jumpIsNotCounted() {
         val path = straight(4_000.0) + straight(3_000.0, startMeters = 7_000.0)

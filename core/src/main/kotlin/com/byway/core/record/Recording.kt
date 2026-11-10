@@ -41,9 +41,12 @@ fun nameProblem(name: String): String? {
     }
 }
 
-/** 길을 따라 처음과 끝에서 [meters]씩 안쪽에 있는 위치만 남긴다. */
-fun trimEnds(path: List<GeoPoint>, meters: Double): List<GeoPoint> {
-    val along = alongMeters(path)
+/**
+ * 길을 따라 처음과 끝에서 [meters]씩 안쪽에 있는 위치만 남긴다.
+ * 끊겼다 튄 사이는 거리에 넣지 않는다. 첫 위치가 수백 m 튀어도 그 한 칸이 자를 거리를 다 쓰지 못한다.
+ */
+fun trimEnds(path: List<GeoPoint>, meters: Double, jumpMeters: Double = RecordRules().jumpMeters): List<GeoPoint> {
+    val along = alongMeters(path, jumpMeters)
     val total = along.lastOrNull() ?: return emptyList()
     return path.filterIndexed { i, _ -> along[i] >= meters && total - along[i] >= meters }
 }
@@ -55,7 +58,7 @@ fun drivenMeters(path: List<GeoPoint>, jumpMeters: Double): Double =
 fun makeCourse(id: String, name: String, mood: String, fixes: List<GeoPoint>, rules: RecordRules = RecordRules()): Recorded {
     nameProblem(name)?.let { return Recorded.BadName(it) }
     require(mood in RECORD_MOODS) { "모르는 분위기: $mood" }
-    val trimmed = trimEnds(fixes, rules.trimMeters)
+    val trimmed = trimEnds(fixes, rules.trimMeters, rules.jumpMeters)
     val meters = drivenMeters(trimmed, rules.jumpMeters)
     if (meters < rules.minMeters) return Recorded.TooShort(meters)
     val path = thin(trimmed, rules.pointMeters)
@@ -63,8 +66,11 @@ fun makeCourse(id: String, name: String, mood: String, fixes: List<GeoPoint>, ru
     return Recorded.Made(Course(id = id, name = name.trim(), path = path, sections = sections, attribution = DRIVER_ATTRIBUTION))
 }
 
-private fun alongMeters(path: List<GeoPoint>): List<Double> =
-    path.indices.runningFold(0.0) { sum, i -> if (i == 0) sum else sum + path[i - 1].distanceTo(path[i]) }.drop(1)
+/** 처음부터의 누적 거리. [jumpMeters]보다 먼 칸은 더하지 않는다. */
+private fun alongMeters(path: List<GeoPoint>, jumpMeters: Double = Double.MAX_VALUE): List<Double> =
+    path.indices.runningFold(0.0) { sum, i ->
+        if (i == 0) sum else sum + path[i - 1].distanceTo(path[i]).takeIf { it <= jumpMeters }.let { it ?: 0.0 }
+    }.drop(1)
 
 /** 앞서 남긴 점에서 [meters] 넘게 떨어진 점만 남기고, 마지막 점은 늘 남긴다. */
 private fun thin(path: List<GeoPoint>, meters: Double): List<GeoPoint> {
