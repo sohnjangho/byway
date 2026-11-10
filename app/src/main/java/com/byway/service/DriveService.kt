@@ -21,6 +21,7 @@ import com.byway.core.drive.DriveHost
 import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.core.geo.GeoPoint
+import com.byway.core.record.RecordRules
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.feature.music.MusicFeature
 import com.byway.platform.ConnectedMusic
@@ -67,6 +68,10 @@ class DriveService : Service() {
     private var waitingFix: DriveEvent.CourseStarted? = null
     private val startWithoutFix = Runnable { begin(null) }
 
+    /** 기록 중인 길. 기록하지 않을 때는 null 이다. */
+    private var track: MutableList<GeoPoint>? = null
+    private var trackMeters = 0.0
+
     private val boardListener: (DriveState) -> Unit = { if (it.parked != parked) sendParked(it.parked) }
     private val stopLater = Runnable { stopSelf() }
     private val watch = object : Runnable {
@@ -102,7 +107,11 @@ class DriveService : Service() {
         }.also { it.start() }
         location = PleosLocation(this) { point ->
             DriveBoard.update { it.copy(position = point) }
-            if (waitingFix != null) begin(point) else dispatch(DriveEvent.LocationUpdated(point))
+            when {
+                track != null -> record(point)
+                waitingFix != null -> begin(point)
+                else -> dispatch(DriveEvent.LocationUpdated(point))
+            }
         }
         navi.connect { Log.w(TAG, "navi connect failed", it) }
         location.start()
@@ -116,6 +125,8 @@ class DriveService : Service() {
             ACTION_STOP -> endCourse()
             ACTION_ANSWER -> if (host != null) dispatch(DriveEvent.Answered(intent.getBooleanExtra(EXTRA_YES, false))) else stopSelf()
             ACTION_DISCARD -> discard()
+            ACTION_RECORD_START -> startRecording()
+            ACTION_RECORD_STOP -> stopRecording()
         }
         return START_NOT_STICKY
     }
@@ -172,6 +183,30 @@ class DriveService : Service() {
         engine = null
         forget()
         DriveBoard.update { it.copy(running = false, prompt = null, stale = false) }
+        main.postDelayed(stopLater, STOP_DELAY_MS)
+    }
+
+    /** 달린 길 기록(공유 설계 6-3). 코스를 달리는 중이면 시작하지 않는다. 위치는 끝낼 때까지 이 서비스 메모리에만 있다. */
+    private fun startRecording() {
+        if (host != null) return
+        main.removeCallbacks(stopLater)
+        track = mutableListOf()
+        trackMeters = 0.0
+        DriveBoard.update { it.copy(recording = Recording(0.0, 0), recorded = null) }
+    }
+
+    private fun record(point: GeoPoint) {
+        val fixes = track ?: return
+        fixes.lastOrNull()?.distanceTo(point)?.takeIf { it <= RecordRules().jumpMeters }?.let { trackMeters += it }
+        fixes += point
+        DriveBoard.update { it.copy(recording = Recording(trackMeters, fixes.size)) }
+    }
+
+    /** 기록을 끝내면 위치를 저장 화면으로 넘기고 서비스를 내린다. */
+    private fun stopRecording() {
+        val fixes = track ?: return stopSelf()
+        track = null
+        DriveBoard.update { it.copy(recording = null, recorded = fixes.toList()) }
         main.postDelayed(stopLater, STOP_DELAY_MS)
     }
 
@@ -271,6 +306,9 @@ class DriveService : Service() {
 
     override fun onDestroy() {
         main.removeCallbacksAndMessages(null)
+        // 기록 중에 서비스가 내려가도 그때까지의 길은 저장 화면으로 넘긴다.
+        track?.let { fixes -> DriveBoard.update { it.copy(recording = null, recorded = fixes.toList()) } }
+        track = null
         host = null
         engine = null
         DriveBoard.stopListening(boardListener)
@@ -310,6 +348,8 @@ class DriveService : Service() {
         private const val ACTION_STOP = "com.byway.STOP"
         private const val ACTION_ANSWER = "com.byway.ANSWER"
         private const val ACTION_DISCARD = "com.byway.DISCARD"
+        private const val ACTION_RECORD_START = "com.byway.RECORD_START"
+        private const val ACTION_RECORD_STOP = "com.byway.RECORD_STOP"
         private const val EXTRA_COURSE_ID = "courseId"
         private const val EXTRA_RESUME_FROM = "resumeFrom"
         private const val EXTRA_YES = "yes"
@@ -324,6 +364,15 @@ class DriveService : Service() {
 
         fun stop(context: Context) {
             context.startService(Intent(context, DriveService::class.java).setAction(ACTION_STOP))
+        }
+
+        /** 달린 길 기록을 시작한다. 기록 동의 화면의 버튼에서만 부른다. */
+        fun recordStart(context: Context) {
+            context.startForegroundService(Intent(context, DriveService::class.java).setAction(ACTION_RECORD_START))
+        }
+
+        fun recordStop(context: Context) {
+            context.startService(Intent(context, DriveService::class.java).setAction(ACTION_RECORD_STOP))
         }
 
         /** 주행 화면의 답 버튼. */

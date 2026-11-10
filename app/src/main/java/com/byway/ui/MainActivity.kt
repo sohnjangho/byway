@@ -14,6 +14,9 @@ import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import com.byway.ui.record.RecordingView
+import com.byway.ui.record.recordConsentScreen
+import com.byway.ui.record.saveRecordScreen
 import com.byway.service.MyDrives
 import com.byway.service.SavedRun
 
@@ -31,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     /** 이어가지 않기로 한 뒤에는 저장이 지워지는 동안에도 다시 묻지 않는다. */
     private var declined = false
     private var stale = false
+    private var pendingRecord = false
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
@@ -85,6 +89,16 @@ class MainActivity : AppCompatActivity() {
         if (DriveBoard.state.finished != null) DriveBoard.update { it.copy(finished = null) }
     }
 
+    /** 기록 동의 버튼을 누른 뒤에만 부른다. 위치 권한이 없으면 먼저 묻는다. */
+    private fun record() {
+        if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            DriveService.recordStart(this)
+        } else {
+            pendingRecord = true
+            requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
+        }
+    }
+
     private fun start(courseId: String, resumeFrom: Int = 0) {
         if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
             DriveService.start(this, courseId, resumeFrom)
@@ -102,6 +116,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
             pendingStart?.let { (courseId, resumeFrom) -> DriveService.start(this, courseId, resumeFrom) }
+            if (pendingRecord) DriveService.recordStart(this)
         }
     }
 
@@ -133,6 +148,7 @@ class MainActivity : AppCompatActivity() {
             place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal, saved)
         }
         (root.getChildAt(0) as? DriveScreen)?.show(state)
+        (root.getChildAt(0) as? RecordingView)?.show(state)
     }
 
     private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
@@ -171,6 +187,23 @@ class MainActivity : AppCompatActivity() {
                         render(DriveBoard.state)
                     },
                 )
+                screen == Screen.RecordConsent -> recordConsentScreen(
+                    this, kit,
+                    onAgree = {
+                        go(nav.copy(recordConsent = false))
+                        record()
+                    },
+                    onCancel = { go(nav.copy(recordConsent = false)) },
+                )
+                screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
+                screen == Screen.SaveRecord -> saveRecordScreen(
+                    this, kit, state.recorded.orEmpty(),
+                    onSaved = {
+                        DriveBoard.update { it.copy(recorded = null) }
+                        go(nav.toTab(Tab.MINE))
+                    },
+                    onDiscard = { DriveBoard.update { it.copy(recorded = null) } },
+                )
                 else -> waitingScreen(this)
             },
         )
@@ -196,6 +229,7 @@ class MainActivity : AppCompatActivity() {
             { nav = it },
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
+            onRecord = { go(nav.copy(recordConsent = true)) },
         )
     }
 

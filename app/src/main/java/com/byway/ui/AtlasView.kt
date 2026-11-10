@@ -23,6 +23,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.byway.core.course.AtlasSpot
+import com.byway.core.course.atlasSpotOf
 import com.byway.core.course.Box
 import com.byway.core.course.Course
 import com.byway.service.SceneCatalog
@@ -168,7 +169,8 @@ private class AtlasCanvas(context: Context) : View(context) {
         this.named = named
         this.night = night
         this.shade = shade
-        courses = list.mapNotNull { course -> scene.courses[course.id]?.let { course to it.atlas } }
+        // 미리 그린 자리가 없는 코스(직접 만든 코스, 공유 코스)는 같은 투영으로 자리를 계산한다.
+        courses = list.map { course -> course to (scene.courses[course.id]?.atlas ?: atlasSpotOf(course)) }
         Covers.loadAtlas(context, night) {
             ground = it
             invalidate()

@@ -7,6 +7,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.byway.core.course.Course
+import com.byway.service.CourseStore
 import com.byway.service.MyDrives
 
 /** 내 코스. 큰 지도에 내 코스 번호와 지명이 있고, 코스를 고르면 경로와 설명이 나온다. 기록은 이 차에만 저장된다. */
@@ -17,9 +18,11 @@ internal fun mineScreen(
     update: (Nav) -> Unit,
     onStart: (String) -> Unit,
     onBrowse: () -> Unit,
+    onRecord: () -> Unit,
 ): View = with(context) {
     val recent = MyDrives.recent(this)
-    val courses = kit.book.mine(MyDrives.saved(this), recent)
+    val made = CourseStore.files(this).mine().map { it.id }.toSet()
+    val courses = (kit.book.known(made) + kit.book.mine(MyDrives.saved(this), recent)).distinctBy { it.id }
     val third = kit.window == WindowClass.THIRD
     val full = kit.window == WindowClass.FULL
     var current = nav
@@ -44,7 +47,7 @@ internal fun mineScreen(
             slot.addView(courseCard(kit, course, recent, { showList() }, onStart), matchFrame())
         }
         fun pick(id: String) {
-            val camera = atlas.cameraFor(id) ?: return
+            val camera = atlas.cameraFor(id) ?: return showCourse(id)
             current = current.copy(picked = id, atlas = camera)
             update(current)
             atlas.focusOn(camera, id)
@@ -71,7 +74,7 @@ internal fun mineScreen(
             isClickable = true
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
-            addView(identity())
+            addView(identity(onRecord))
             addSpaced(totals(kit), Dimens.SPACE_4)
             addView(slot, fill().apply { topMargin = dp(Dimens.SPACE_4) })
         }
@@ -84,7 +87,7 @@ internal fun mineScreen(
     }
 }
 
-private fun Context.identity(): View = row().apply {
+private fun Context.identity(onRecord: () -> Unit): View = row().apply {
     val mark = label("나", Dimens.HEADING, bold = true).apply {
         gravity = Gravity.CENTER
         background = rounded(palette.bgPressed, Dimens.AVATAR_MEDIUM / 2)
@@ -95,6 +98,7 @@ private fun Context.identity(): View = row().apply {
         addView(label("기록은 이 차에만 저장됩니다", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
     }
     addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
+    addView(smallButton("길 기록하기", onRecord))
 }
 
 private fun Context.totals(kit: BrowseKit): View {
@@ -139,7 +143,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
             addView(number, LinearLayout.LayoutParams(dp(Dimens.PLACE_NUMBER), dp(Dimens.PLACE_NUMBER)).apply { marginEnd = dp(Dimens.SPACE_3) })
             val text = column().apply {
                 addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
-                addView(label(if (course.id in recent) "달린 코스" else "저장한 코스", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
+                addView(label(mineKind(course.id, recent), Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
         }
@@ -156,15 +160,22 @@ private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<Stri
     val edge = dp(Dimens.SPACE_6)
     setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
     val facts = kit.book.facts(course)
-    addView(label(if (course.id in recent) "달린 코스" else "저장한 코스", Dimens.LABEL).atMostLines(1))
+    addView(label(mineKind(course.id, recent), Dimens.LABEL).atMostLines(1))
     addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
-    addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
     addView(android.widget.Space(context), fill())
     val buttons = LinearLayout(context).apply {
         addView(quietButton("내 코스 전체", onBack), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
         addView(primaryButton("내비에 입히기") { onStart(course.id) }, LinearLayout.LayoutParams(0, WRAP, 1f))
     }
     addView(buttons)
+}
+
+/** 내 코스 목록의 작은 글. 직접 만든 코스는 id 가 m- 로 시작한다. */
+internal fun mineKind(id: String, recent: List<String>): String = when {
+    id.startsWith("m-") -> "내가 만든 코스"
+    id in recent -> "달린 코스"
+    else -> "저장한 코스"
 }
