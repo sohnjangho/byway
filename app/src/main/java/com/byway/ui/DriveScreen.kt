@@ -39,14 +39,15 @@ internal class DriveScreen(
     private val full = window == WindowClass.FULL
 
     // 넓은 창에서 list 는 아래에 사진 띠가 없으니 출처를 아래로 내린다는 뜻이다.
-    // 1/3 창은 글 칸에 자리를 내느라 지도 칸이 짧아서, 홈의 사진 띠 화면과 같이 장면을 줄여 경로를 다 담는다.
-    private val sceneView = SceneView(context, window, list = !third, hintOnMap = false, strip = third)
+    // 1/3 창은 지도가 주인공이라 칸을 키우고(752dp) 줄이지 않은 장면에 경로를 다 담는다.
+    private val sceneView = SceneView(context, window, list = !third, hintOnMap = false)
     private val backdrop = DriveBackdrop(context, window)
     private val where = context.label("", Dimens.LABEL, colors.inkSecondary).tabular().fixedLines(1)
-    private val section = context.label("", Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
-    private val remaining = context.label("", Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
+    private val section = context.label("", if (third) Dimens.THIRD_DRIVE_SECTION else Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
+    private val remaining = context.label("", if (third) Dimens.THIRD_DRIVE_NUMBER else Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
     private val bar = context.sectionBar(book, course)
-    private val spoken = context.label("", Dimens.DRIVE_LINE).fixedLines(2)
+    // 1/3 칸은 지도에 자리를 내느라 안내 문구를 한 줄로 둔다. 차 안내는 가운데 내비가 맡는다.
+    private val spoken = context.label("", if (third) Dimens.BODY else Dimens.DRIVE_LINE).fixedLines(if (third) 1 else 2)
     private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
     private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
@@ -86,11 +87,11 @@ internal class DriveScreen(
         } else {
             context.column().apply {
                 addView(info)
-                addView(near, fill().apply { topMargin = context.dp(Dimens.SPACE_6) })
+                addView(near, fill().apply { topMargin = context.dp(if (third) Dimens.SPACE_3 else Dimens.SPACE_6) })
             }
         }
         val edge = context.dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
-        side.setPadding(edge, if (third) context.dp(Dimens.SPACE_2) else edge, edge, context.dp(Dimens.SPACE_6))
+        side.setPadding(edge, if (third) context.dp(Dimens.SPACE_2) else edge, edge, context.dp(if (third) Dimens.SPACE_4 else Dimens.SPACE_6))
         addView(side, if (third) {
             LayoutParams(MATCH, MATCH).apply { topMargin = context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) }
         } else {
@@ -99,15 +100,15 @@ internal class DriveScreen(
     }
 
     private fun infoColumn(): View = context.column().apply {
-        addView(context.label(course.name, Dimens.SIDE_NAME, bold = true).atMostLines(1))
+        addView(context.label(course.name, if (third) Dimens.THIRD_DRIVE_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
         if (!third) addSpaced(context.pickRow(course.tags), Dimens.SPACE_2)
         addSpaced(context.row().apply {
             addView(section, LinearLayout.LayoutParams(0, WRAP, 1f))
             addView(where)
         }, if (third) Dimens.SPACE_2 else Dimens.SPACE_6)
         addView(distanceRow())
-        addView(bar, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.DRIVE_BAR_HEIGHT)).apply { topMargin = context.dp(Dimens.SPACE_3) })
-        addSpaced(spoken, Dimens.SPACE_4)
+        addView(bar, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.DRIVE_BAR_HEIGHT)).apply { topMargin = context.dp(if (third) Dimens.SPACE_2 else Dimens.SPACE_3) })
+        addSpaced(spoken, if (third) Dimens.SPACE_2 else Dimens.SPACE_4)
     }
 
     private fun distanceRow(): View = LinearLayout(context).apply {

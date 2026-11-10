@@ -52,7 +52,8 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass) 
 
     override fun onDraw(canvas: Canvas) {
         val density = resources.displayMetrics.density
-        val band = sceneFadeOnScreen(window, width / density, height / density, strip = window == WindowClass.THIRD)
+        // 1/3 주행 지도는 사진 띠가 없어 줄이지 않은 장면을 쓴다. 배경도 그 장면의 띠에서 만난다.
+        val band = sceneFadeOnScreen(window, width / density, height / density)
         val from = band.from * density
         val to = band.to * density
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)

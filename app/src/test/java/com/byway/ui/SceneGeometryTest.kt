@@ -122,11 +122,12 @@ class SceneGeometryTest {
         assertEquals(806f, band.to)
     }
 
+    /** 1/3 주행 화면은 사진 띠가 없어 줄이지 않은 장면을 쓴다. 배경은 그 장면이 옅어지는 띠에서 지도와 만난다. */
     @Test
     fun theDriveBackdropMeetsTheMapBelowItInTheThirdWindow() {
-        val band = sceneFadeOnScreen(WindowClass.THIRD, 840f, 1210f, strip = true)
+        val band = sceneFadeOnScreen(WindowClass.THIRD, 840f, 1210f)
         assertEquals(true, band.vertical)
-        assertEquals(316f, band.from)
-        assertEquals(576f, band.to)
+        assertEquals(449f, band.from)
+        assertEquals(737f, band.to)
     }
 }

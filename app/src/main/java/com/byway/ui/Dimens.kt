@@ -59,8 +59,13 @@ internal object Dimens {
     const val SIDE_INFO_WIDTH = 540
     const val SIDE_BOTTOM = 152
     const val SIDE_NAME = 52f
-    const val THIRD_SCENE_HEIGHT = 732
-    const val THIRD_DRIVE_SCENE_HEIGHT = 580
+    /** 1/3 칸은 지도가 주인공이다. 홈 장면과 주행 지도를 키우고 아래 글을 줄인다(화면 다듬기 설계 2절). */
+    const val THIRD_SCENE_HEIGHT = 800
+    const val THIRD_DRIVE_SCENE_HEIGHT = 752
+    const val THIRD_NAME = 40f
+    const val THIRD_DRIVE_NAME = 36f
+    const val THIRD_DRIVE_SECTION = Tokens.TEXT_DRIVE_LINE
+    const val THIRD_DRIVE_NUMBER = 72f
     const val DRIVE_PHOTO_NIGHT = 0.25f
     const val DRIVE_PHOTO_DAY = 0.18f
     const val SCENE_CREDIT_BOTTOM = 176

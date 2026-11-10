@@ -11,8 +11,8 @@ private const val SCENE_HEIGHT = 1210f
 private const val THIRD_WIDTH = 1683f
 private const val THIRD_HEIGHT = 847f
 private const val THIRD_TOP = 26f
-private const val STRIP_WIDTH = 1250f
-private const val STRIP_HEIGHT = 629f
+private const val STRIP_WIDTH = 1430f
+private const val STRIP_HEIGHT = 720f
 private const val LIST_WIDTH = 1394f
 private const val LIST_HEIGHT = 702f
 private const val LIST_TOP = 70f
@@ -40,7 +40,7 @@ fun sceneFade(window: WindowClass, list: Boolean = false, strip: Boolean = false
     WindowClass.FULL -> FadeBand(false, 820f, 1170f, MAP_UNDER_TEXT)
     WindowClass.THIRD -> when {
         list -> FadeBand(true, 309f, 533f, 1f)
-        strip -> FadeBand(true, 290f, 550f, 1f)
+        strip -> FadeBand(true, 332f, 630f, 1f)
         else -> FadeBand(true, 423f, 711f, 1f)
     }
 }
