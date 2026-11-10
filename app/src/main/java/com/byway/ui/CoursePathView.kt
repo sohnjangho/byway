@@ -42,6 +42,9 @@ class CoursePathView(context: Context) : View(context) {
     /** 파티 확대 지도의 범위와 범위 밖 먼 멤버 수. 범위가 없으면 코스 전체를 맞춘다. */
     private var zoomed: GeoFrame? = null
     private var far = 0
+
+    /** 확대 지도 오른쪽 아래에 적는 출처 줄(코스 선, 배경 사진). */
+    var zoomCredits: List<String> = emptyList()
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -143,7 +146,7 @@ class CoursePathView(context: Context) : View(context) {
         scale.strokeWidth = density * 3
         canvas.drawLine(edge, y, edge + length, y, scale)
         write(scaleLabel(meters), edge, y - size * 0.6f, colors.ink, Paint.Align.LEFT)
-        course?.attribution?.takeIf { it.isNotBlank() }?.let { write(it, width - edge, y, colors.inkSecondary, Paint.Align.RIGHT) }
+        zoomCredits.reversed().forEachIndexed { i, line -> write(line, width - edge, y - i * size * 1.3f, colors.inkSecondary, Paint.Align.RIGHT) }
     }
 
     /** 위경도 범위를 칸 안에 맞추는 좌표 변환. 코스 전체는 여백 10%로, 확대 범위는 여백 없이 맞춘다. */

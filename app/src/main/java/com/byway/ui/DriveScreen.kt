@@ -46,8 +46,8 @@ internal class DriveScreen(
     private val section = context.label("", if (third) Dimens.THIRD_DRIVE_SECTION else Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
     private val remaining = context.label("", if (third) Dimens.THIRD_DRIVE_NUMBER else Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
     private val bar = context.sectionBar(book, course)
-    // 1/3 칸은 지도에 자리를 내느라 안내 문구를 한 줄로 둔다. 차 안내는 가운데 내비가 맡는다.
-    private val spoken = context.label("", if (third) Dimens.BODY else Dimens.DRIVE_LINE).fixedLines(if (third) 1 else 2)
+    // 1/3 칸은 지도에 자리를 내느라 안내 문구를 한 단계 작게 둔다. 행동을 알리는 문구가 잘리지 않게 두 줄은 남긴다.
+    private val spoken = context.label("", if (third) Dimens.BODY else Dimens.DRIVE_LINE).fixedLines(2)
     private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
     private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
@@ -55,10 +55,9 @@ internal class DriveScreen(
 
     /**
      * 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다.
-     * 흰 바탕 대신 코스 분위기(구간 색과 흐린 코스 사진) 위에 그린다(화면 다듬기 설계 4절).
+     * 확대 중에는 장면 지도를 숨기고 글 칸 배경을 화면 전체로 넓혀, 그 위에 바로 그린다. 배경이 하나라 이음매가 없다(화면 다듬기 설계 4절).
      */
-    private val zoomView = CoursePathView(context)
-    private val zoomLayer = MoodLayer(context, window).hold(zoomView).apply { visibility = INVISIBLE }
+    private val zoomView = CoursePathView(context).apply { visibility = INVISIBLE }
     private var zoomFrame: GeoFrame? = null
 
     init {
@@ -71,14 +70,15 @@ internal class DriveScreen(
         sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
         val style = currentMapStyle()
         // 지도 출처 한 줄, 글 칸 배경에 코스 사진을 흐리게 깔면 그 사진 출처 한 줄이다.
-        sceneView.setCredit(listOfNotNull(mapCreditLine(style), course.sceneryCredit.takeIf { hasPhoto }?.let { photoCreditLine(it, changed = true) }).joinToString("\n"))
+        sceneView.setCredit(mapCreditLine(style))
+        sceneView.setBackdropCredit(moodPhotoCredit(course, hasPhoto))
+        zoomView.zoomCredits = listOfNotNull(course.attribution.takeIf { it.isNotBlank() }, moodPhotoCredit(course, hasPhoto))
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth
         })
         zoomView.show(course, emptyList())
-        zoomLayer.show(course)
-        addView(zoomLayer, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
+        addView(zoomView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third) leftMargin = sideWidth
         })
 
@@ -140,7 +140,6 @@ internal class DriveScreen(
         section.text = current.name
         section.setTextColor(colors.moodColor(current.mood))
         backdrop.setTint(colors.airColor(current.mood))
-        zoomLayer.setTint(colors.airColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
         spoken.text = driveLine(state.line, state.stale)
@@ -161,7 +160,9 @@ internal class DriveScreen(
         val zoom = me?.takeIf { zoomView.width > 0 && zoomView.height > 0 }
             ?.let { partyFrame(it, pins.map { pin -> pin.point }, zoomView.width.toDouble() / zoomView.height, zoomFrame) }
         zoomFrame = zoom?.frame
-        zoomLayer.visibility = if (zoom == null) INVISIBLE else VISIBLE
+        zoomView.visibility = if (zoom == null) INVISIBLE else VISIBLE
+        sceneView.visibility = if (zoom == null) VISIBLE else INVISIBLE
+        backdrop.full = zoom != null
         if (zoom == null) return
         zoomView.zoom(zoom.frame, zoom.far)
         zoomView.moveTo(me)

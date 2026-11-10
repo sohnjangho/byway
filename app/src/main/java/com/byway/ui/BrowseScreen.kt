@@ -44,6 +44,13 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
         val picked = nav.picked?.takeIf { id -> shown.any { it.id == id } }
         atlas.show(Tab.BROWSE, kit.window, shown, picked, nav.atlas, night, shade)
         addView(atlas, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_ATLAS_HEIGHT) else MATCH))
+        // 넓은 창에서 코스를 고르면 글 칸 뒤에 그 코스의 분위기(구간 색과 흐린 사진)를 깐다. 지도 가림과 같은 띠에서 옅어지고,
+        // 84%로 깔아 지도가 글 칸 아래에 16%로 비치는 것은 그대로다(화면 다듬기 설계 1·4절).
+        val mood = DriveBackdrop(context, kit.window, band = FadeBand(false, panelEnd - Dimens.SPACE_8.toFloat(), panelEnd + 50f, 0f)).apply {
+            alpha = 1f - MAP_UNDER_TEXT
+            visibility = View.GONE
+        }
+        if (!third) addView(mood, matchFrame())
 
         val detail = primaryButton("") {}
         val cards = mutableMapOf<String, View>()
@@ -51,8 +58,15 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             cards.forEach { (key, card) -> card.background = cardFace(key == id) }
             val course = shown.firstOrNull { it.id == id }
             detail.visibility = if (course == null) View.GONE else View.VISIBLE
-            // 코스를 고르면 글 칸이 그 코스의 분위기 색으로 바뀐다(화면 다듬기 설계 4절).
-            atlas.setPanelTint(course?.let { moodTint(it, 0, palette) })
+            if (!third) {
+                mood.visibility = if (course == null) View.GONE else View.VISIBLE
+                atlas.setShadeOn(course == null)
+                mood.clearPicture()
+                val photo = course != null && canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
+                course?.let { mood.setTint(moodTint(it, 0, palette)) }
+                if (photo && course != null) Covers.loadScenery(context, course) { if (mood.visibility == View.VISIBLE) mood.setPicture(it) }
+                atlas.setPhotoCredit(course?.let { moodPhotoCredit(it, photo) })
+            }
             if (course != null) {
                 detail.text = "${course.name} 자세히 보기"
                 detail.setOnClickListener { kit.onCourse(course) }

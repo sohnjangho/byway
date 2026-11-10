@@ -70,7 +70,9 @@ internal object Dimens {
     const val DRIVE_PHOTO_DAY = 0.18f
     const val SCENE_CREDIT_BOTTOM = 176
     const val LIST_HINT_BOTTOM = 96
-    const val SCENE_CREDIT_WIDTH = 760
+    const val SCENE_CREDIT_WIDTH = 820
+    /** 1/3 홈 출처 폭. 줄인 장면의 경로 왼쪽 빈자리에 든다(SceneGeometryTest). */
+    const val THIRD_CREDIT_WIDTH = 288
 
     /** 1/3 창에서 장면을 줄였을 때 경로 왼쪽에 남는 자리의 폭. */
     const val EFFECT_WIDTH = 920

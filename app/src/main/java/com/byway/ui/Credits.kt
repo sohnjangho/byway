@@ -12,8 +12,15 @@ private const val TERRAIN = "Terrain Light · Data © OpenStreetMap contributors
  */
 fun mapCreditLine(style: MapStyle, withFrames: Boolean = false): String = when (style) {
     MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors"
-    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors" + if (withFrames) " · 사진 띠 Sentinel-2 cloudless © EOX" else ""
+    MapStyle.MAP -> if (withFrames) "Terrain Light, Sentinel-2 cloudless © EOX · © OpenStreetMap contributors" else "Terrain Light © EOX · © OpenStreetMap contributors"
 }
+
+/**
+ * 지도 칩의 글. 보이는 지도의 출처([map])는 늘 적는다. 풍경 사진으로 넘겨도 글 칸 아래에 지도가 보이기 때문이다.
+ * 흐린 배경 사진이 깔려 있으면 그 출처([backdrop], 변형 포함)를, 풍경 사진만 보이면 그 출처([photo])를 둘째 줄에 적는다.
+ */
+fun creditText(map: String, backdrop: String?, photo: String?, onPhoto: Boolean): String =
+    listOfNotNull(map, (if (onPhoto) backdrop ?: photo else backdrop)?.takeIf { it.isNotBlank() }).joinToString("\n")
 
 private val PHOTO_CREDIT = Regex("""^(?:사진\s*:?\s*)?(.+?)\s*\(([^,)]+)(?:,[^)]*)?\)\s*$""")
 

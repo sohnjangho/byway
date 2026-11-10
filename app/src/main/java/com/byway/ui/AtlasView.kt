@@ -20,6 +20,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.widget.TextView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.byway.core.course.AtlasSpot
@@ -44,8 +45,8 @@ private const val THIRD_BOTTOM_FADE = 120f
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
 internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float, val veil: Float = 1f)
 
-/** 넓은 창의 글 칸 쪽 가림. 장면 지도와 같은 띠로 글 칸 아래에 지도를 옅게 깐다([panelEnd]는 글 칸 끝, dp). */
-internal fun panelShade(panelEnd: Float): AtlasShade = AtlasShade(false, panelEnd - 300f, panelEnd + 50f, veil = 1f - MAP_UNDER_TEXT)
+/** 넓은 창의 글 칸 쪽 가림. 장면 지도와 같은 띠로 글 칸 아래에 지도를 옅게 깐다([panelEnd]는 글 칸 끝, dp). 글자 아래는 16%를 넘지 않는다. */
+internal fun panelShade(panelEnd: Float): AtlasShade = AtlasShade(false, panelEnd - Dimens.SPACE_8, panelEnd + 50f, veil = 1f - MAP_UNDER_TEXT)
 
 /** 한국 지도(일반 지도나 위성). 코스를 고르면 그 자리로 확대되고 코스 장면이 제자리에 겹친다. */
 @SuppressLint("ViewConstructor")
@@ -74,8 +75,15 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
 
     fun cameraFor(courseId: String): AtlasCamera? = canvasView.cameraFor(courseId)
 
-    /** 글 칸 쪽 가림의 색. 고른 코스가 있으면 그 코스의 분위기 색이고, 없으면 바탕색이다(화면 다듬기 설계 4절). */
-    fun setPanelTint(color: Int?) = canvasView.setPanelTint(color)
+    /** 글 칸 쪽 가림을 켜고 끈다. 둘러보기에서 코스를 고르면 그 코스의 분위기 배경이 가림을 대신한다(화면 다듬기 설계 4절). */
+    fun setShadeOn(on: Boolean) = canvasView.setShadeOn(on)
+
+    private var creditView: TextView? = null
+
+    /** 분위기 배경에 흐린 코스 사진을 깔면 그 출처를 지도 출처 아래 줄에 적는다. */
+    fun setPhotoCredit(line: String?) {
+        creditView?.text = creditText(mapCreditLine(currentMapStyle()), line, null, onPhoto = false)
+    }
 
     fun focusOn(camera: AtlasCamera, chosen: String?) {
         canvasView.setChosen(chosen)
@@ -104,6 +112,7 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
             setPadding(context.dp(Dimens.SPACE_2), inset, context.dp(Dimens.SPACE_2), inset)
             maxWidth = context.dp(Dimens.ATLAS_CREDIT_WIDTH)
         }
+        creditView = credit
         addView(credit, LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
             marginEnd = context.dp(Dimens.SPACE_6)
             bottomMargin = context.dp(Dimens.SPACE_2)
@@ -137,11 +146,11 @@ private class AtlasCanvas(context: Context) : View(context) {
 
     /** 1/3 칸이면 지도 칸 위아래를 칸 폭 전체로 바탕색에 녹인다. 좌우는 칸 끝에 붙어 틀이 없다. */
     private var third = false
-    private var panelTint: Int? = null
+    private var shadeOn = true
 
-    fun setPanelTint(color: Int?) {
-        if (color == panelTint) return
-        panelTint = color
+    fun setShadeOn(on: Boolean) {
+        if (on == shadeOn) return
+        shadeOn = on
         invalidate()
     }
     private var chosen: String? = null
@@ -276,7 +285,7 @@ private class AtlasCanvas(context: Context) : View(context) {
         canvas.restore()
         drawLabels(canvas, s, close)
         drawPins(canvas, s, close)
-        shade?.let { drawShade(canvas, it) }
+        shade?.takeIf { shadeOn }?.let { drawShade(canvas, it) }
         if (third) drawThirdEdges(canvas)
     }
 
@@ -408,8 +417,7 @@ private class AtlasCanvas(context: Context) : View(context) {
         val w = width.toFloat()
         val solid = shade.solid * density
         val clear = shade.clear * density
-        val panel = panelTint ?: colors.bg
-        val base = Color.argb((shade.veil * 255).toInt(), Color.red(panel), Color.green(panel), Color.blue(panel))
+        val base = Color.argb((shade.veil * 255).toInt(), Color.red(colors.bg), Color.green(colors.bg), Color.blue(colors.bg))
         val none = Color.argb(0, Color.red(base), Color.green(base), Color.blue(base))
         shadePaint.shader = if (shade.fromRight) {
             LinearGradient(w - solid, 0f, w - clear, 0f, base, none, Shader.TileMode.CLAMP)

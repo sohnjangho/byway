@@ -58,11 +58,13 @@ internal fun homeScreen(
         setBackgroundColor(palette.bg)
         val hasScenery = canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
         // 고른 코스의 분위기를 글 칸 뒤에 깐다. 지도가 짙어지는 띠에서 옅어져 지도와 이어진다(화면 다듬기 설계 4절).
-        val backdrop = DriveBackdrop(context, kit.window).apply { setTint(moodTint(course, 0, palette)) }
-        if (hasScenery) Covers.loadScenery(context, course, backdrop::setPicture)
+        // 1/3 칸은 글 칸이 좁고 출처 둘 자리가 없어 색만 깐다. 넓은 창은 흐린 코스 사진도 깔고 그 출처를 지도 칩에 적는다.
+        val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
+        val backdrop = DriveBackdrop(context, kit.window, strip = third && hasFrames).apply { setTint(moodTint(course, 0, palette)) }
+        val backdropPhoto = hasScenery && !third
+        if (backdropPhoto) Covers.loadScenery(context, course, backdrop::setPicture)
         addView(backdrop, matchFrame())
         val control = sceneryControl(kit.window, home = true)
-        val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
         val sceneView = SceneView(context, kit.window, hintOnMap = control == SceneryControl.CHIP, strip = third && hasFrames)
         val sceneryButton = if (hasScenery && control == SceneryControl.BUTTON) compactButton("풍경") { sceneView.togglePhoto() } else null
         sceneView.onPhoto = { shown -> sceneryButton?.text = if (shown) "경로" else "풍경" }
@@ -90,7 +92,8 @@ internal fun homeScreen(
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
         // 1/3 창은 사진 띠 때문에 지도 칸이 좁다. 긴 출처가 경로를 가리지 않게 짧게 적는다.
-        sceneView.setCredit(listOfNotNull(mapCreditLine(currentMapStyle(), withFrames = hasFrames), moodPhotoCredit(course, hasScenery)).joinToString("\n"))
+        sceneView.setCredit(mapCreditLine(currentMapStyle(), withFrames = hasFrames))
+        sceneView.setBackdropCredit(moodPhotoCredit(course, backdropPhoto))
         // 훑어보기 자료의 장소 번호는 도구가 매긴 것이다. 목록의 번호로 바꿔서 쓴다.
         fun nearNo(frame: FrameInfo): Int? = frame.placeNo?.let { shownNo[it] }
         fun nearName(frame: FrameInfo): String? = nearNo(frame)?.let { no -> places.firstOrNull { it.no == no }?.name }
@@ -193,8 +196,9 @@ private fun Context.infoColumn(
     // 1/3 칸은 지도가 주인공이라 숫자와 예상 시간을 작게, 줄 사이를 좁게 둔다(화면 다듬기 설계 2절).
     val gap = if (third) Dimens.SPACE_2 else Dimens.SPACE_3
     addSpaced(ChoiceRow(context, choice, if (third) Dimens.SMALL else Dimens.HEADING), gap)
-    addSpaced(label(sceneryLine(facts.moodShare, course.tags.themes, viewCount(course)), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
-    addSpaced(label("적합도·즐거움·소요 시간은 예상 · 교통 상황 제외", Dimens.LABEL, palette.inkSecondary).atMostLines(1), gap)
+    sceneryNotes(sceneryLine(facts.moodShare, course.tags.themes, viewCount(course)), third).forEachIndexed { i, line ->
+        addSpaced(label(line, Dimens.LABEL, if (i == 0) palette.ink else palette.inkSecondary).atMostLines(1), if (i == 0) Dimens.SPACE_2 else gap)
+    }
     addSpaced(paceRow(pace, withNotes = !third, inline = third), Dimens.SPACE_2)
 }
 

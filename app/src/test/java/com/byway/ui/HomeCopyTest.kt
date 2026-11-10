@@ -173,4 +173,11 @@ class HomeCopyTest {
         assertEquals(listOf("1시간 10분", "1시간 30분", "3시간 15분"), cells.map { it.time })
         assertEquals(listOf("쉬지 않고", "경치 좋은 곳 두 번", "명소와 식사까지"), cells.map { it.note })
     }
+
+    /** 1/3 칸은 경치 줄과 예상치 안내를 한 줄로 합쳐 버튼 줄까지 화면에 들게 한다. 넓은 창은 두 줄이다. */
+    @Test
+    fun theThirdWindowMergesTheNoteIntoTheSceneryLine() {
+        assertEquals(listOf("바다 90%", "적합도·즐거움·소요 시간은 예상 · 교통 상황 제외"), sceneryNotes("바다 90%", third = false))
+        assertEquals(listOf("바다 90% · 예상치, 교통 제외"), sceneryNotes("바다 90%", third = true))
+    }
 }

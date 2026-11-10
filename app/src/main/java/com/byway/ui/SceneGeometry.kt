@@ -32,12 +32,13 @@ fun sceneRect(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = f
 const val MAP_UNDER_TEXT = 0.16f
 
 /**
- * 지도가 글 칸과 만나는 띠. 넓은 창은 지도가 글 칸 아래까지 옅게 깔리고, 글 칸 끝 300dp 앞에서 짙어져 칸 끝 바로 뒤에서 다 드러난다(화면 다듬기 설계 1절).
+ * 지도가 글 칸과 만나는 띠. 넓은 창은 지도가 글 칸 아래 전체에 16%로 옅게 깔리고, 글자 오른쪽 끝(글 칸 끝 − SPACE_8)부터 짙어져
+ * 칸 끝 50dp 뒤에서 다 드러난다(화면 다듬기 설계 1절). 글자 아래는 어디서도 16%를 넘지 않아 낮 위성 지도에서도 읽힌다.
  * 1/3 창은 지도가 아래로 길게 옅어져 글 칸과의 경계가 보이지 않는다. 값은 장면 그림 안의 좌표다.
  */
 fun sceneFade(window: WindowClass, list: Boolean = false, strip: Boolean = false): FadeBand = when (window) {
-    WindowClass.TWO -> FadeBand(false, 1180f, 1530f, MAP_UNDER_TEXT)
-    WindowClass.FULL -> FadeBand(false, 820f, 1170f, MAP_UNDER_TEXT)
+    WindowClass.TWO -> FadeBand(false, 1448f, 1530f, MAP_UNDER_TEXT)
+    WindowClass.FULL -> FadeBand(false, 1088f, 1170f, MAP_UNDER_TEXT)
     WindowClass.THIRD -> when {
         list -> FadeBand(true, 309f, 533f, 1f)
         strip -> FadeBand(true, 332f, 630f, 1f)

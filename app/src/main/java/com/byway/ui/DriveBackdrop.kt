@@ -19,10 +19,23 @@ private const val DOUBLINGS = 2
 /**
  * 주행 화면 글 칸의 배경. 구간 색 위에 코스 사진을 흐리고 옅게 깔아 코스의 분위기를 낸다. 사진이 없는 코스는 구간 색만 쓴다.
  * 지도가 나타나는 자리에서 옅어져 지도와 이어진다. 움직이지 않고 구간이 바뀌면 그 자리에서 색만 바뀐다.
- * [full]이면 지도와 잇지 않고 화면 전체에 깐다. 파티·요약·안내 화면과 파티 확대 지도의 바탕이다(화면 다듬기 설계 4절).
+ * [full]이면 지도와 잇지 않고 화면 전체에 깐다. 파티·요약·안내 화면과, 확대 지도가 보이는 주행 화면의 바탕이다(화면 다듬기 설계 4절).
+ * [strip]은 사진 띠 때문에 줄인 장면(1/3 홈)의 띠를 쓴다. [band]를 주면 그 띠(화면 dp)에서 옅어진다(둘러보기 글 칸).
  */
 @SuppressLint("ViewConstructor")
-internal class DriveBackdrop(context: Context, private val window: WindowClass, private val full: Boolean = false) : View(context) {
+internal class DriveBackdrop(
+    context: Context,
+    private val window: WindowClass,
+    full: Boolean = false,
+    private val strip: Boolean = false,
+    private val band: FadeBand? = null,
+) : View(context) {
+    var full: Boolean = full
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
     private var tint = context.palette.bg
     private var soft: Bitmap? = null
     private val photo = Paint(Paint.FILTER_BITMAP_FLAG).apply {
@@ -62,8 +75,7 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass, 
             return
         }
         val density = resources.displayMetrics.density
-        // 1/3 주행 지도는 사진 띠가 없어 줄이지 않은 장면을 쓴다. 배경도 그 장면의 띠에서 만난다.
-        val band = sceneFadeOnScreen(window, width / density, height / density)
+        val band = band ?: sceneFadeOnScreen(window, width / density, height / density, strip = strip)
         val from = band.from * density
         val to = band.to * density
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)

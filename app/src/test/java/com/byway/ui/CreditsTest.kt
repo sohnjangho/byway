@@ -80,7 +80,8 @@ class CreditsTest {
         val room = 841 - 48
         val width = { text: String -> text.length * Dimens.CREDIT * 0.55f }
         MapStyle.entries.forEach { assertTrue(width(mapCreditLine(it)) <= room) }
-        assertTrue(width(mapCreditLine(MapStyle.MAP, withFrames = true)) <= 2 * room)
+        // 사진 띠가 있는 화면도 EOX 를 한 번만 적어 한 줄에 든다.
+        assertTrue(width(mapCreditLine(MapStyle.MAP, withFrames = true)) <= room)
         assertTrue(width("사진 H. Y. Shin 000 · CC0") <= room)
     }
 
@@ -94,5 +95,15 @@ class CreditsTest {
     @Test
     fun theMapSourceIsListedWithALinkBack() {
         assertTrue(lines.any { it.contains("Terrain Light") && it.contains("maps.eox.at") })
+    }
+
+    /** 지도 칩은 보이는 지도의 출처를 늘 적는다. 풍경 사진으로 넘겨도 글 칸 아래 지도가 보이므로 지도 줄을 남긴다. 흐린 배경 사진이 있으면 그 출처(변형)를 쓴다. */
+    @Test
+    fun theChipAlwaysNamesTheVisibleMapAndPhoto() {
+        assertEquals("지도", creditText("지도", null, null, onPhoto = false))
+        assertEquals("지도\n배경", creditText("지도", "배경", "사진", onPhoto = false))
+        assertEquals("지도\n사진", creditText("지도", null, "사진", onPhoto = true))
+        assertEquals("지도\n배경", creditText("지도", "배경", "사진", onPhoto = true))
+        assertEquals("지도", creditText("지도", null, "", onPhoto = true))
     }
 }

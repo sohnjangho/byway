@@ -9,6 +9,7 @@
 .t-body { font-size: 28px; line-height: 36px; font-weight: 400; }
 .t-small { font-size: 26px; line-height: 34px; font-weight: 400; }
 .t-label { font-size: 24px; line-height: 28px; font-weight: 400; }
+.t-credit { font-size: 20px; line-height: 26px; font-weight: 400; }
 .t-brand { font-size: 40px; line-height: 52px; font-weight: 700; }
 /* 에움길 화면 공통 모양.
    색은 tokens.css의 var(--...)만 쓰고, 글자 크기는 화면에서 .t-* 클래스로 정한다.
