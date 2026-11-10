@@ -74,6 +74,9 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
 
     fun cameraFor(courseId: String): AtlasCamera? = canvasView.cameraFor(courseId)
 
+    /** 글 칸 쪽 가림의 색. 고른 코스가 있으면 그 코스의 분위기 색이고, 없으면 바탕색이다(화면 다듬기 설계 4절). */
+    fun setPanelTint(color: Int?) = canvasView.setPanelTint(color)
+
     fun focusOn(camera: AtlasCamera, chosen: String?) {
         canvasView.setChosen(chosen)
         canvasView.moveTo(camera)
@@ -134,6 +137,13 @@ private class AtlasCanvas(context: Context) : View(context) {
 
     /** 1/3 칸이면 지도 칸 위아래를 칸 폭 전체로 바탕색에 녹인다. 좌우는 칸 끝에 붙어 틀이 없다. */
     private var third = false
+    private var panelTint: Int? = null
+
+    fun setPanelTint(color: Int?) {
+        if (color == panelTint) return
+        panelTint = color
+        invalidate()
+    }
     private var chosen: String? = null
     private var camera = AtlasCamera(0f, 0f, 1f)
     private var ground: Bitmap? = null
@@ -398,7 +408,8 @@ private class AtlasCanvas(context: Context) : View(context) {
         val w = width.toFloat()
         val solid = shade.solid * density
         val clear = shade.clear * density
-        val base = Color.argb((shade.veil * 255).toInt(), Color.red(colors.bg), Color.green(colors.bg), Color.blue(colors.bg))
+        val panel = panelTint ?: colors.bg
+        val base = Color.argb((shade.veil * 255).toInt(), Color.red(panel), Color.green(panel), Color.blue(panel))
         val none = Color.argb(0, Color.red(base), Color.green(base), Color.blue(base))
         shadePaint.shader = if (shade.fromRight) {
             LinearGradient(w - solid, 0f, w - clear, 0f, base, none, Shader.TileMode.CLAMP)

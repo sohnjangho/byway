@@ -5,15 +5,16 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.Space
+import com.byway.core.course.Course
 
 /**
  * 3분할로 출발하려면 화면을 나누라는 안내(주행 화면 3분할 설계 2절). 정차 중에만 보인다.
  * 앱은 화면을 직접 나눌 수 없어서, 사용자가 오른쪽 끝 ⋮을 끌어 에움길 창이 1/3이 되면 [MainActivity]가 바로 출발한다.
  * 위에는 나뉜 모습(차량 정보, 내비, 에움길)을 그린다. 에움길 칸만 옅은 강조색이다.
  */
-internal fun splitGuideScreen(context: Context, kit: BrowseKit, onPlain: () -> Unit, onClose: () -> Unit): View = with(context) {
-    column().apply {
-        setBackgroundColor(palette.bg)
+internal fun splitGuideScreen(context: Context, kit: BrowseKit, course: Course?, onPlain: () -> Unit, onClose: () -> Unit): View = with(context) {
+    // 출발할 코스의 분위기를 깐다(화면 다듬기 설계 4절).
+    val body = column().apply {
         val edge = dp(kit.edge)
         setPadding(edge, edge, edge, edge)
         addView(label("코스 출발", Dimens.SMALL, palette.inkSecondary))
@@ -28,6 +29,7 @@ internal fun splitGuideScreen(context: Context, kit: BrowseKit, onPlain: () -> U
         }
         addSpaced(buttons, Dimens.SPACE_6)
     }
+    MoodLayer(context, kit.window).hold(body).apply { show(course) }
 }
 
 /** 나뉜 화면 그림. 칸 폭은 실제 비율(853 : 841 : 841)에 가깝게 같은 너비로 둔다. */

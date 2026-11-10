@@ -46,6 +46,7 @@ import com.byway.ui.primaryButton
 import com.byway.ui.quietButton
 import com.byway.ui.row
 import com.byway.ui.smallButton
+import com.byway.ui.MoodLayer
 import com.byway.ui.share.OFFLINE_NOTE
 import com.byway.ui.textField
 
@@ -57,12 +58,14 @@ private const val POLL_MS = 2_000L
  * 파티 안에서는 2초마다 멤버와 위치를 새로 받아 오른쪽 코스 그림에 핀으로 찍는다.
  */
 internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> Unit, onClose: () -> Unit): View = with(context) {
+    // 파티 안에서는 파티 코스의 분위기를 깐다(화면 다듬기 설계 4절). 파티 밖은 바탕색이다.
+    val mood = MoodLayer(context, kit.window)
     val text = column()
     val scroll = ScrollView(context).apply {
         isVerticalScrollBarEnabled = false
         addView(text)
     }
-    val drawing = CoursePathView(this).apply { asCard() }
+    val drawing = CoursePathView(this)
     val actions = LinearLayout(context)
     val note = label("", Dimens.SMALL, palette.accent)
     var view: PartyView? = null
@@ -121,6 +124,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
     }
 
     fun outside() {
+        mood.show(null)
         text.addView(label("드라이빙 파티", Dimens.HEADING, bold = true))
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
@@ -194,6 +198,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
     fun inside(party: PartyView) {
         val me = party.members.firstOrNull { it.me }
         val course = localCourse(party.courseId)
+        mood.show(course)
         course?.let { drawing.show(it, emptyList()) }
         showPins(context, drawing, party)
         text.addView(label("드라이빙 파티", Dimens.SMALL, palette.inkSecondary))
@@ -268,8 +273,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         addSpaced(note, Dimens.SPACE_2)
         addSpaced(actions, Dimens.SPACE_3)
     }
-    panes(left, drawing, kit.wide).apply {
-        setBackgroundColor(palette.bg)
+    val content = panes(left, drawing, kit.wide).apply {
         setPadding(edge, edge, edge, edge)
         addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
@@ -282,6 +286,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
             }
         })
     }
+    mood.hold(content)
 }
 
 /** 오른쪽 코스 그림에 다른 멤버의 핀을 찍는다. */

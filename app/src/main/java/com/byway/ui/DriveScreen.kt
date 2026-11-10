@@ -53,8 +53,12 @@ internal class DriveScreen(
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
     private val end = context.outlineButton("코스 끝내기", onEnd)
 
-    /** 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다. */
-    private val zoomView = CoursePathView(context).apply { visibility = INVISIBLE }
+    /**
+     * 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다.
+     * 흰 바탕 대신 코스 분위기(구간 색과 흐린 코스 사진) 위에 그린다(화면 다듬기 설계 4절).
+     */
+    private val zoomView = CoursePathView(context)
+    private val zoomLayer = MoodLayer(context, window).hold(zoomView).apply { visibility = INVISIBLE }
     private var zoomFrame: GeoFrame? = null
 
     init {
@@ -73,7 +77,8 @@ internal class DriveScreen(
             if (!third && !hasPicture) leftMargin = sideWidth
         })
         zoomView.show(course, emptyList())
-        addView(zoomView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
+        zoomLayer.show(course)
+        addView(zoomLayer, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third) leftMargin = sideWidth
         })
 
@@ -135,6 +140,7 @@ internal class DriveScreen(
         section.text = current.name
         section.setTextColor(colors.moodColor(current.mood))
         backdrop.setTint(colors.airColor(current.mood))
+        zoomLayer.setTint(colors.airColor(current.mood))
         remaining.text = readout.remainingKm
         bar.show(readout.filled)
         spoken.text = driveLine(state.line, state.stale)
@@ -155,7 +161,7 @@ internal class DriveScreen(
         val zoom = me?.takeIf { zoomView.width > 0 && zoomView.height > 0 }
             ?.let { partyFrame(it, pins.map { pin -> pin.point }, zoomView.width.toDouble() / zoomView.height, zoomFrame) }
         zoomFrame = zoom?.frame
-        zoomView.visibility = if (zoom == null) INVISIBLE else VISIBLE
+        zoomLayer.visibility = if (zoom == null) INVISIBLE else VISIBLE
         if (zoom == null) return
         zoomView.zoom(zoom.frame, zoom.far)
         zoomView.moveTo(me)

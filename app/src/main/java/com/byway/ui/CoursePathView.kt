@@ -101,7 +101,6 @@ class CoursePathView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val frame = frame ?: return
         val density = resources.displayMetrics.density
-        if (zoomed != null) canvas.drawColor(colors.bg)
         val width = density * if (thin) Dimens.COURSE_LINE_THUMB else Dimens.COURSE_LINE
         // 코스 선은 어두운 외곽선 위에 구간 색을 그린다. 주간의 흰 면에서도 선이 묻히지 않는다.
         line.strokeWidth = width + density * Dimens.COURSE_OUTLINE

@@ -16,13 +16,13 @@ import android.view.View
 private const val HALVINGS = 4
 private const val DOUBLINGS = 2
 
-
 /**
  * 주행 화면 글 칸의 배경. 구간 색 위에 코스 사진을 흐리고 옅게 깔아 코스의 분위기를 낸다. 사진이 없는 코스는 구간 색만 쓴다.
  * 지도가 나타나는 자리에서 옅어져 지도와 이어진다. 움직이지 않고 구간이 바뀌면 그 자리에서 색만 바뀐다.
+ * [full]이면 지도와 잇지 않고 화면 전체에 깐다. 파티·요약·안내 화면과 파티 확대 지도의 바탕이다(화면 다듬기 설계 4절).
  */
 @SuppressLint("ViewConstructor")
-internal class DriveBackdrop(context: Context, private val window: WindowClass) : View(context) {
+internal class DriveBackdrop(context: Context, private val window: WindowClass, private val full: Boolean = false) : View(context) {
     private var tint = context.palette.bg
     private var soft: Bitmap? = null
     private val photo = Paint(Paint.FILTER_BITMAP_FLAG).apply {
@@ -48,9 +48,19 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass) 
         invalidate()
     }
 
+    fun clearPicture() {
+        soft = null
+        invalidate()
+    }
+
     private fun Bitmap.resized(w: Int, h: Int): Bitmap = Bitmap.createScaledBitmap(this, maxOf(1, w), maxOf(1, h), true)
 
     override fun onDraw(canvas: Canvas) {
+        if (full) {
+            canvas.drawColor(tint)
+            soft?.let { canvas.drawBitmap(it, centerCrop(it, width, height), Rect(0, 0, width, height), photo) }
+            return
+        }
         val density = resources.displayMetrics.density
         // 1/3 주행 지도는 사진 띠가 없어 줄이지 않은 장면을 쓴다. 배경도 그 장면의 띠에서 만난다.
         val band = sceneFadeOnScreen(window, width / density, height / density)

@@ -36,10 +36,8 @@ internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onH
             addView(ScrollView(context).apply { addView(details) }.bounceAtEnds(vertical = true), fill())
             addSpaced(buttons, Dimens.SPACE_6)
         }
-        val drawing = CoursePathView(this).apply {
-            asCard()
-            show(course, emptyList())
-        }
+        // 흰 카드 대신 코스 분위기 위에 코스 선을 바로 그린다(화면 다듬기 설계 4절).
+        val drawing = CoursePathView(this).apply { show(course, emptyList()) }
         val edge = dp(kit.edge)
-        panes(text, drawing, kit.wide).apply { setPadding(edge, edge, edge, edge) }
+        MoodLayer(this, kit.window).hold(panes(text, drawing, kit.wide).apply { setPadding(edge, edge, edge, edge) }).apply { show(course) }
     }

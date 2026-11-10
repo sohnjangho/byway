@@ -51,6 +51,8 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             cards.forEach { (key, card) -> card.background = cardFace(key == id) }
             val course = shown.firstOrNull { it.id == id }
             detail.visibility = if (course == null) View.GONE else View.VISIBLE
+            // 코스를 고르면 글 칸이 그 코스의 분위기 색으로 바뀐다(화면 다듬기 설계 4절).
+            atlas.setPanelTint(course?.let { moodTint(it, 0, palette) })
             if (course != null) {
                 detail.text = "${course.name} 자세히 보기"
                 detail.setOnClickListener { kit.onCourse(course) }

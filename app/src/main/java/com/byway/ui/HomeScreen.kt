@@ -57,6 +57,10 @@ internal fun homeScreen(
     FrameLayout(this).apply {
         setBackgroundColor(palette.bg)
         val hasScenery = canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
+        // 고른 코스의 분위기를 글 칸 뒤에 깐다. 지도가 짙어지는 띠에서 옅어져 지도와 이어진다(화면 다듬기 설계 4절).
+        val backdrop = DriveBackdrop(context, kit.window).apply { setTint(moodTint(course, 0, palette)) }
+        if (hasScenery) Covers.loadScenery(context, course, backdrop::setPicture)
+        addView(backdrop, matchFrame())
         val control = sceneryControl(kit.window, home = true)
         val hasFrames = scene != null && scene.frames.isNotEmpty() && scene.track.isNotEmpty()
         val sceneView = SceneView(context, kit.window, hintOnMap = control == SceneryControl.CHIP, strip = third && hasFrames)
@@ -86,7 +90,7 @@ internal fun homeScreen(
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
         // 1/3 창은 사진 띠 때문에 지도 칸이 좁다. 긴 출처가 경로를 가리지 않게 짧게 적는다.
-        sceneView.setCredit(mapCreditLine(currentMapStyle(), withFrames = hasFrames))
+        sceneView.setCredit(listOfNotNull(mapCreditLine(currentMapStyle(), withFrames = hasFrames), moodPhotoCredit(course, hasScenery)).joinToString("\n"))
         // 훑어보기 자료의 장소 번호는 도구가 매긴 것이다. 목록의 번호로 바꿔서 쓴다.
         fun nearNo(frame: FrameInfo): Int? = frame.placeNo?.let { shownNo[it] }
         fun nearName(frame: FrameInfo): String? = nearNo(frame)?.let { no -> places.firstOrNull { it.no == no }?.name }
