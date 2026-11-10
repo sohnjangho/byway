@@ -9,6 +9,7 @@ import android.widget.ScrollView
 import com.byway.core.course.Course
 import com.byway.service.CourseStore
 import com.byway.service.MyDrives
+import com.byway.ui.share.madeCourseActions
 
 /** 내 코스. 큰 지도에 내 코스 번호와 지명이 있고, 코스를 고르면 경로와 설명이 나온다. 기록은 이 차에만 저장된다. */
 internal fun mineScreen(
@@ -19,6 +20,8 @@ internal fun mineScreen(
     onStart: (String) -> Unit,
     onBrowse: () -> Unit,
     onRecord: () -> Unit,
+    onShare: (String) -> Unit,
+    onChanged: () -> Unit,
 ): View = with(context) {
     val recent = MyDrives.recent(this)
     val made = CourseStore.files(this).mine().map { it.id }.toSet()
@@ -44,7 +47,7 @@ internal fun mineScreen(
         fun showCourse(id: String) {
             val course = courses.firstOrNull { it.id == id } ?: return
             slot.removeAllViews()
-            slot.addView(courseCard(kit, course, recent, { showList() }, onStart), matchFrame())
+            slot.addView(courseCard(kit, course, recent, { showList() }, onStart, { onShare(course.id) }, onChanged), matchFrame())
         }
         fun pick(id: String) {
             val camera = atlas.cameraFor(id) ?: return showCourse(id)
@@ -155,7 +158,15 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
     }.bounceAtEnds(vertical = true)
 }
 
-private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<String>, onBack: () -> Unit, onStart: (String) -> Unit): View = column().apply {
+private fun Context.courseCard(
+    kit: BrowseKit,
+    course: Course,
+    recent: List<String>,
+    onBack: () -> Unit,
+    onStart: (String) -> Unit,
+    onShare: () -> Unit,
+    onChanged: () -> Unit,
+): View = column().apply {
     background = rounded(palette.bgRaised)
     val edge = dp(Dimens.SPACE_6)
     setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
@@ -165,6 +176,7 @@ private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<Stri
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
     addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    if (course.id.startsWith("m-")) addSpaced(madeCourseActions(course, onShare, onChanged), Dimens.SPACE_4)
     addView(android.widget.Space(context), fill())
     val buttons = LinearLayout(context).apply {
         addView(quietButton("내 코스 전체", onBack), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })

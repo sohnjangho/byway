@@ -46,13 +46,15 @@ data class Nav(
     val settings: Boolean = false,
     /** 내 코스에서 "길 기록하기"를 눌러 기록 동의를 묻는 중. */
     val recordConsent: Boolean = false,
+    /** 공유 범위를 고르는 내 코스 id. */
+    val share: String? = null,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
-fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false)
+fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null)
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
-fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false)
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null)
 
 /** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
 fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }
@@ -76,6 +78,9 @@ sealed interface Screen {
     data object RecordConsent : Screen
     data object Recording : Screen
     data object SaveRecord : Screen
+
+    /** 내가 만든 코스의 공유 범위 고르기와 동의. 정차 중에만. */
+    data class Share(val courseId: String) : Screen
 }
 
 /**
@@ -91,6 +96,7 @@ fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
     state.finished?.let { return Screen.Summary(it) }
     if (resumable) return Screen.Resume
     if (nav.recordConsent) return Screen.RecordConsent
+    nav.share?.let { return Screen.Share(it) }
     if (nav.about) return Screen.About
     if (nav.settings) return Screen.Settings
     return Screen.Browse(nav.tab)

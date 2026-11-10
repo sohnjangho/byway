@@ -14,6 +14,8 @@ import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import com.byway.service.ShareSync
+import com.byway.ui.share.shareScreen
 import com.byway.ui.record.RecordingView
 import com.byway.ui.record.recordConsentScreen
 import com.byway.ui.record.saveRecordScreen
@@ -132,6 +134,8 @@ class MainActivity : AppCompatActivity() {
         }
         val saved = savedRun()
         val next = screenFor(state, nav, resumable = saved != null)
+        // 정차 화면을 열 때 공유 코스 목록을 새로 받는다. 바뀌었을 때만 화면을 다시 그린다.
+        if (next is Screen.Browse) ShareSync.refresh(this) { render(DriveBoard.state) }
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette || stale) {
             val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
@@ -195,6 +199,11 @@ class MainActivity : AppCompatActivity() {
                     },
                     onCancel = { go(nav.copy(recordConsent = false)) },
                 )
+                screen is Screen.Share && book.courses.any { it.id == screen.courseId } -> shareScreen(
+                    this, kit, book.find(screen.courseId),
+                    onDone = { go(nav.copy(share = null)) },
+                    onCancel = { go(nav.copy(share = null)) },
+                )
                 screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
                 screen == Screen.SaveRecord -> saveRecordScreen(
                     this, kit, state.recorded.orEmpty(),
@@ -219,6 +228,7 @@ class MainActivity : AppCompatActivity() {
             reveal = reveal,
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
+            onChanged = { go(nav) },
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
@@ -230,6 +240,8 @@ class MainActivity : AppCompatActivity() {
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
             onRecord = { go(nav.copy(recordConsent = true)) },
+            onShare = { id -> go(nav.copy(share = id)) },
+            onChanged = { go(nav) },
         )
     }
 
