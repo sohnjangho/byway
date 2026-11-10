@@ -19,7 +19,7 @@ case "$lane" in
 esac
 
 status=0
-outside=$(git diff --name-only "$base"...HEAD | grep -Ev "$allowed" || true)
+outside=$(git -c core.quotePath=false diff --name-only "$base"...HEAD | grep -Ev "$allowed" || true)
 if [ -n "$outside" ]; then
   echo "레인 밖 변경:"; echo "$outside"; status=1
 fi
