@@ -28,6 +28,8 @@ data class GeoFrame(val center: GeoPoint, val widthMeters: Double, val heightMet
 data class FrameRules(
     /** 내 차에서 이 거리 안의 멤버만 확대 범위에 넣는다. 더 먼 멤버는 코스 전체 지도에서도 따로 보인다. */
     val reachMeters: Double = 5_000.0,
+    /** 이미 확대 중이면 이 거리까지 남긴다. 5km 언저리에서 확대가 켜졌다 꺼졌다 하지 않는다. */
+    val stayMeters: Double = 5_500.0,
     /** 점들을 담은 상자에 사방으로 더하는 여백(폭의 비율). */
     val margin: Double = 0.2,
     /** 가장 좁은 폭. 멤버가 바로 옆에 있어도 너무 확대하지 않는다. */
@@ -48,7 +50,8 @@ data class PartyFrame(val frame: GeoFrame, val far: Int)
  */
 fun partyFrame(me: GeoPoint, members: List<GeoPoint>, aspect: Double, current: GeoFrame?, rules: FrameRules = FrameRules()): PartyFrame? {
     if (!(aspect > 0.0) || aspect.isInfinite()) return null
-    val near = members.filter { me.distanceTo(it) <= rules.reachMeters }
+    val reach = if (current != null) rules.stayMeters else rules.reachMeters
+    val near = members.filter { me.distanceTo(it) <= reach }
     if (near.isEmpty()) return null
     val far = members.size - near.size
     val points = near + me

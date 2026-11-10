@@ -38,6 +38,8 @@ data class DriveState(
     val recorded: List<GeoPoint>? = null,
     /** 함께 달리는 파티. 주행 화면이 다른 멤버의 핀을 그린다. 파티가 없거나 서버에 닿지 못하면 null 이다. */
     val party: PartyView? = null,
+    /** 정차 회차. 정차할 때마다 하나 오른다. 3분할 안내는 같은 회차에서만 이어 출발한다. */
+    val stop: Int = 0,
 )
 
 /** 기록 중 화면의 한 줄. [meters]는 끊겼다 튄 사이를 뺀 달린 거리다. */

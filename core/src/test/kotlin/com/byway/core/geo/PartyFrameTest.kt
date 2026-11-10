@@ -99,4 +99,15 @@ class PartyFrameTest {
         assertEquals(1_500.0, first.widthMeters, 1e-6)
         assertEquals(first, frameOf(offset(me, 50.0, 0.0), listOf(offset(me, 220.0, 0.0)), first))
     }
+
+    /** 5km 언저리에서 GPS가 흔들려도 확대가 켜졌다 꺼졌다 하지 않는다. 확대 중이면 5.5km까지 남긴다. */
+    @Test
+    fun memberAtBoundaryDoesNotToggle() {
+        val first = frameOf(me, listOf(offset(me, 4_900.0, 0.0)))
+        val moved = offset(me, 5_200.0, 0.0)
+        assertNull(partyFrame(me, listOf(moved), aspect, null))
+        val kept = requireNotNull(partyFrame(me, listOf(moved), aspect, first))
+        assertEquals(0, kept.far)
+        assertNull(partyFrame(me, listOf(offset(me, 5_600.0, 0.0)), aspect, first))
+    }
 }

@@ -71,6 +71,9 @@ class DriveService : Service() {
     /** 함께 달리는 파티(공유 설계 6-5). 코스를 달리는 동안 2초마다 내 위치를 보내고 멤버 위치를 받는다. */
     private var partySharing = false
     private var partyBusy = false
+
+    /** 파티를 마지막으로 받은 때(elapsedRealtime). 잠깐 닿지 못할 때 마지막 파티를 얼마나 둘지 정한다. */
+    private var partySeenAt: Long? = null
     private val partyLoop = object : Runnable {
         override fun run() {
             pollParty()
@@ -214,6 +217,7 @@ class DriveService : Service() {
                 when (tick) {
                     is PartyTick.Seen -> {
                         partySharing = tick.view.members.firstOrNull { it.me }?.sharing == true
+                        partySeenAt = SystemClock.elapsedRealtime()
                         DriveBoard.update { it.copy(party = tick.view) }
                     }
                     PartyTick.Ended -> {
@@ -221,8 +225,8 @@ class DriveService : Service() {
                         partySharing = false
                         DriveBoard.update { it.copy(party = null) }
                     }
-                    // 주행 중 실패는 알리지 않고 핀만 지운다.
-                    PartyTick.Unreachable -> DriveBoard.update { it.copy(party = null) }
+                    // 주행 중 실패는 알리지 않는다. 잠깐이면 마지막 파티를 두고, 30초가 넘으면 핀을 지운다.
+                    PartyTick.Unreachable -> DriveBoard.update { it.copy(party = keptParty(it.party, partySeenAt, SystemClock.elapsedRealtime())) }
                 }
             }
         }

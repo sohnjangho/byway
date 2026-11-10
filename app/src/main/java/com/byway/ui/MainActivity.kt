@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
      * 화면을 나누라고 안내하고, 사용자가 나누면 [render]가 이어서 출발한다.
      */
     private fun begin(courseId: String, resumeFrom: Int) {
-        val request = StartRequest(courseId, resumeFrom)
+        val request = StartRequest(courseId, resumeFrom, DriveBoard.state.stop)
         when (startPlan(currentDriveLayout(), windowClassOf(widthDp()))) {
             StartPlan.GO -> launch(request)
             StartPlan.GUIDE -> go(nav.copy(splitGuide = request))
@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         if (state.running) nav = nav.whileDriving()
         // 안내 중 기어를 바꾸면 안내를 닫는다. 화면이 나뉘었으면(1/3 창) 기다리던 출발을 한 번만 시작한다.
         if (!state.parked && nav.splitGuide != null) nav = nav.copy(splitGuide = null)
-        val (guided, ready) = takeGuide(nav, windowClassOf(widthDp()), state.parked)
+        val (guided, ready) = takeGuide(nav, windowClassOf(widthDp()), state.parked, state.stop)
         nav = guided
         ready?.let(::launch)
         // 내 코스를 저장했거나 서버 목록을 받으면 코스 책을 다시 만든다.

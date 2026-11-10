@@ -28,8 +28,8 @@ fun windowClassOf(widthDp: Int): WindowClass = when {
 /** 한국 지도를 보는 자리. 창이 바뀌어도 남도록 Nav 에 담는다. */
 data class AtlasCamera(val cx: Float, val cy: Float, val scale: Float) : Serializable
 
-/** 화면을 나눈 뒤 이어 할 출발. 3분할 안내 중에 [Nav]에 담는다. */
-data class StartRequest(val courseId: String, val resumeFrom: Int) : Serializable
+/** 화면을 나눈 뒤 이어 할 출발. 3분할 안내 중에 [Nav]에 담는다. [stop]은 안내를 띄운 정차 회차다. */
+data class StartRequest(val courseId: String, val resumeFrom: Int, val stop: Int = 0) : Serializable
 
 /** 운전자가 고른 것들. 창 막대를 끌어 Activity 가 다시 만들어져도 남도록 Bundle 에 담는다. */
 data class Nav(

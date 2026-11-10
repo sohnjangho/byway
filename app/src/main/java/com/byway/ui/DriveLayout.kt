@@ -33,11 +33,13 @@ const val SPLIT_GUIDE_PLAIN = "나누지 않고 출발"
 const val SPLIT_GUIDE_CLOSE = "닫기"
 
 /**
- * 안내 중인 출발을 지금 시작할 수 있으면 꺼낸다. 에움길 창이 1/3이 되었고(사용자가 나눔) 정차 중일 때다.
+ * 안내 중인 출발을 지금 시작할 수 있으면 꺼낸다. 에움길 창이 1/3이 되었고(사용자가 나눔) 같은 정차 회차일 때다.
  * 돌려주는 [Nav]에서는 안내가 지워져 있어, 폭 변화가 여러 번 들어와도 한 번만 출발한다.
+ * 에움길이 가려진 사이 운전하고 다시 정차했으면([stop]이 다름) 지난 안내는 버린다. 고르지 않은 코스가 출발하지 않는다.
  */
-fun takeGuide(nav: Nav, window: WindowClass, parked: Boolean): Pair<Nav, StartRequest?> {
-    val request = nav.splitGuide
-    if (request == null || window != WindowClass.THIRD || !parked) return nav to null
+fun takeGuide(nav: Nav, window: WindowClass, parked: Boolean, stop: Int): Pair<Nav, StartRequest?> {
+    val request = nav.splitGuide ?: return nav to null
+    if (request.stop != stop) return nav.copy(splitGuide = null) to null
+    if (window != WindowClass.THIRD || !parked) return nav to null
     return nav.copy(splitGuide = null) to request
 }
