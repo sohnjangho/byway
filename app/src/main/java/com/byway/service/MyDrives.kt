@@ -23,11 +23,13 @@ object MyDrives {
     private const val VOICE = "voice_on"
     private const val MUSIC = "music_on"
     private const val MOOD = "mood_on"
+    private const val DRIVE_LAYOUT = "drive_layout"
     private const val MAP_STYLE = "map_style"
     private const val RUN_COURSE = "run_course"
     private const val RUN_PROGRESS = "run_progress"
     private const val RUN_CABIN = "run_cabin"
     private const val DEFAULT_MAP_STYLE = "map"
+    private const val DEFAULT_DRIVE_LAYOUT = "split"
     private const val RECENT_LIMIT = 10
     private const val SEPARATOR = "\n"
 
@@ -94,6 +96,7 @@ object MyDrives {
         musicOn = stored.getBoolean(MUSIC, true)
         moodOn = stored.getBoolean(MOOD, true)
         mapStyle = stored.getString(MAP_STYLE, DEFAULT_MAP_STYLE) ?: DEFAULT_MAP_STYLE
+        driveLayout = stored.getString(DRIVE_LAYOUT, DEFAULT_DRIVE_LAYOUT) ?: DEFAULT_DRIVE_LAYOUT
     }
 
     /** 지도 그림의 종류. "map" 또는 "satellite". 화면이 읽을 때 뜻을 정한다. */
@@ -101,6 +104,13 @@ object MyDrives {
         set(value) {
             field = value
             settings?.edit()?.putString(MAP_STYLE, value)?.apply()
+        }
+
+    /** 달릴 때의 화면 배치. "split"(3분할) 또는 "navi"(내비 2/3). 화면이 읽을 때 뜻을 정한다. */
+    var driveLayout: String = DEFAULT_DRIVE_LAYOUT
+        set(value) {
+            field = value
+            settings?.edit()?.putString(DRIVE_LAYOUT, value)?.apply()
         }
 
     var ambienceOn: Boolean = true
