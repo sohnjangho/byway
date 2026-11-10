@@ -13,11 +13,11 @@ class Positions(private val clock: () -> Long, private val ttlMs: Long = 60_000L
         fixes[party to device] = Fix(point, clock())
     }
 
-    /** 살아 있는 위치. 가장 최근 것이 앞에 온다. 지난 것은 이때 지운다. */
-    fun live(party: String): List<Pair<String, GeoPoint>> {
+    /** 살아 있는 위치(기기, 자리, 받은 뒤 지난 ms). 가장 최근 것이 앞에 온다. 지난 것은 이때 지운다. */
+    fun live(party: String): List<Triple<String, GeoPoint, Long>> {
         val now = clock()
         fixes.entries.removeIf { now - it.value.at > ttlMs }
-        return fixes.filterKeys { it.first == party }.entries.sortedByDescending { it.value.at }.map { it.key.second to it.value.point }
+        return fixes.filterKeys { it.first == party }.entries.sortedByDescending { it.value.at }.map { Triple(it.key.second, it.value.point, now - it.value.at) }
     }
 
     fun remove(party: String, device: String) {

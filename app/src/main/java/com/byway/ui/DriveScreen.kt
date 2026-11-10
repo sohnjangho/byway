@@ -131,6 +131,7 @@ internal class DriveScreen(
         showAhead(driven)
         scene?.let { sceneView.setMarker(trackAt(it.track, driven)) }
         sceneView.moveFallbackTo(state.position)
+        sceneView.setPins(partyPins(state))
     }
 
     /** 줄 수를 고정해 지나온 곳이 빠져도 아래 글이 움직이지 않는다. 가장 가까운 곳의 번호는 주황이다. */
@@ -171,5 +172,13 @@ private class AheadRow(private val context: Context) {
         name.text = place.name
         line.text = aheadLine(place)
         distance.text = aheadKmText(place, driven)
+    }
+}
+
+/** 함께 달리는 파티의 다른 멤버 핀(공유 설계 6-5). 주행 중에는 핀만 보이고 조작은 없다. */
+internal fun partyPins(state: com.byway.service.DriveState): List<com.byway.ui.party.MapPin> {
+    val party = state.party ?: return emptyList()
+    return com.byway.service.livePins(party).mapNotNull { pin ->
+        party.members.firstOrNull { it.id == pin.memberId }?.let { com.byway.ui.party.MapPin(pin.memberId, com.byway.core.geo.GeoPoint(pin.lat, pin.lon), it.avatar) }
     }
 }

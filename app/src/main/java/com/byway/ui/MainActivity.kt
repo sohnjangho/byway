@@ -16,6 +16,7 @@ import com.byway.service.DriveService
 import com.byway.service.DriveState
 import com.byway.service.ShareSync
 import com.byway.ui.share.shareScreen
+import com.byway.ui.party.partyScreen
 import com.byway.ui.record.RecordingView
 import com.byway.ui.record.recordConsentScreen
 import com.byway.ui.record.saveRecordScreen
@@ -204,6 +205,7 @@ class MainActivity : AppCompatActivity() {
                     onDone = { go(nav.copy(share = null)) },
                     onCancel = { go(nav.copy(share = null)) },
                 )
+                screen == Screen.Party -> partyScreen(this, kit, onStart = ::start, onClose = { go(nav.copy(party = false)) })
                 screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
                 screen == Screen.SaveRecord -> saveRecordScreen(
                     this, kit, state.recorded.orEmpty(),
@@ -242,6 +244,7 @@ class MainActivity : AppCompatActivity() {
             onRecord = { go(nav.copy(recordConsent = true)) },
             onShare = { id -> go(nav.copy(share = id)) },
             onChanged = { go(nav) },
+            onParty = { go(nav.copy(party = true)) },
         )
     }
 

@@ -11,6 +11,9 @@ import com.byway.core.geo.GeoPoint
 import kotlin.math.cos
 
 /** 코스 모양과 내비에 올라가는 지점, 현재 위치를 그린다. 지도가 아니라 코스 그림이다. */
+/** 파티 핀 아바타 반지름(dp). */
+internal const val PIN_RADIUS_DP = 22f
+
 class CoursePathView(context: Context) : View(context) {
     private val colors = context.palette
     private var course: Course? = null
@@ -29,6 +32,7 @@ class CoursePathView(context: Context) : View(context) {
     }
     private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.ink }
     private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.accent }
+    private var pins: List<com.byway.ui.party.MapPin> = emptyList()
 
     /** [thin]은 카드 썸네일용 가는 선이다. */
     fun show(course: Course, stops: List<Stop>, thin: Boolean = false) {
@@ -36,6 +40,13 @@ class CoursePathView(context: Context) : View(context) {
         this.stops = stops
         this.thin = thin
         prepare()
+        invalidate()
+    }
+
+    /** 파티 멤버 핀. 위치가 바뀌면 그 자리에 다시 그린다(움직임 효과 없음). */
+    fun setPins(next: List<com.byway.ui.party.MapPin>) {
+        if (pins == next) return
+        pins = next
         invalidate()
     }
 
@@ -76,6 +87,7 @@ class CoursePathView(context: Context) : View(context) {
         }
         stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * Dimens.STOP_RADIUS, stop) }
         position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * Dimens.CAR_RADIUS, car) }
+        pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, frame.x(it.point), frame.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
     }
 
     /** 코스를 칸 안에 맞추는 좌표 변환. */

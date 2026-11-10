@@ -1,5 +1,8 @@
 package com.byway.ui
 
+import com.byway.core.course.scenePointOf
+import com.byway.ui.party.MapPin
+import com.byway.ui.party.PartyPins
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
@@ -137,6 +140,7 @@ internal class SceneView(
     /** [reveal]이면 이전 그림에서 넘어오며 경로를 앞에서부터 그린다. */
     fun show(course: Course, scene: CourseScene?, places: List<ScenePlace>, night: Boolean, sceneryAvailable: Boolean, reveal: Boolean = false) {
         this.course = course
+        shownScene = scene
         canShowPhoto = sceneryAvailable
         showRoute()
         fallback.show(course, emptyList())
@@ -185,6 +189,16 @@ internal class SceneView(
 
     /** 지도 그림이 없어 코스 그림으로 대신할 때의 위치 점. */
     fun moveFallbackTo(point: GeoPoint?) = fallback.moveTo(point)
+
+    private var shownScene: CourseScene? = null
+
+    /** 파티 멤버 핀. 장면 그림에는 장면 좌표로, 코스 선 그림에는 위경도로 찍는다. */
+    fun setPins(pins: List<MapPin>) {
+        fallback.setPins(pins)
+        val frame = shownScene?.atlas?.frame ?: return canvasView.setPins(emptyList())
+        val size = SceneCatalog.index(context).sceneSize
+        canvasView.setPins(pins.map { scenePointOf(it.point, frame, size) to it.avatar })
+    }
 
     /** 화면에 함께 보이는 자료가 바뀌면 출처도 바꾼다. */
     fun setCredit(text: String) {
@@ -332,6 +346,7 @@ private class SceneCanvas(
     private var mix = 1f
     private var mover: ValueAnimator? = null
     private var marker: Px? = null
+    private var pins: List<Pair<Px, String>> = emptyList()
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val layerPaint = Paint()
     private val fade = Paint()
@@ -363,6 +378,12 @@ private class SceneCanvas(
     fun setMarker(at: Px?) {
         if (marker == at) return
         marker = at
+        invalidate()
+    }
+
+    fun setPins(next: List<Pair<Px, String>>) {
+        if (pins == next) return
+        pins = next
         invalidate()
     }
 
@@ -451,6 +472,9 @@ private class SceneCanvas(
         }
         places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal)) }
         marker?.let { drawMarker(canvas, out.left + it.x * scale, out.top + it.y * scale) }
+        pins.forEach { (at, avatar) ->
+            PartyPins.draw(canvas, context, out.left + at.x * scale, out.top + at.y * scale, avatar, context.dp(PIN_RADIUS_DP.toInt()).toFloat(), colors.onPhoto, colors.photoScrim)
+        }
     }
 
     /** 훑어보기에서 고른 지점. 번호 표시와 헷갈리지 않게 주황 점으로 그린다. */

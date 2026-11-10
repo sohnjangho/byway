@@ -58,8 +58,9 @@ data class PartyMember(
     val starred: Boolean,
 )
 
+/** [ageMs]는 서버가 그 위치를 받은 뒤 지난 시간이다. 앱은 30초가 넘은 핀을 그리지 않는다. */
 @Serializable
-data class PartyPin(val memberId: String, val lat: Double, val lon: Double)
+data class PartyPin(val memberId: String, val lat: Double, val lon: Double, val ageMs: Long = 0)
 
 /** [pins]에는 60초 안에 받은 위치만 온다. */
 @Serializable

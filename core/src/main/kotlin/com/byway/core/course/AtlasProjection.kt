@@ -28,6 +28,12 @@ fun toAtlas(point: GeoPoint): Px {
     return Px((x - origin.first).toFloat(), (y - origin.second).toFloat())
 }
 
+/** 장면 그림 위의 자리. [frame]은 그 장면이 한국 지도에서 차지하는 자리(AtlasSpot.frame)다. 파티 핀을 장면 위에 찍을 때 쓴다. */
+fun scenePointOf(point: GeoPoint, frame: Box, sceneSize: Px): Px {
+    val at = toAtlas(point)
+    return Px((at.x - frame.x) / frame.w * sceneSize.x, (at.y - frame.y) / frame.h * sceneSize.y)
+}
+
 /** 코스의 지도 자리. 장면 그림이 없으므로 [AtlasSpot.frame]은 코스 상자와 같다. */
 fun atlasSpotOf(course: Course): AtlasSpot {
     val points = course.path.map(::toAtlas)

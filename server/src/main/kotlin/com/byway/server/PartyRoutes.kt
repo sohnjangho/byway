@@ -148,9 +148,9 @@ internal fun Server.leaveParty(code: String, device: String) {
 internal fun Server.view(code: String, me: String): PartyView {
     val party = requireNotNull(store.party(code))
     val members = store.members(code)
-    val live = positions.live(code).filter { (device, _) -> members.any { it.device == device && it.sharing } }
+    val live = positions.live(code).filter { (device, _, _) -> members.any { it.device == device && it.sharing } }
     val real = members.map { PartyMember(memberId(it.device), it.nickname, it.avatar, demo = false, me = it.device == me, sharing = it.sharing && it.device == me, starred = it.starred && it.device == me) }
-    val pins = live.map { (device, point) -> PartyPin(memberId(device), point.lat, point.lon) }
+    val pins = live.map { (device, point, age) -> PartyPin(memberId(device), point.lat, point.lon, age) }
     val course = courseOf(party.courseId)
     if (!party.open || demoMembers == 0 || course == null) return PartyView(party.code, party.name, party.courseId, party.open, party.owner == me, real, pins)
     val places = DemoMembers(course.path).places(demoMembers, clock() - party.openedAt, live.firstOrNull()?.second)

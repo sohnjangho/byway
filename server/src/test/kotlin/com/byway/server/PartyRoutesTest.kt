@@ -234,6 +234,30 @@ class PartyRoutesTest {
     }
 
     @Test
+    fun pinsCarryTheirAge() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.newParty(a).code
+        client.sharing(a, code, true)
+        client.at(a, code, river.path[10])
+        now += 10_000
+        assertEquals(10_000L, client.seen(a, code).pins.single().ageMs)
+    }
+
+    /** 링크 코스로 연 파티도 멤버는 그 코스를 받는다(공유 설계 6-5 "기기에 없으면 함께 받는다"). */
+    @Test
+    fun membersGetThePartyCourse() = testApplication {
+        startParty()
+        val a = client.token()
+        val link = Json.decodeFromString<Uploaded>(client.upload(a, "link").bodyAsText()).id
+        val code = Json.decodeFromString<PartyView>(client.create(a, link).bodyAsText()).code
+        val b = client.token()
+        assertTrue(client.courses(b).isEmpty())
+        client.join(b, code)
+        assertEquals(listOf(link), client.courses(b).map { it.id })
+    }
+
+    @Test
     fun leaveLastMemberEnds() = testApplication {
         startParty()
         val a = client.token()

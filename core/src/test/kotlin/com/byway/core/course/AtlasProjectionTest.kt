@@ -23,6 +23,22 @@ class AtlasProjectionTest {
         }
     }
 
+    /** 파티 핀을 장면 그림 위에 찍을 때 쓴다. 장면 그림의 코스 선 양 끝과 맞아야 한다. */
+    @Test
+    fun scenePointsMatchTheDrawnRouteEnds() {
+        courses.forEach { course ->
+            val scene = requireNotNull(index.courses[course.id])
+            val first = scene.lines.first().points.first()
+            val last = scene.lines.last().points.last()
+            val start = scenePointOf(course.path.first(), scene.atlas.frame, index.sceneSize)
+            val end = scenePointOf(course.path.last(), scene.atlas.frame, index.sceneSize)
+            assertEquals(course.id, first.x, start.x, 3f)
+            assertEquals(course.id, first.y, start.y, 3f)
+            assertEquals(course.id, last.x, end.x, 3f)
+            assertEquals(course.id, last.y, end.y, 3f)
+        }
+    }
+
     @Test
     fun linesFollowSectionsAndStayInTheBox() {
         val course = courses.first()

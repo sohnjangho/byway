@@ -71,12 +71,13 @@ class Store private constructor(private val db: Connection) {
     fun codeTaken(code: String): Boolean =
         query("SELECT 1 FROM course WHERE code = ? UNION SELECT 1 FROM party WHERE code = ?", code, code) { 1 }.isNotEmpty()
 
-    /** 전체 공개(숨김 제외), 내가 올린 것, 내가 멤버인 파티의 파티 코스. */
+    /** 전체 공개(숨김 제외), 내가 올린 것, 내가 멤버인 파티의 파티 코스, 내가 멤버인 파티가 달리는 코스. */
     @Synchronized
     fun visibleCourses(device: String): List<CourseRow> = query(
         "SELECT $COURSE_COLUMNS FROM course WHERE (visibility = 'public' AND hidden = 0) OR owner = ? " +
-            "OR (visibility = 'party' AND hidden = 0 AND party_code IN (SELECT party_code FROM member WHERE device = ?)) ORDER BY created_at",
-        device, device, mapper = ::courseRow,
+            "OR (visibility = 'party' AND hidden = 0 AND party_code IN (SELECT party_code FROM member WHERE device = ?)) " +
+            "OR (hidden = 0 AND id IN (SELECT course_id FROM party WHERE code IN (SELECT party_code FROM member WHERE device = ?))) ORDER BY created_at",
+        device, device, device, mapper = ::courseRow,
     )
 
     @Synchronized

@@ -1,0 +1,46 @@
+package com.byway.service
+
+import android.content.Context
+import com.byway.core.geo.GeoPoint
+import com.byway.core.share.PartyPin
+import com.byway.core.share.PartyView
+import com.byway.core.share.Position
+
+/** 2초마다 한 번 파티와 주고받은 결과. */
+sealed interface PartyTick {
+    data class Seen(val view: PartyView) : PartyTick
+
+    /** 파티가 끝났거나 내가 빠졌다(서버 404). 핀을 지우고 파티 상태를 비운다. */
+    data object Ended : PartyTick
+
+    /** 서버에 닿지 못했다. 파티는 그대로 두고 핀만 지운다. */
+    data object Unreachable : PartyTick
+}
+
+/** 위치 공유가 켜져 있고 위치가 있으면 내 위치를 보내고, 파티를 받는다(공유 설계 6-5). 동의 전에는 위치를 보내지 않는다. */
+fun partyTick(me: GeoPoint?, sharing: Boolean, send: (Position) -> Result<Unit>, fetch: () -> Result<PartyView>): PartyTick {
+    if (sharing && me != null) send(Position(me.lat, me.lon))
+    val got = fetch()
+    got.getOrNull()?.let { return PartyTick.Seen(it) }
+    return if ((got.exceptionOrNull() as? ShareError.Http)?.code == 404) PartyTick.Ended else PartyTick.Unreachable
+}
+
+private const val STALE_MS = 30_000L
+
+/** 지도에 그릴 핀. 내 핀과 30초 넘게 소식이 없는 핀은 뺀다. */
+fun livePins(view: PartyView): List<PartyPin> {
+    val mine = view.members.filter { it.me }.map { it.id }.toSet()
+    return view.pins.filter { it.memberId !in mine && it.ageMs <= STALE_MS }
+}
+
+/** 지금 들어가 있는 파티 코드. 이 차에만 둔다. */
+object MyParty {
+    private const val PREFS = "share"
+    private const val CODE = "party"
+
+    fun code(context: Context): String? = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(CODE, null)
+
+    fun set(context: Context, code: String?) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply { if (code == null) remove(CODE) else putString(CODE, code) }.apply()
+    }
+}
