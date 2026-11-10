@@ -38,6 +38,9 @@ private const val NAMED_MIN = 2.4f
 private const val CLOSE_RATIO = 0.6f
 private const val EDGE_FADE = 0.12f
 
+/** 1/3 칸 지도 아래를 내용 바탕으로 녹이는 길이(dp). */
+private const val THIRD_BOTTOM_FADE = 120f
+
 /** 지도에서 어느 쪽을 어둡게 눌러 글 칸과 잇는지. */
 internal class AtlasShade(val fromRight: Boolean, val solid: Float, val clear: Float, val veil: Float = 1f)
 
@@ -62,7 +65,7 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
     }
 
     fun show(tab: Tab, window: WindowClass, courses: List<Course>, chosen: String?, camera: AtlasCamera?, night: Boolean, shade: AtlasShade?) {
-        canvasView.configure(atlasFocus(tab, window), courses, tab == Tab.MINE, night, shade)
+        canvasView.configure(atlasFocus(tab, window), courses, tab == Tab.MINE, night, shade, third = window == WindowClass.THIRD)
         canvasView.setChosen(chosen)
         canvasView.setCamera(camera ?: canvasView.overview())
     }
@@ -128,6 +131,9 @@ private class AtlasCanvas(context: Context) : View(context) {
     private var named = false
     private var night = true
     private var shade: AtlasShade? = null
+
+    /** 1/3 칸이면 지도 칸 위아래를 칸 폭 전체로 바탕색에 녹인다. 좌우는 칸 끝에 붙어 틀이 없다. */
+    private var third = false
     private var chosen: String? = null
     private var camera = AtlasCamera(0f, 0f, 1f)
     private var ground: Bitmap? = null
@@ -167,8 +173,9 @@ private class AtlasCanvas(context: Context) : View(context) {
         }
     })
 
-    fun configure(focus: Box, list: List<Course>, named: Boolean, night: Boolean, shade: AtlasShade?) {
+    fun configure(focus: Box, list: List<Course>, named: Boolean, night: Boolean, shade: AtlasShade?, third: Boolean = false) {
         this.focus = focus
+        this.third = third
         this.named = named
         this.night = night
         this.shade = shade
@@ -245,7 +252,7 @@ private class AtlasCanvas(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
-        canvas.drawColor(colors.bg)
+        canvas.drawColor(seaColor(currentMapStyle(), night))
         val s = camera.scale
         val origin = toScreen(0f, 0f, camera, focus)
         canvas.save()
@@ -260,6 +267,21 @@ private class AtlasCanvas(context: Context) : View(context) {
         drawLabels(canvas, s, close)
         drawPins(canvas, s, close)
         shade?.let { drawShade(canvas, it) }
+        if (third) drawThirdEdges(canvas)
+    }
+
+    /** 1/3 칸 지도의 위(메뉴 줄)와 아래(내용)를 바탕색으로 녹인다. 칸 폭 전체라 모서리가 생기지 않는다. */
+    private fun drawThirdEdges(canvas: Canvas) {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val base = colors.bg
+        val none = Color.argb(0, Color.red(base), Color.green(base), Color.blue(base))
+        val top = (Dimens.RAIL_TOP_HEIGHT + Dimens.SPACE_6) * density
+        shadePaint.shader = LinearGradient(0f, 0f, 0f, top, base, none, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, w, top, shadePaint)
+        val bottom = THIRD_BOTTOM_FADE * density
+        shadePaint.shader = LinearGradient(0f, h - bottom, 0f, h, none, base, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, h - bottom, w, h, shadePaint)
     }
 
     /** 지도 그림의 네 변을 바탕으로 녹여 사각 테두리가 보이지 않게 한다. */
