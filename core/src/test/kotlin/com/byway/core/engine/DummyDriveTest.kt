@@ -72,4 +72,28 @@ class DummyDriveTest {
         val end = engine.at(GeoPoint(37.0, 127.3005))
         assertTrue(end.filterIsInstance<DriveCommand.Publish>().any { it.event == DriveEvent.CourseFinished })
     }
+
+    /** 내비가 도착 지점을 도로 위로 옮겨, 차가 직선 끝점 옆(북 600m, 서 500m)에 선다. 1km 안이니 끝이다(검토 I-1). */
+    @Test
+    fun finishesBesideLastPointOffTheLine() {
+        val (engine, _) = started()
+        (1..55).forEach { engine.at(GeoPoint(37.0, 127.0 + it * 0.005)) }
+        val end = engine.at(GeoPoint(37.0054, 127.2945))
+        assertTrue(end.filterIsInstance<DriveCommand.Publish>().any { it.event == DriveEvent.CourseFinished })
+    }
+
+    /** 직선에서 10km 넘게 벗어났다가 한참 앞에서 다시 붙어도 진행이 따라온다(검토 I-1). */
+    @Test
+    fun catchesUpAfterLongDetour() {
+        val (engine, _) = started()
+        (1..10).forEach { engine.at(GeoPoint(37.0, 127.0 + it * 0.005)) }
+        // 북쪽으로 약 13km 올라가 동쪽으로 가다가 127.25 에서 내려온다. 위치는 200m 안팎씩 이어진다.
+        (1..60).forEach { engine.at(GeoPoint(37.0 + it * 0.002, 127.05)) }
+        (1..100).forEach { engine.at(GeoPoint(37.12, 127.05 + it * 0.002)) }
+        (1..60).forEach { engine.at(GeoPoint(37.12 - it * 0.002, 127.25)) }
+        val back = (1..3).flatMap { engine.at(GeoPoint(37.0, 127.25 + it * 0.001)) }
+        val left = back.filterIsInstance<ShowProgress>().last().remainingMeters
+        // 127.25 지점은 직선 30km 중 25km 쯤이다. 표기 거리 37km 로 늘리면 남은 거리는 약 6km.
+        assertTrue("left=$left", left < 10_000.0)
+    }
 }

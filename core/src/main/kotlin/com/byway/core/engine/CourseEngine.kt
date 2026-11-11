@@ -285,7 +285,14 @@ class CourseEngine(
 
         private fun onStray(point: GeoPoint): List<DriveCommand> {
             // 더미 코스의 선은 지점을 이은 직선이라 실제 도로와 크게 어긋난다. 벗어남을 묻거나 되돌리지 않고 내비 경로를 따른다.
-            if (course.dummy || parked || progress < freeUntil) return emptyList()
+            // 탐색 범위 밖 앞쪽에서 다시 직선 가까이 오면 거기까지 진행을 옮긴다(검토 I-1).
+            if (course.dummy) {
+                val ahead = firstRunNearest(point)?.takeIf { it > progress } ?: return emptyList()
+                progress = ahead
+                checkpoint = ahead
+                return advance()
+            }
+            if (parked || progress < freeUntil) return emptyList()
             strayFixes++
             if (strayFixes < tuning.offCourseFixes) return emptyList()
             strayFixes = 0
@@ -461,9 +468,16 @@ class CourseEngine(
             return listOf(Say(Messages.sectionEntered(now.name)), Publish(DriveEvent.SectionEntered(now)))
         }
 
-        private fun isFinished() = (progress == path.lastIndex && (!course.dummy || nearLastPoint())) || parkedAtEnd()
+        private fun isFinished() = if (course.dummy) {
+            (progress >= course.sections.last().startIndex && nearLastPoint()) || parkedAtEnd()
+        } else {
+            progress == path.lastIndex || parkedAtEnd()
+        }
 
-        /** 더미 코스는 직선 위로 비친 자리만으로는 끝에 닿았다고 보지 않는다. 마지막 지점 가까이 와야 한다. */
+        /**
+         * 더미 코스는 직선 위로 비친 자리만으로는 끝에 닿았다고 보지 않는다. 마지막 구간에 들어와 마지막 지점 가까이 와야 한다.
+         * 내비가 도착 지점을 도로 위로 옮겨 직선 끝점 옆에 서도 끝으로 본다(검토 I-1).
+         */
         private fun nearLastPoint() = last?.let { it.distanceTo(path.last()) <= DUMMY_FINISH_METERS } ?: false
 
         /** 종점 앞 주차장에 세워도 끝까지 달린 것이다. 종점이 탐색 범위에 들어온 뒤에만 본다. 출발점과 종점이 같은 코스가 있다. */
