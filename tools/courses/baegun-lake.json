@@ -22,6 +22,9 @@
     ],
     "ages": [
       "30s"
+    ],
+    "weathers": [
+      "rain"
     ]
   },
   "waypoints": [
