@@ -38,10 +38,12 @@ class PartyRulesTest {
         assertFalse(needsAnswer(view(member(), joined = false)))
     }
 
+    /** 리더의 코스가 끝나면 코스를 비워 다음엔 다시 고른다(PM 11-11 "코스를 고르지 않았는데 이미 지정됨"). */
     @Test
-    fun restartOnlyAfterAccepting() {
-        assertTrue(canRestart(view(member(accepted = true))))
-        assertFalse(canRestart(view(member())))
-        assertFalse(canRestart(view(member(accepted = true), proposal = 0, courseId = null)))
+    fun leaderEndsRunClearsCourse() {
+        assertTrue(leaderEndsRun(view(member(leader = true, accepted = true))))
+        assertFalse(leaderEndsRun(view(member(accepted = true))))
+        assertFalse(leaderEndsRun(view(member(leader = true), proposal = 0, courseId = null)))
+        assertFalse(leaderEndsRun(null))
     }
 }

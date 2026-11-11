@@ -527,4 +527,21 @@ class PartyRoutesTest {
         assertTrue(fromA.pins.isEmpty())
         assertTrue(fromA.members.isEmpty())
     }
+
+    /** 리더의 코스가 끝나면 코스를 비운다. 리더만 할 수 있고, 비우면 질문도 사라진다(PM 11-11). */
+    @Test
+    fun leaderClearsCourseAfterRun() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code)
+        client.propose(a, code)
+        assertEquals(river.id, client.seen(b, code).courseId)
+        assertEquals(HttpStatusCode.Forbidden, client.send("/v1/parties/$code/course", b, "", "DELETE").status)
+        assertEquals(HttpStatusCode.OK, client.send("/v1/parties/$code/course", a, "", "DELETE").status)
+        val seen = client.seen(b, code)
+        assertEquals(null, seen.courseId)
+        assertFalse(com.byway.core.share.needsAnswer(seen))
+    }
 }

@@ -160,6 +160,10 @@ class Store private constructor(private val db: Connection) {
         return query("SELECT proposal FROM party WHERE code = ?", code) { it.getInt(1) }.first()
     }
 
+    /** 코스만 비운다. 제안 번호는 그대로라 다음에 고르면 새 번호로 묻는다. */
+    @Synchronized
+    fun clearCourse(code: String) = update("UPDATE party SET course_id = '' WHERE code = ?", code)
+
     @Synchronized
     fun closeParty(code: String) = update("UPDATE party SET open = 0 WHERE code = ?", code)
 

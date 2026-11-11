@@ -22,6 +22,7 @@ import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.core.geo.GeoPoint
 import com.byway.core.record.RecordRules
+import com.byway.core.share.leaderEndsRun
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.feature.music.MusicFeature
 import com.byway.platform.ConnectedMusic
@@ -232,13 +233,21 @@ class DriveService : Service() {
         }
     }
 
-    /** 코스를 끝내면 위치 보내기를 멈추고 서버의 내 위치를 지운다(동의 철회와 같다). */
+    /**
+     * 코스를 끝내면 위치 보내기를 멈추고 서버의 내 위치를 지운다(동의 철회와 같다).
+     * 리더면 코스도 비워 다음에는 다시 고른다(PM 11-11).
+     */
     private fun stopParty() {
         main.removeCallbacks(partyLoop)
         val code = MyParty.code(this)
-        if (code != null && partySharing) {
+        val clear = leaderEndsRun(DriveBoard.state.party)
+        if (code != null && (partySharing || clear)) {
             val client = Share.client(this)
-            Share.io.execute { client.sharing(code, false) }
+            val sharing = partySharing
+            Share.io.execute {
+                if (sharing) client.sharing(code, false)
+                if (clear) client.clearCourse(code)
+            }
         }
         partySharing = false
         DriveBoard.update { it.copy(party = null) }

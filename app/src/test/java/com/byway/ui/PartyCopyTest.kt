@@ -6,7 +6,6 @@ import com.byway.ui.party.memberTags
 import com.byway.ui.party.PARTY_JOIN_CONSENT
 import com.byway.ui.party.ACCEPT_BUTTON
 import com.byway.ui.party.INVITE_BUTTON
-import com.byway.ui.party.RESTART_BUTTON
 import com.byway.ui.party.START_BUTTON
 import com.byway.ui.party.askTitle
 import com.byway.ui.party.findPartyCourse
@@ -105,7 +104,7 @@ class PartyCopyTest {
     /** 위치가 나가기 시작하는 버튼은 동의 버튼이다(함께달리기 설계 6-7). */
     @Test
     fun buttonsThatShareLocationSayAgree() {
-        listOf(START_BUTTON, RESTART_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
+        listOf(START_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
     }
 
     /** 제안한 사람이 나간 뒤 내가 리더가 되었으면 내 이름을 적지 않는다(함께달리기 설계 6-10.4). */
@@ -127,12 +126,10 @@ class PartyCopyTest {
         assertEquals(null, findPartyCourse("s-404", listed, mine, emptyMap()))
     }
 
-    /** 리더도 나갈 수 있다(설계 6-3). 다시 출발이 있으면 맨 앞이다(검토 I-4). */
+    /** 리더도 나갈 수 있다(설계 6-3). 코스가 끝나면 비우므로 "다시 출발"은 없다(PM 11-11). */
     @Test
     fun everyoneCanLeaveAndTheLeaderCanAlsoEnd() {
-        assertEquals(listOf("코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = false))
-        assertEquals(listOf("동의하고 다시 출발", "코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = true))
-        assertEquals(listOf("동의하고 다시 출발", "나가기"), partyActions(owner = false, restart = true))
-        assertEquals(listOf("나가기"), partyActions(owner = false, restart = false))
+        assertEquals(listOf("코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true))
+        assertEquals(listOf("나가기"), partyActions(owner = false))
     }
 }

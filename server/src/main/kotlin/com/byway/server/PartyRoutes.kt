@@ -25,6 +25,7 @@ import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -144,6 +145,16 @@ fun Route.partyRoutes(server: Server) {
         if (party.owner != me) return@post call.respond(HttpStatusCode.Forbidden, Problem("리더만 코스를 고를 수 있습니다"))
         courseProblem(server, me, party.code, courseId)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
         store.putMember(member.copy(accepted = store.propose(party.code, courseId, server.clock())))
+        call.respond(server.view(party.code, me))
+    }
+
+    /** 리더의 코스가 끝나면 코스를 비운다. 다음 코스는 리더가 다시 고르고, 비운 동안은 묻지 않는다(PM 11-11). */
+    delete("/v1/parties/{code}/course") {
+        val me = call.device(store) ?: return@delete
+        val member = present(server, me) ?: return@delete call.notFound()
+        val party = store.party(member.partyCode)?.takeIf { it.open } ?: return@delete call.notFound()
+        if (party.owner != me) return@delete call.respond(HttpStatusCode.Forbidden, Problem("리더만 코스를 비울 수 있습니다"))
+        store.clearCourse(party.code)
         call.respond(server.view(party.code, me))
     }
 

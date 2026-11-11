@@ -62,8 +62,10 @@ class ShareClientTest {
             client.passLeader("ABC234", "m-1")
             client.kick("ABC234", "m-2")
             client.reopen("ABC234", null)
+            client.clearCourse("ABC234")
             assertEquals(
-                listOf("course", "answer", "leader", "kick", "reopen").map { "POST /v1/parties/ABC234/$it HTTP/1.1" },
+                listOf("course", "answer", "leader", "kick", "reopen").map { "POST /v1/parties/ABC234/$it HTTP/1.1" } +
+                    "DELETE /v1/parties/ABC234/course HTTP/1.1",
                 lines.toList(),
             )
         }

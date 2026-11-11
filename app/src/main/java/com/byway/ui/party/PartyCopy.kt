@@ -21,7 +21,6 @@ internal const val PARTY_INTRO = "여러 차가 함께 달립니다. 사람을 �
 internal const val INVITE_NOTE = "다른 차에서 함께달리기 → 코드로 참여에 이 코드를 넣으면 들어옵니다"
 internal const val PICK_BUTTON = "코스 고르기"
 internal const val START_BUTTON = "동의하고 출발"
-internal const val RESTART_BUTTON = "동의하고 다시 출발"
 internal const val ACCEPT_BUTTON = "동의하고 함께 달리기"
 internal const val DECLINE_BUTTON = "거부하고 파티 나가기"
 internal const val PASS_LEADER = "리더 넘기기"
@@ -38,9 +37,12 @@ internal val PICK_GROUPS = listOf("내가 저장한 코스", "목록 코스", "�
 internal fun findPartyCourse(id: String, courses: List<Course>, mine: List<Course>, uploads: Map<String, String>): Course? =
     courses.firstOrNull { it.id == id } ?: mine.firstOrNull { uploads[it.id] == id }
 
-/** 파티 안 아래 칸의 버튼(앞이 주 버튼). 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3, 검토 I-4). */
-internal fun partyActions(owner: Boolean, restart: Boolean): List<String> =
-    listOfNotNull(RESTART_BUTTON.takeIf { restart }, PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
+/**
+ * 파티 안 아래 칸의 버튼(앞이 주 버튼). 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3, 검토 I-4).
+ * 리더의 코스가 끝나면 코스를 비우므로 "다시 출발"은 두지 않는다(PM 11-11).
+ */
+internal fun partyActions(owner: Boolean): List<String> =
+    listOfNotNull(PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
 
 internal const val LEAVE_BUTTON = "나가기"
 internal const val END_BUTTON = "파티 끝내기"
