@@ -39,6 +39,7 @@ private data class TagsFile(
     val times: List<String> = emptyList(),
     val seasons: List<String> = emptyList(),
     val ages: List<String> = emptyList(),
+    val weathers: List<String> = emptyList(),
 )
 
 @Serializable
@@ -65,7 +66,7 @@ fun parseCourse(text: String): Course {
         path = file.path.map { (lat, lon) -> GeoPoint(lat, lon) },
         sections = sections,
         spots = file.spots.map { Spot(it.name, it.kind, GeoPoint(it.lat, it.lon), it.pathIndex) },
-        tags = CourseTags(file.tags.themes, file.tags.moods, file.tags.times, file.tags.seasons, file.tags.ages),
+        tags = CourseTags(file.tags.themes, file.tags.moods, file.tags.times, file.tags.seasons, file.tags.ages, file.tags.weathers),
         sceneryCredit = file.sceneryCredit,
         sceneryDetail = file.sceneryDetail,
         summary = file.summary,
@@ -88,7 +89,7 @@ fun writeCourse(course: Course): String = json.encodeToString(
         sections = course.sections.map { SectionFile(it.name, it.startIndex, it.endIndex, it.mood) },
         summary = course.summary,
         toleranceMeters = course.toleranceMeters,
-        tags = course.tags.let { TagsFile(it.themes, it.moods, it.times, it.seasons, it.ages) },
+        tags = course.tags.let { TagsFile(it.themes, it.moods, it.times, it.seasons, it.ages, it.weathers) },
         sceneryCredit = course.sceneryCredit,
         sceneryDetail = course.sceneryDetail,
         spots = course.spots.map { SpotFile(it.name, it.kind, it.point.lat, it.point.lon, it.pathIndex) },
