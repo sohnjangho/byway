@@ -94,7 +94,7 @@ class PartyRoutesTest {
         val party = Json.decodeFromString<PartyView>(created.bodyAsText())
         assertTrue(isCode(party.code))
         assertTrue(party.owner && party.open)
-        assertEquals("하나와 함께 달리기", party.name)
+        assertEquals("하나님의 드라이브", party.name)
         val b = client.token()
         assertEquals(HttpStatusCode.OK, client.join(b, party.code).status)
         val fromA = client.seen(a, party.code)

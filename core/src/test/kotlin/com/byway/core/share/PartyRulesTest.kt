@@ -47,12 +47,11 @@ class PartyRulesTest {
         assertFalse(leaderEndsRun(null))
     }
 
-    /** 함께 달리기 기본 이름. 받침이 있으면 "과", 없으면 "와"다. 한글이 아니면 "와"로 둔다. */
+    /** 함께 달리기 기본 이름(PM 11-11 "Road와 함께 달리기는 좀 이상함"): "닉네임님의 드라이브". */
     @Test
-    fun togetherNameFollowsTheLastSyllable() {
-        org.junit.Assert.assertEquals("하나와 함께 달리기", togetherName("하나"))
-        org.junit.Assert.assertEquals("둘과 함께 달리기", togetherName("둘"))
-        org.junit.Assert.assertEquals("Road와 함께 달리기", togetherName("Road"))
-        org.junit.Assert.assertEquals("함께 달리기", togetherName("  "))
+    fun togetherNameIsNicknamesDrive() {
+        org.junit.Assert.assertEquals("하나님의 드라이브", togetherName("하나"))
+        org.junit.Assert.assertEquals("Road님의 드라이브", togetherName(" Road "))
+        org.junit.Assert.assertEquals("함께 드라이브", togetherName("  "))
     }
 }

@@ -15,11 +15,8 @@ fun needsAnswer(view: PartyView): Boolean {
  */
 fun leaderEndsRun(view: PartyView?): Boolean = view != null && view.owner && view.courseId != null
 
-/** 함께 달리기 기본 이름(PM 11-11 "파티" 대신 "함께 달리기"). 받침이 있으면 "과", 없거나 한글이 아니면 "와"다. */
+/** 함께 달리기 기본 이름(PM 11-11): "닉네임님의 드라이브". 닉네임이 비면 "함께 드라이브"다. */
 fun togetherName(nickname: String): String {
     val name = nickname.trim()
-    if (name.isEmpty()) return "함께 달리기"
-    val last = name.last()
-    val batchim = last in '가'..'힣' && (last - '가') % 28 != 0
-    return "$name${if (batchim) "과" else "와"} 함께 달리기"
+    return if (name.isEmpty()) "함께 드라이브" else "${name}님의 드라이브"
 }
