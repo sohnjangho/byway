@@ -393,7 +393,7 @@
 - [ ] **Step 1: 시연 서버를 다시 띄운다.** gpu-wsl에서 서버를 다시 빌드하고 `tools/run-server.sh demo`로 띄운다.
   - 열 늘리기 뒤 옛 시연 파티 A39Z8V를 `GET`할 수 있는지 본다.
   - 기대: 200, `courseId` 팔당 노을, `proposal` 1, 내 줄 `accepted`(Task 2 열 늘리기 규칙).
-- [ ] **Step 2: 시연 빌드를 설치한다.** `./gradlew --no-watch-fs -q :app:assembleRelease -Pbyway.serverUrl=http://100.83.190.98:8787` → 맥에서 `adb install -r`
+- [ ] **Step 2: 시연 빌드를 설치한다.** `./gradlew --no-watch-fs -q :app:assembleRelease -Pbyway.serverUrl=http://<테일넷 주소>:8787` → 맥에서 `adb install -r`
 - [ ] **Step 3: 에뮬레이터에서 확인한다(잠금 안).**
   - **메뉴:** 1/3·2/3·전체 창에서 메뉴와 탭 줄에 "함께달리기"가 보인다. 1/3 탭 줄이 넘치지 않는다. 내 코스에 "파티" 버튼이 없다.
   - **앱이 리더일 때:**
