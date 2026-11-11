@@ -206,6 +206,52 @@ def chain(places, start, target, rnd, used_pairs):
     return picked, round(total)
 
 
+STEP_M = 120.0  # 예시 경로 점 간격(m). 구불거린 뒤에도 300m 를 넘지 않는다.
+MAX_GAP_M = 250.0  # 점 사이 최대 간격
+WIGGLE_MAX_M = 2500.0  # 지점 사이 직선에서 벗어나는 폭의 최댓값. 엔진이 더미를 코스 위로 보는 10km 보다 한참 안이다.
+
+
+def route(points, seed):
+    """지점 사이를 구불구불한 예시 도로로 잇는다. 지점은 정확히 지나고, 다리 양 끝에서는 직선에 붙는다.
+
+    지도 데이터가 아니라 화면용 예시 선이다(PM 11-11 "지도는 없더라도 코스경로는 더미로").
+    """
+    rnd = random.Random(seed)
+    path = [[points[0][1], points[0][2]]]
+    indexes = [0]
+    for a, b in zip(points, points[1:]):
+        d = km(a, b) * 1000
+        n = max(2, math.ceil(d / STEP_M))
+        lat0 = math.radians((a[1] + b[1]) / 2)
+        dy = (b[1] - a[1]) * 111320
+        dx = (b[2] - a[2]) * 111320 * math.cos(lat0)
+        length = math.hypot(dx, dy) or 1.0
+        px, py = -dy / length, dx / length  # 진행 방향의 왼쪽
+        amp = min(WIGGLE_MAX_M, 0.08 * d)
+        waves = [(0.6, rnd.uniform(0.8, 2.2), rnd.uniform(0, 6.3)),
+                 (0.3, rnd.uniform(3, 6), rnd.uniform(0, 6.3)),
+                 (0.1, rnd.uniform(8, 12), rnd.uniform(0, 6.3))]
+        for i in range(1, n + 1):
+            t = i / n
+            if i == n:
+                point = [b[1], b[2]]
+            else:
+                off = amp * math.sin(math.pi * t) * sum(w * math.sin(2 * math.pi * f * t + ph) for w, f, ph in waves)
+                north = dy * t + py * off
+                east = dx * t + px * off
+                point = [round(a[1] + north / 111320, 6), round(a[2] + east / (111320 * math.cos(lat0)), 6)]
+            # 굽은 곳에서 점 사이가 벌어지면 가운데 점을 더 넣는다.
+            start = path[-1]
+            gap = km((0, *start), (0, *point)) * 1000
+            extra = math.ceil(gap / MAX_GAP_M) - 1
+            for k in range(1, extra + 1):
+                f = k / (extra + 1)
+                path.append([round(start[0] + (point[0] - start[0]) * f, 6), round(start[1] + (point[1] - start[1]) * f, 6)])
+            path.append(point)
+        indexes.append(len(path) - 1)
+    return path, indexes
+
+
 def tags(points, rnd):
     themes = []
     for p in points:
@@ -263,6 +309,8 @@ def make():
                 name = f"{short(points[0][0])}–{short(points[1][0])}–{short(points[-1][0])} {word}"
             names.add(name)
             vias = [p[0] for p in points[1:-1]]
+            # 경로 난수는 코스마다 따로 둬 이름·태그를 만드는 난수 순서를 바꾸지 않는다.
+            path, indexes = route(points, f"{region}-{n}")
             words = [THEME_NAME[x] for x in t["themes"]]
             scenery = words[0] if len(words) == 1 else words[0] + ("과 " if batchim(words[0]) else "와 ") + words[1]
             summary = f"{points[0][0]}에서 출발해 {obj(' · '.join(vias))} 지나 {points[-1][0]}까지, {obj(scenery)} 따라 달리는 {region} 길."
@@ -272,8 +320,9 @@ def make():
                 "region": region,
                 "summary": summary,
                 "km": total,
-                "points": [{"name": p[0], "lat": p[1], "lon": p[2]} for p in points],
+                "points": [{"name": p[0], "lat": p[1], "lon": p[2], "pathIndex": i} for p, i in zip(points, indexes)],
                 "tags": t,
+                "path": path,
             })
     # 지역마다 비 오는 날 코스가 하나는 있게 한다.
     for region in COUNTS:
@@ -284,4 +333,4 @@ def make():
 
 
 if __name__ == "__main__":
-    print(json.dumps(make(), ensure_ascii=False, indent=1))
+    print(json.dumps(make(), ensure_ascii=False, separators=(",", ":")))

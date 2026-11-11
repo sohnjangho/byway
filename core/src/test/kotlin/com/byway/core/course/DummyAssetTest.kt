@@ -75,4 +75,33 @@ class DummyAssetTest {
     fun realCoursesHaveSomeRain() {
         assertTrue(real.count { "rain" in it.tags.weathers } >= 3)
     }
+
+    /** 더미 경로(PM 11-11 "지도는 없더라도 코스경로는 더미로"): 지점을 지나고, 촘촘하고, 직선보다 구불구불하되 지점 사이 직선에서 3km 안이다. */
+    @Test
+    fun routesAreWigglyButCloseToTheirPoints() {
+        val file = kotlinx.serialization.json.Json.parseToJsonElement(File("../app/src/main/assets/dummy/courses.json").readText())
+        val points = (file as kotlinx.serialization.json.JsonArray).associate { entry ->
+            val o = entry as kotlinx.serialization.json.JsonObject
+            val id = (o["id"] as kotlinx.serialization.json.JsonPrimitive).content
+            id to (o["points"] as kotlinx.serialization.json.JsonArray).map { p ->
+                val q = p as kotlinx.serialization.json.JsonObject
+                com.byway.core.geo.GeoPoint(
+                    (q["lat"] as kotlinx.serialization.json.JsonPrimitive).content.toDouble(),
+                    (q["lon"] as kotlinx.serialization.json.JsonPrimitive).content.toDouble(),
+                )
+            }
+        }
+        dummies.forEach { c ->
+            val stops = points.getValue(c.id)
+            assertEquals(c.id, stops.first(), c.path.first())
+            c.sections.forEachIndexed { i, s -> assertEquals(c.id, stops[i + 1], c.path[s.endIndex]) }
+            assertTrue(c.id, c.path.zipWithNext { a, b -> a.distanceTo(b) }.all { it <= 300.0 })
+            val routeLength = c.path.zipWithNext { a, b -> a.distanceTo(b) }.sum()
+            val straight = stops.zipWithNext { a, b -> a.distanceTo(b) }.sum()
+            assertTrue("${c.id} ${routeLength / straight}", routeLength / straight >= 1.03)
+            c.sections.forEachIndexed { i, s ->
+                (s.startIndex..s.endIndex).forEach { k -> assertTrue(c.id, c.path[k].distanceToSegment(stops[i], stops[i + 1]) <= 3_000.0) }
+            }
+        }
+    }
 }

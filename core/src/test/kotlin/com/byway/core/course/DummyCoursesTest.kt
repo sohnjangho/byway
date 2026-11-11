@@ -54,4 +54,21 @@ class DummyCoursesTest {
         val course = parseDummyCourses(file(km = 42.0)).single()
         assertEquals(42_000.0, factsOf(course).meters, 1e-9)
     }
+
+    /** 생성기가 만든 구불구불한 더미 경로가 있으면 그 선을 쓰고, 구간은 지점의 pathIndex 에서 끊는다. */
+    @Test
+    fun usesGivenRouteAndCutsSectionsAtPoints() {
+        val text = """
+            [{"id":"dummy-w","name":"구불 더미","region":"강원","summary":"시험","km":5.0,
+              "points":[{"name":"가","lat":37.0,"lon":127.0,"pathIndex":0},
+                        {"name":"나","lat":37.0,"lon":127.02,"pathIndex":2},
+                        {"name":"다","lat":37.0,"lon":127.04,"pathIndex":4}],
+              "path":[[37.0,127.0],[37.003,127.01],[37.0,127.02],[36.997,127.03],[37.0,127.04]]}]
+        """
+        val course = parseDummyCourses(text).single()
+        assertEquals(GeoPoint(37.003, 127.01), course.path[1])
+        assertEquals(5, course.path.size)
+        assertEquals(listOf(Section("나", 0, 2), Section("다", 3, 4)), course.sections)
+        assertTrue(course.dummy)
+    }
 }

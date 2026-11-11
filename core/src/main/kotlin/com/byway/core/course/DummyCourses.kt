@@ -17,10 +17,12 @@ private data class DummyFile(
     val km: Double,
     val points: List<DummyPoint>,
     val tags: DummyTags = DummyTags(),
+    /** 생성기가 만든 구불구불한 예시 경로. 없으면 지점을 직선으로 잇는다. */
+    val path: List<List<Double>> = emptyList(),
 )
 
 @Serializable
-private data class DummyPoint(val name: String, val lat: Double, val lon: Double)
+private data class DummyPoint(val name: String, val lat: Double, val lon: Double, val pathIndex: Int? = null)
 
 @Serializable
 private data class DummyTags(
@@ -34,11 +36,37 @@ private data class DummyTags(
 private val json = Json { ignoreUnknownKeys = true }
 
 /**
- * 지도 없는 더미 코스 목록을 읽는다(더 많은 코스 설계 4절). 지점을 직선으로 이어 [DUMMY_STEP_METERS] 간격의 path 를 만들고,
- * 지점과 지점 사이마다 구간 하나를 두어 그 다리의 도착 지명을 구간 이름으로 쓴다.
+ * 지도 없는 더미 코스 목록을 읽는다(더 많은 코스 설계 4절). 생성기가 만든 예시 경로가 있으면 그 선을 쓰고, 없으면 지점을 직선으로
+ * 이어 [DUMMY_STEP_METERS] 간격의 path 를 만든다. 지점과 지점 사이마다 구간 하나를 두어 그 다리의 도착 지명을 구간 이름으로 쓴다.
  */
 fun parseDummyCourses(text: String): List<Course> = json.decodeFromString<List<DummyFile>>(text).map { file ->
     require(file.points.size >= 2) { "지점이 모자란 더미 코스: ${file.id}" }
+    val (path, sections) = if (file.path.isNotEmpty()) givenRoute(file) else straightRoute(file)
+    Course(
+        id = file.id,
+        name = file.name,
+        path = path,
+        sections = sections,
+        tags = file.tags.let { CourseTags(themes = it.themes, moods = it.moods, times = it.times, seasons = it.seasons, weathers = it.weathers) },
+        summary = file.summary,
+        region = file.region,
+        dummy = true,
+        declaredMeters = file.km * 1_000,
+    )
+}
+
+/** 생성기의 예시 경로. 지점마다 pathIndex 가 있고 구간은 그 자리에서 끊는다. */
+private fun givenRoute(file: DummyFile): Pair<List<GeoPoint>, List<Section>> {
+    val path = file.path.map { (lat, lon) -> GeoPoint(lat, lon) }
+    val ends = file.points.drop(1).map { requireNotNull(it.pathIndex) { "pathIndex 없는 지점: ${file.id}" } }
+    require(file.points.first().pathIndex == 0 && ends.last() == path.lastIndex && ends.zipWithNext().all { (a, b) -> a < b }) { "지점이 경로와 맞지 않음: ${file.id}" }
+    val sections = ends.mapIndexed { leg, end ->
+        Section(file.points[leg + 1].name, if (leg == 0) 0 else ends[leg - 1] + 1, end)
+    }
+    return path to sections
+}
+
+private fun straightRoute(file: DummyFile): Pair<List<GeoPoint>, List<Section>> {
     val points = file.points.map { GeoPoint(it.lat, it.lon) }
     val path = mutableListOf(points.first())
     val sections = mutableListOf<Section>()
@@ -51,17 +79,7 @@ fun parseDummyCourses(text: String): List<Course> = json.decodeFromString<List<D
         }
         sections += Section(file.points[leg + 1].name, start, path.lastIndex)
     }
-    Course(
-        id = file.id,
-        name = file.name,
-        path = path,
-        sections = sections,
-        tags = file.tags.let { CourseTags(themes = it.themes, moods = it.moods, times = it.times, seasons = it.seasons, weathers = it.weathers) },
-        summary = file.summary,
-        region = file.region,
-        dummy = true,
-        declaredMeters = file.km * 1_000,
-    )
+    return path to sections
 }
 
 /** 더미 코스는 직선 path 길이를 표기 거리로 늘려 보인다. 실제 코스는 1이다. */
