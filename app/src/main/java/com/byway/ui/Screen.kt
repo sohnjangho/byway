@@ -59,16 +59,18 @@ data class Nav(
     val picking: Boolean = false,
     /** 3분할 설정에서 화면을 나누라고 안내하는 중인 출발. 나뉘면 이 출발을 시작한다. */
     val splitGuide: StartRequest? = null,
+    /** 출발 화면 고르기에서 고른 배치. 창이 그 배치에 맞게 바뀌기를 기다리는 중이다. 고르기 전에는 없다. */
+    val startLayout: DriveLayout? = null,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
 fun Nav.toTab(tab: Tab): Nav = copy(
     tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, picking = false,
-    splitGuide = null, openFilter = null,
+    splitGuide = null, startLayout = null, openFilter = null,
 )
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
-fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, picking = false, splitGuide = null)
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, picking = false, splitGuide = null, startLayout = null)
 
 /** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
 fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }

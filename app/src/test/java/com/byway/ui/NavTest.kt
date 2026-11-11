@@ -104,11 +104,13 @@ class NavTest {
     @Test
     fun drivingClosesSplitGuide() {
         assertNull(Nav(splitGuide = StartRequest("c1", 0)).whileDriving().splitGuide)
+        assertNull(Nav(splitGuide = StartRequest("c1", 0), startLayout = DriveLayout.SPLIT).whileDriving().startLayout)
     }
 
     @Test
     fun tabClosesSplitGuide() {
         assertNull(Nav(splitGuide = StartRequest("c1", 0)).toTab(Tab.HOME).splitGuide)
+        assertNull(Nav(splitGuide = StartRequest("c1", 0), startLayout = DriveLayout.NAVI).toTab(Tab.HOME).startLayout)
     }
 
     /** 메뉴는 탭 내용 위에 떠 있다. 함께달리기처럼 글이 칸 끝까지 가는 탭은 메뉴 자리를 비운다(넓은 창은 왼쪽, 1/3 칸은 위). */

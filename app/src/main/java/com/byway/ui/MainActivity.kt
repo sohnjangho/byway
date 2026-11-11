@@ -125,21 +125,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 설정한 주행 화면 배치대로 출발한다(주행 화면 3분할 설계 2절). 3분할인데 에움길 창이 1/3이 아니면
-     * 화면을 나누라고 안내하고, 사용자가 나누면 [render]가 이어서 출발한다.
+     * 출발할 화면 배치를 고르게 한다(PM 11-11). 고른 배치가 지금 창에 맞으면 바로, 아니면 사용자가 화면 나눔을 바꾸는 순간
+     * [render]가 이어서 출발한다.
      */
     private fun begin(courseId: String, resumeFrom: Int) {
         val request = StartRequest(courseId, resumeFrom, DriveBoard.state.stop)
-        when (startPlan(currentDriveLayout(), windowClassOf(widthDp()))) {
-            StartPlan.GO -> launch(request)
-            StartPlan.GUIDE -> go(nav.copy(splitGuide = request))
+        go(nav.copy(splitGuide = request, startLayout = null))
+    }
+
+    /** 출발 화면 고르기에서 고른 배치. 다음 출발 때 처음 골라져 있다. */
+    private fun choose(layout: DriveLayout) {
+        MyDrives.driveLayout = layout.name.lowercase()
+        val request = nav.splitGuide ?: return
+        if (layout.fits(windowClassOf(widthDp())) && DriveBoard.state.parked) {
+            go(nav.copy(splitGuide = null, startLayout = null))
+            launch(request, layout)
+        } else {
+            go(nav.copy(startLayout = layout))
         }
     }
 
-    /** 코스를 시작하고 내비를 띄운다. 3분할이면 내비가 가운데로 가고 에움길은 오른쪽 칸으로 간다. */
-    private fun launch(request: StartRequest) {
+    /**
+     * 코스를 시작하고 내비를 띄운다. 3분할에서는 새로 띄운 앱이 가운데로 가므로 내비가 가운데, 에움길이 오른쪽이 된다.
+     * "차량 정보 + 에움길 + 내비"는 잠시 뒤 에움길을 다시 앞으로 불러 가운데로 오게 한다.
+     */
+    private fun launch(request: StartRequest, layout: DriveLayout) {
         DriveService.start(this, request.courseId, request.resumeFrom)
         showNavigation(this)
+        if (layout == DriveLayout.SPLIT_BYWAY) {
+            root.postDelayed({
+                startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+            }, BRING_BACK_MS)
+        }
     }
 
     /** 달리다 만 코스. 코스 목록에 없는 것은 묻지 않는다. */
@@ -160,10 +177,10 @@ class MainActivity : AppCompatActivity() {
     private fun render(state: DriveState) {
         if (state.running) nav = nav.whileDriving()
         // 안내 중 기어를 바꾸면 안내를 닫는다. 화면이 나뉘었으면(1/3 창) 기다리던 출발을 한 번만 시작한다.
-        if (!state.parked && nav.splitGuide != null) nav = nav.copy(splitGuide = null)
+        if (!state.parked && nav.splitGuide != null) nav = nav.copy(splitGuide = null, startLayout = null)
         val (guided, ready) = takeGuide(nav, windowClassOf(widthDp()), state.parked, state.stop)
         nav = guided
-        ready?.let(::launch)
+        ready?.let { launch(it.request, it.layout) }
         // 내 코스를 저장했거나 서버 목록을 받으면 코스 책을 다시 만든다.
         if (bookVersion != CourseCatalog.version) {
             book = currentBook()
@@ -240,12 +257,9 @@ class MainActivity : AppCompatActivity() {
                 )
                 screen == Screen.SplitGuide -> splitGuideScreen(
                     this, kit, book.courses.firstOrNull { it.id == nav.splitGuide?.courseId },
-                    onPlain = {
-                        val request = nav.splitGuide
-                        go(nav.copy(splitGuide = null))
-                        request?.let(::launch)
-                    },
-                    onClose = { go(nav.copy(splitGuide = null)) },
+                    chosen = nav.startLayout,
+                    onChoose = ::choose,
+                    onClose = { go(nav.copy(splitGuide = null, startLayout = null)) },
                 )
                 screen == Screen.Resume && saved != null -> resumeScreen(
                     this, kit, book.courses.first { it.id == saved.courseId }, saved.progress,
@@ -345,6 +359,9 @@ class MainActivity : AppCompatActivity() {
         const val LOCATION = "pleos.car.permission.FUSED_LOCATION"
         const val LOCATION_REQUEST = 1
         const val NAV = "nav"
+
+        /** 내비가 가운데로 간 뒤 에움길을 다시 부르기까지(차량 정보 + 에움길 + 내비). 내비가 뜨는 시간을 둔다. */
+        const val BRING_BACK_MS = 1_500L
 
         /** 창 크기가 바뀌어 Activity 가 다시 만들어져도 코스 수치를 다시 계산하지 않는다. */
         var sharedBook: CourseBook? = null
