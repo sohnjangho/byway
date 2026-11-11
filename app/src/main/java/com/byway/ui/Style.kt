@@ -1,7 +1,6 @@
 package com.byway.ui
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -112,12 +111,15 @@ internal fun Context.quietButton(title: String, onClick: () -> Unit): Button =
 internal fun Context.compactButton(title: String, onClick: () -> Unit): Button =
     quietButton(title, onClick).apply { setPadding(dp(Dimens.SPACE_4), 0, dp(Dimens.SPACE_4), 0) }
 
-/** 주행 화면 버튼. 눈을 끄는 색면을 두지 않으려고 테두리만 그리고 눌림 움직임도 뺀다. */
-internal fun Context.outlineButton(title: String, onClick: () -> Unit): Button =
+/**
+ * 주행 화면 버튼. 홈의 보조 버튼과 같은 면과 선이라 사진 바탕 위에서도 보인다(주행 화면 홈 맞춤 설계 2절).
+ * 눈을 끄는 강조색은 쓰지 않고, 주행 규칙대로 눌림 움직임은 뺀다.
+ */
+internal fun Context.driveButton(title: String, onClick: () -> Unit): Button =
     button(title, Dimens.BODY, Dimens.BUTTON_MEDIUM, onClick).apply {
         stateListAnimator = null
         setTextColor(palette.ink)
-        background = pressable(Color.TRANSPARENT, palette.bgPressed, Dimens.RADIUS_MD, palette.line)
+        background = pressable(palette.bgRaised, palette.bgPressed, Dimens.RADIUS_MD, palette.line)
     }
 
 /** 그려지는 높이는 64dp 지만 터치 영역은 76dp 를 지키도록 위아래에 투명한 여백을 둔다. */

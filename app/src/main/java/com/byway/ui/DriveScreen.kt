@@ -12,6 +12,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
 import com.byway.core.geo.GeoFrame
 import com.byway.core.geo.GeoPoint
+import com.byway.core.geo.Viewport
 import com.byway.core.geo.partyFrame
 import com.byway.service.DriveState
 import com.byway.service.SceneCatalog
@@ -21,6 +22,7 @@ import com.byway.service.SceneCatalog
  * 글 칸에는 코스와 구간, 남은 거리, 안내 문구, 앞으로 만날 곳을 두고, 그 뒤에 코스 사진과 구간 색을 깐다. 지도에는 경로와 번호, 위치 점이 있다.
  * 스크롤과 애니메이션, 분위기 효과는 없고 움직이는 것은 위치 점뿐이다.
  * 파티로 달릴 때 내 차 5km 안에 멤버가 있으면 지도 자리에 확대 지도를 덮는다(주행 화면 3분할 설계 3절). 범위는 점이 가장자리로 나갈 때만 한 번에 바뀐다.
+ * 확대 지도도 홈 장면과 같은 지도, 선, 번호, 출처 칩으로 그리고, 글 칸 바탕과 목록, 버튼도 홈과 같다(주행 화면 홈 맞춤 설계).
  */
 @SuppressLint("ViewConstructor")
 internal class DriveScreen(
@@ -51,20 +53,24 @@ internal class DriveScreen(
     private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
     private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
-    private val end = context.outlineButton("코스 끝내기", onEnd)
+    private val end = context.driveButton("코스 끝내기", onEnd)
 
     /**
      * 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다.
-     * 확대 중에는 장면 지도를 숨기고 글 칸 배경을 화면 전체로 넓혀, 그 위에 바로 그린다. 배경이 하나라 이음매가 없다(화면 다듬기 설계 4절).
+     * 장면과 같은 자리에 놓고 지도는 글 칸 아래까지 띠로 이어진다. 확대 중에는 장면의 지도만 숨기고 출처 칩은 남긴다.
      */
-    private val zoomView = CoursePathView(context).apply { visibility = INVISIBLE }
+    private val zoomView = CoursePathView(context).apply {
+        visibility = INVISIBLE
+        mapWindow = window
+    }
+    private val sideWidth = context.dp(Dimens.RAIL_WIDTH + if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH)
     private var zoomFrame: GeoFrame? = null
 
     init {
         setBackgroundColor(colors.bg)
         val hasPicture = scene != null && Covers.hasScene(context, course.id, context.night)
-        val sideWidth = context.dp(Dimens.RAIL_WIDTH + if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH)
-        val hasPhoto = canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
+        // 홈처럼 1/3 칸은 분위기 색만 깔고, 넓은 칸은 흐린 코스 사진도 깐다.
+        val hasPhoto = !third && canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course))
         if (hasPhoto) Covers.loadScenery(context, course, backdrop::setPicture)
         addView(backdrop, matchFrame())
         sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
@@ -72,14 +78,13 @@ internal class DriveScreen(
         // 지도 출처 한 줄, 글 칸 배경에 코스 사진을 흐리게 깔면 그 사진 출처 한 줄이다.
         sceneView.setCredit(mapCreditLine(style))
         sceneView.setBackdropCredit(moodPhotoCredit(course, hasPhoto))
-        zoomView.zoomCredits = listOfNotNull(course.attribution.takeIf { it.isNotBlank() }, moodPhotoCredit(course, hasPhoto))
+        // 확대 지도는 장면 아래에 둔다. 확대 중에도 장면의 출처 칩이 그 위에 남는다.
+        zoomView.show(course, emptyList())
+        zoomView.showPlaces(places)
+        addView(zoomView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH))
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth
-        })
-        zoomView.show(course, emptyList())
-        addView(zoomView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
-            if (!third) leftMargin = sideWidth
         })
 
         val info = infoColumn()
@@ -123,6 +128,12 @@ internal class DriveScreen(
     }
 
     /** 앞으로 만날 곳과 버튼. 버튼은 홈처럼 아래에 붙고 코스 끝내기의 오른쪽 끝은 물음이 떠도 그대로다. */
+    /** 넓은 칸은 글 칸 오른쪽 지도 자리에 멤버를 맞춘다. 1/3 칸은 지도 칸 전체다. */
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        zoomView.zoomFit = if (third) null else Viewport(sideWidth.toFloat(), 0f, (w - sideWidth).toFloat(), h.toFloat())
+    }
+
     private fun nearColumn(): View = context.column().apply {
         if (!third) addView(aheadTitle)
         rows.forEachIndexed { i, row -> addSpaced(row.view, if (i == 0 && third) 0 else Dimens.SPACE_3) }
@@ -157,12 +168,12 @@ internal class DriveScreen(
 
     /** 내 위치와 칸 크기를 알고 5km 안에 멤버가 있을 때만 확대 지도를 보인다. 아니면 코스 장면이 그대로 보인다. */
     private fun showZoom(me: GeoPoint?, pins: List<com.byway.ui.party.MapPin>) {
-        val zoom = me?.takeIf { zoomView.width > 0 && zoomView.height > 0 }
-            ?.let { partyFrame(it, pins.map { pin -> pin.point }, zoomView.width.toDouble() / zoomView.height, zoomFrame) }
+        val fit = zoomView.zoomFit ?: Viewport(0f, 0f, zoomView.width.toFloat(), zoomView.height.toFloat())
+        val zoom = me?.takeIf { fit.width > 0 && fit.height > 0 }
+            ?.let { partyFrame(it, pins.map { pin -> pin.point }, fit.width.toDouble() / fit.height, zoomFrame) }
         zoomFrame = zoom?.frame
         zoomView.visibility = if (zoom == null) INVISIBLE else VISIBLE
-        sceneView.visibility = if (zoom == null) VISIBLE else INVISIBLE
-        backdrop.full = zoom != null
+        sceneView.setMapShown(zoom == null)
         if (zoom == null) return
         zoomView.zoom(zoom.frame, zoom.far)
         zoomView.moveTo(me)
@@ -183,12 +194,11 @@ internal class DriveScreen(
     }
 }
 
-/** 앞으로 만날 곳 한 줄. 번호와 이름, 설명, 남은 거리다. */
+/** 앞으로 만날 곳 한 줄. 홈의 코스 주변 줄과 같이 번호, 이름, 그 아래 "종류 · 설명 · 남은 거리"다. */
 private class AheadRow(private val context: Context) {
     private val number = context.label("", Dimens.LABEL, bold = true).tabular().apply { gravity = Gravity.CENTER }
     private val name = context.label("", Dimens.SMALL, bold = true).atMostLines(1)
     private val line: TextView = context.label("", Dimens.LABEL, context.palette.ink).atMostLines(1)
-    private val distance = context.label("", Dimens.SMALL, bold = true).tabular().fixedLines(1)
 
     val view: View = context.row().apply {
         addView(number, LinearLayout.LayoutParams(context.dp(Dimens.PLACE_NUMBER), context.dp(Dimens.PLACE_NUMBER)).apply { marginEnd = context.dp(Dimens.SPACE_3) })
@@ -196,7 +206,6 @@ private class AheadRow(private val context: Context) {
             addView(name)
             addView(line)
         }, LinearLayout.LayoutParams(0, WRAP, 1f))
-        addView(distance, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
     }
 
     fun show(place: com.byway.core.course.ScenePlace?, driven: Double, nearest: Boolean) {
@@ -205,8 +214,7 @@ private class AheadRow(private val context: Context) {
         number.text = "${place.no}"
         context.paintBadge(number, nearest)
         name.text = place.name
-        line.text = aheadLine(place)
-        distance.text = aheadKmText(place, driven)
+        line.text = aheadLine(place, driven)
     }
 }
 

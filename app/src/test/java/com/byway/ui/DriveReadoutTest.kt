@@ -105,9 +105,10 @@ class DriveReadoutTest {
         assertEquals("1.5km", aheadKmText(place(1, 5.0), 3.5))
     }
 
+    /** 홈의 코스 주변 줄처럼 종류·설명·거리를 한 줄에 쓴다. 거리는 지금 자리에서 남은 거리다(주행 화면 홈 맞춤 설계 2절). */
     @Test
-    fun thePlaceLineLeavesOutTheCourseKm() {
-        assertEquals("경치 · 해질녘", aheadLine(place(1, 12.4, note = "해질녘")))
-        assertEquals("경치", aheadLine(place(1, 12.4)))
+    fun thePlaceLineReadsLikeTheHomeLineWithTheDistanceAhead() {
+        assertEquals("경치 · 해질녘 · 1.5km 앞", aheadLine(place(1, 5.0, note = "해질녘"), 3.5))
+        assertEquals("경치 · 1.5km 앞", aheadLine(place(1, 5.0), 3.5))
     }
 }

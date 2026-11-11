@@ -51,5 +51,6 @@ fun placesAhead(places: List<ScenePlace>, drivenKm: Double, limit: Int): List<Sc
 fun aheadKmText(place: ScenePlace, drivenKm: Double): String =
     String.format(Locale.ROOT, "%.1fkm", (place.km - drivenKm).coerceAtLeast(0.0))
 
-/** 주행 화면 장소 줄의 설명. 코스 위 거리는 옆에 남은 거리로 적으므로 뺀다. */
-fun aheadLine(place: ScenePlace): String = listOf(place.label, place.note).filter { it.isNotBlank() }.joinToString(" · ")
+/** 주행 화면 장소 줄. 홈의 코스 주변 줄처럼 종류·설명·거리를 한 줄에 쓰고, 거리는 지금 자리에서 남은 거리다. */
+fun aheadLine(place: ScenePlace, drivenKm: Double): String =
+    listOf(place.label, place.note, "${aheadKmText(place, drivenKm)} 앞").filter { it.isNotBlank() }.joinToString(" · ")
