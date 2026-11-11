@@ -88,6 +88,7 @@ internal fun partyCourseGroups(courses: List<Course>, shared: List<SharedCourse>
     courses.forEach { course ->
         val info = byId[course.id]
         when {
+            course.dummy -> Unit
             course.id.startsWith("m-") -> mine += uploads[course.id]?.let { CourseChoice(it, course.name, upload = false) } ?: CourseChoice(course.id, course.name, upload = true)
             info == null -> listed += CourseChoice(course.id, course.name, upload = false)
             info.mine -> Unit

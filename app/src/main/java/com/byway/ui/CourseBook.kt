@@ -8,6 +8,8 @@ import com.byway.core.course.SceneMood
 import com.byway.core.course.Shelf
 import com.byway.core.course.Stop
 import com.byway.core.course.characterOf
+import com.byway.core.course.factsOf
+import com.byway.core.course.lengthScale
 import com.byway.core.course.rank
 import com.byway.core.course.regions
 import com.byway.core.course.suggestFor
@@ -16,8 +18,13 @@ import com.byway.core.course.themes
 /** 코스별 수치를 한 번만 계산해 둔다. 화면은 다시 계산하지 않고 여기서 읽는다. */
 class CourseBook(val courses: List<Course>) {
     private val byId = courses.associateBy { it.id }
+
+    /** 경로를 잰 실제 코스. 더미 코스는 랭킹, 자동 추천, 홈 띠에 넣지 않는다(더 많은 코스 설계 8절). */
+    private val real = courses.filterNot { it.dummy }
     private val rankings = mutableMapOf<RankBy, List<Ranked>>()
-    private val measured by lazy { ranked(RankBy.CURVES).associate { it.course.id to it.facts } }
+    private val measured by lazy {
+        ranked(RankBy.CURVES).associate { it.course.id to it.facts } + courses.filter { it.dummy }.associate { it.id to factsOf(it) }
+    }
     private val characters = mutableMapOf<String, String>()
     private val suggestions = mutableMapOf<Int, Course>()
     private val moodSuggestions = mutableMapOf<Pair<SceneMood, Int>, Course>()
@@ -34,7 +41,7 @@ class CourseBook(val courses: List<Course>) {
      */
     internal val rivals: List<Course> by lazy {
         listOf<(CourseFacts) -> Double>({ it.curves.toDouble() }, { it.eumRatio }, { it.meters }, { it.climbMeters.toDouble() })
-            .flatMap { measure -> courses.sortedByDescending { measure(facts(it)) }.take(2) }.distinctBy { it.id }
+            .flatMap { measure -> real.sortedByDescending { measure(facts(it)) }.take(2) }.distinctBy { it.id }
     }
 
     fun find(id: String): Course = byId.getValue(id)
@@ -47,23 +54,30 @@ class CourseBook(val courses: List<Course>) {
 
     fun facts(course: Course): CourseFacts = measured.getValue(course.id)
 
-    fun ranked(by: RankBy): List<Ranked> = rankings.getOrPut(by) { rank(courses, by) }
+    fun ranked(by: RankBy): List<Ranked> = rankings.getOrPut(by) { rank(real, by) }
 
     fun character(course: Course): String = characters.getOrPut(course.id) {
         characterOf(course, (rivals + course).distinctBy { it.id })
     }
 
-    fun suggested(hour: Int): Course = suggestions.getOrPut(hour) { suggestFor(courses, hour) }
+    fun suggested(hour: Int): Course = suggestions.getOrPut(hour) { suggestFor(real, hour) }
 
-    fun suggested(mood: SceneMood, hour: Int): Course = moodSuggestions.getOrPut(mood to hour) { suggestFor(courses, mood, hour) }
+    fun suggested(mood: SceneMood, hour: Int): Course = moodSuggestions.getOrPut(mood to hour) { suggestFor(real, mood, hour) }
+
+    /** 홈 띠와 다른 코스 서랍에 놓는 코스. 실제 코스에, 지금 고른 코스가 더미면 그 코스를 맨 앞에 더한다. */
+    fun featured(currentId: String?): List<Course> =
+        listOfNotNull(currentId?.let(byId::get)?.takeIf { it.dummy }) + real
 
     fun sectionMeters(course: Course): List<Double> = lengths.getOrPut(course.id) { sectionLengths(course) }
 
     fun stops(course: Course): List<Stop> = stops.getOrPut(course.id) { naviStops(course) }
 
-    /** 구간 끝과 다음 구간 시작 사이의 한 칸은 앞 구간에 넣어 합이 코스 길이가 되게 한다. */
-    private fun sectionLengths(course: Course): List<Double> = course.sections.map { section ->
-        val end = minOf(section.endIndex + 1, course.path.lastIndex)
-        course.path.subList(section.startIndex, end + 1).zipWithNext { a, b -> a.distanceTo(b) }.sum()
+    /** 구간 끝과 다음 구간 시작 사이의 한 칸은 앞 구간에 넣어 합이 코스 길이가 되게 한다. 더미 코스는 표기 거리로 늘린다. */
+    private fun sectionLengths(course: Course): List<Double> {
+        val scale = course.lengthScale()
+        return course.sections.map { section ->
+            val end = minOf(section.endIndex + 1, course.path.lastIndex)
+            course.path.subList(section.startIndex, end + 1).zipWithNext { a, b -> a.distanceTo(b) }.sum() * scale
+        }
     }
 }

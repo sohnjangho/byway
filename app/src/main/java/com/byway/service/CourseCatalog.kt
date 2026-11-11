@@ -3,10 +3,14 @@ package com.byway.service
 import android.content.Context
 import com.byway.core.course.Course
 import com.byway.core.course.parseCourse
+import com.byway.core.course.parseDummyCourses
 
 /** 앱에 들어 있는 코스와 내가 만든 코스, 받은 코스, 서버 목록을 합쳐 읽는다([CourseFiles.courses]). */
 object CourseCatalog {
     private const val FOLDER = "courses"
+
+    /** 지도 없는 시연용 더미 코스(더 많은 코스 설계 4절). 실제 코스 뒤에 붙인다. */
+    private const val DUMMY = "dummy/courses.json"
     private var assets: List<Course>? = null
     private var cached: List<Course>? = null
 
@@ -24,7 +28,9 @@ object CourseCatalog {
         version++
     }
 
-    private fun assets(context: Context): List<Course> = assets ?: context.assets.list(FOLDER).orEmpty().sorted().map { name ->
-        context.assets.open("$FOLDER/$name").bufferedReader().use { parseCourse(it.readText()) }
-    }.also { assets = it }
+    private fun assets(context: Context): List<Course> = assets ?: (
+        context.assets.list(FOLDER).orEmpty().sorted().map { name ->
+            context.assets.open("$FOLDER/$name").bufferedReader().use { parseCourse(it.readText()) }
+        } + context.assets.open(DUMMY).bufferedReader().use { parseDummyCourses(it.readText()) }
+        ).also { assets = it }
 }

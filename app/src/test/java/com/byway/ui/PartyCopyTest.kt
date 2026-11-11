@@ -65,6 +65,17 @@ class PartyCopyTest {
         assertEquals(listOf("s2", "s3"), groups.received.map { it.id })
     }
 
+    /** 더미 코스는 서버에 없어 상대 기기가 못 받을 수 있다. 코스 고르기에 넣지 않는다(더 많은 코스 설계 8절). */
+    @Test
+    fun dummiesAreNotPartyChoices() {
+        val dummy = com.byway.core.course.Course(
+            "dummy-1-01", "더미 길", listOf(com.byway.core.geo.GeoPoint(37.0, 127.0), com.byway.core.geo.GeoPoint(37.0, 127.1)),
+            listOf(com.byway.core.course.Section("끝", 0, 1)), dummy = true, declaredMeters = 12_000.0,
+        )
+        val groups = partyCourseGroups(listOf(dummy), emptyList(), emptyMap(), "ABC234")
+        assertTrue((groups.mine + groups.listed + groups.received).none { it.id == dummy.id })
+    }
+
     @Test
     fun starNoteSaysWhatStaysAndHowToRemoveIt() {
         assertTrue("남습니다" in STAR_NOTE && "지웁니다" in STAR_NOTE)
