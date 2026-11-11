@@ -207,7 +207,8 @@ private class CardAdapter(private val context: Context, private val kit: BrowseK
         private val cover = FrameLayout(context)
         private val name: TextView = context.label("", Dimens.SMALL, bold = true).atMostLines(1)
         private val line: TextView = context.label("", Dimens.LABEL, context.palette.inkSecondary).atMostLines(1)
-        private val about: TextView = context.label("", Dimens.LABEL).atMostLines(2)
+        // 2열(전체 화면)에서 칸 높이가 같아야 다음 줄이 앞 칸을 덮지 않는다. 설명은 늘 두 줄 자리를 쓴다(검토 I-1).
+        private val about: TextView = context.label("", Dimens.LABEL).fixedLines(2)
         private var id: String? = null
 
         init {
@@ -240,7 +241,7 @@ private class CardAdapter(private val context: Context, private val kit: BrowseK
             name.text = course.name
             line.text = rowText(course, item.awayMeters)
             about.text = course.summary
-            about.visibility = if (course.summary.isBlank()) View.GONE else View.VISIBLE
+            about.visibility = if (course.summary.isBlank()) View.INVISIBLE else View.VISIBLE
         }
     }
 
