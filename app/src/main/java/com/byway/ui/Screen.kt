@@ -118,6 +118,10 @@ fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false, asking: B
     return Screen.Browse(nav.tab)
 }
 
+/** 메뉴가 차지하는 자리(dp, 왼쪽 to 위). 메뉴는 탭 내용 위에 떠 있어서, 글이 칸 끝까지 가는 탭은 이만큼 비운다. */
+fun railInset(window: WindowClass): Pair<Int, Int> =
+    if (window == WindowClass.THIRD) 0 to Dimens.RAIL_TOP_HEIGHT else Dimens.RAIL_WIDTH to 0
+
 private const val WIDE_MIN_DP = 1200
 
 /** 앱 칸 전체는 약 1682dp, 내비와 나누면 약 841dp 다. */

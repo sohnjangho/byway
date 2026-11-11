@@ -97,4 +97,12 @@ class NavTest {
     fun tabClosesSplitGuide() {
         assertNull(Nav(splitGuide = StartRequest("c1", 0)).toTab(Tab.HOME).splitGuide)
     }
+
+    /** 메뉴는 탭 내용 위에 떠 있다. 함께달리기처럼 글이 칸 끝까지 가는 탭은 메뉴 자리를 비운다(넓은 창은 왼쪽, 1/3 칸은 위). */
+    @Test
+    fun railInsetLeavesRoomForTheMenu() {
+        assertEquals(0 to Dimens.RAIL_TOP_HEIGHT, railInset(WindowClass.THIRD))
+        assertEquals(Dimens.RAIL_WIDTH to 0, railInset(WindowClass.TWO))
+        assertEquals(Dimens.RAIL_WIDTH to 0, railInset(WindowClass.FULL))
+    }
 }

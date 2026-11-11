@@ -18,10 +18,10 @@ fun moodPhotoCredit(course: Course, hasPhoto: Boolean): String? =
 /**
  * 코스가 정해진 화면의 바탕(화면 다듬기 설계 4절). 구간 분위기 색 위에 흐린 코스 사진을 화면 전체에 깔고,
  * 사진을 쓰면 그 출처를 오른쪽 위에 한 줄로 적는다. 코스가 없으면 바탕색이다. 움직이지 않는다.
- * 내용은 [hold]로 배경과 출처 사이에 넣는다.
+ * 내용은 [hold]로 배경과 출처 사이에 넣는다. 메뉴가 위에 떠 있는 탭(1/3 칸)은 [creditTop](dp)만큼 출처를 내린다.
  */
 @SuppressLint("ViewConstructor")
-internal class MoodLayer(context: Context, window: WindowClass) : FrameLayout(context) {
+internal class MoodLayer(context: Context, window: WindowClass, creditTop: Int = 0) : FrameLayout(context) {
     private val backdrop = DriveBackdrop(context, window, full = true)
     private val credit = context.label("", Dimens.CREDIT, context.palette.onPhoto).apply {
         background = context.rounded(context.palette.photoScrim, Dimens.RADIUS_SM)
@@ -35,7 +35,7 @@ internal class MoodLayer(context: Context, window: WindowClass) : FrameLayout(co
         setBackgroundColor(context.palette.bg)
         addView(backdrop, matchFrame())
         addView(credit, LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.END).apply {
-            topMargin = context.dp(Dimens.SPACE_2)
+            topMargin = context.dp(Dimens.SPACE_2 + creditTop)
             marginEnd = context.dp(Dimens.SPACE_3)
         })
     }

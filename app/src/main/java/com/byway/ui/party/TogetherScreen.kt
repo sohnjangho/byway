@@ -48,6 +48,7 @@ import com.byway.ui.label
 import com.byway.ui.palette
 import com.byway.ui.panes
 import com.byway.ui.primaryButton
+import com.byway.ui.railInset
 import com.byway.ui.quietButton
 import com.byway.ui.row
 import com.byway.ui.share.OFFLINE_NOTE
@@ -65,7 +66,9 @@ private const val POLL_MS = 2_000L
  */
 internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav) -> Unit, onStart: (String) -> Unit): View = with(context) {
     // 코스가 정해지면 그 코스의 분위기를 깐다(화면 다듬기 설계 4절). 그 전에는 바탕색이다.
-    val mood = MoodLayer(context, kit.window)
+    // 메뉴는 이 탭 위에 떠 있다. 분위기 바탕은 메뉴 밑까지 깔고, 글·그림·출처는 메뉴 자리를 비운다.
+    val (railLeft, railTop) = railInset(kit.window)
+    val mood = MoodLayer(context, kit.window, creditTop = railTop)
     val text = column()
     val scroll = ScrollView(context).apply {
         isVerticalScrollBarEnabled = false
@@ -233,14 +236,11 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 call({ Share.client(context).sharing(code, false) }) { if (it.isSuccess) refreshNow() }
             }, Dimens.SPACE_6)
         }
-        // 승낙했는데 달리고 있지 않으면 다시 출발한다. 위치 공유도 다시 켠다(설계 6-10.2).
-        if (canRestart(party)) {
+        // 승낙했는데 달리고 있지 않으면 다시 출발한다. 위치 공유도 다시 켠다(설계 6-10.2). 버튼은 아래 칸에 둔다.
+        val restart = canRestart(party)
+        if (restart) {
             text.addSpaced(label("위치 공유", Dimens.SMALL, bold = true), Dimens.SPACE_6)
             LOCATION_CONSENT.forEach { text.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
-            text.addSpaced(primaryButton(RESTART_BUTTON) {
-                val courseId = party.courseId ?: return@primaryButton
-                call({ Share.client(context).sharing(code, true) }) { if (it.isSuccess) startWhenReady(courseId) }
-            }, Dimens.SPACE_3)
         }
         text.addSpaced(row().apply {
             addView(label(STAR_NOTE, Dimens.LABEL, palette.inkSecondary), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
@@ -249,8 +249,15 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 call({ Share.client(context).star(code, on) }) { if (it.isSuccess) refreshNow() }
             })
         }, Dimens.SPACE_6)
+        if (restart) {
+            actions.addView(primaryButton(RESTART_BUTTON) {
+                val courseId = party.courseId ?: return@primaryButton
+                call({ Share.client(context).sharing(code, true) }) { if (it.isSuccess) startWhenReady(courseId) }
+            }, LinearLayout.LayoutParams(0, WRAP, 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
+        }
         if (party.owner) {
-            actions.addView(primaryButton(PICK_BUTTON) { go(nav.copy(picking = true)) }, LinearLayout.LayoutParams(0, WRAP, 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
+            val pick = if (restart) quietButton(PICK_BUTTON) { go(nav.copy(picking = true)) } else primaryButton(PICK_BUTTON) { go(nav.copy(picking = true)) }
+            actions.addView(pick, LinearLayout.LayoutParams(0, if (restart) MATCH else WRAP, if (restart) 1f else 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
         }
         val leave = quietButton(if (party.owner) "파티 끝내기" else "나가기") {
             call({ if (party.owner) Share.client(context).end(code) else Share.client(context).leave(code) }) { result ->
@@ -361,7 +368,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         addSpaced(actions, Dimens.SPACE_3)
     }
     val content = panes(left, drawing, kit.wide).apply {
-        setPadding(edge, edge, edge, edge)
+        setPadding(edge + dp(railLeft), edge + dp(railTop), edge, edge)
         addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
                 text.removeCallbacks(poll)

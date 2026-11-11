@@ -78,9 +78,10 @@ internal fun partyAskScreen(context: Context, kit: BrowseKit, view: PartyView, c
         }
     }
 
-    val actions = LinearLayout(context).apply {
-        addView(primaryButton(ACCEPT_BUTTON) { answer(accept = true) }, LinearLayout.LayoutParams(0, WRAP, 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
-        addView(quietButton(DECLINE_BUTTON) { answer(accept = false) }, LinearLayout.LayoutParams(0, MATCH, 1f))
+    // 두 답은 글이 길어 위아래로 칸 폭 전체를 쓴다.
+    val actions = column().apply {
+        addView(primaryButton(ACCEPT_BUTTON) { answer(accept = true) }, LinearLayout.LayoutParams(MATCH, WRAP))
+        addSpaced(quietButton(DECLINE_BUTTON) { answer(accept = false) }, Dimens.SPACE_2)
     }
     val left = column().apply {
         addView(ScrollView(context).apply {
