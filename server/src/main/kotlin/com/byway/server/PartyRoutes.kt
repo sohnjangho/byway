@@ -34,12 +34,12 @@ fun Route.partyRoutes(server: Server) {
     post("/v1/parties") {
         val me = call.device(store) ?: return@post
         val request = call.receive<NewParty>()
-        val problem = profileProblem(request.profile) ?: courseProblem(server, me, request.courseId)
+        val problem = profileProblem(request.profile) ?: courseProblem(server, me, request.courseId.orEmpty())
         if (problem != null) return@post call.respond(HttpStatusCode.BadRequest, Problem(problem))
         val name = request.name.trim().ifEmpty { "${request.profile.nickname.trim()}의 파티" }
         nameProblem(name)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
         val code = server.freeCode()
-        store.addParty(PartyRow(code, name, request.courseId, me, open = true), server.clock())
+        store.addParty(PartyRow(code, name, request.courseId.orEmpty(), me, open = true), server.clock())
         store.putMember(MemberRow(code, me, request.profile.nickname.trim(), request.profile.avatar, sharing = false, starred = false))
         call.respond(HttpStatusCode.Created, server.view(code, me))
     }
@@ -126,8 +126,8 @@ fun Route.partyRoutes(server: Server) {
         if (!member.starred || store.party(member.partyCode)?.open != false) {
             return@post call.respond(HttpStatusCode.Conflict, Problem("즐겨찾는 끝난 파티만 다시 열 수 있습니다"))
         }
-        courseProblem(server, me, courseId)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
-        store.reopenParty(member.partyCode, courseId, server.clock())
+        courseProblem(server, me, courseId.orEmpty())?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
+        store.reopenParty(member.partyCode, courseId.orEmpty(), server.clock())
         store.setOwner(member.partyCode, me)
         call.respond(server.view(member.partyCode, me))
     }

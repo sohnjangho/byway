@@ -197,7 +197,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
 
     fun inside(party: PartyView) {
         val me = party.members.firstOrNull { it.me }
-        val course = localCourse(party.courseId)
+        val course = party.courseId?.let(::localCourse)
         mood.show(course)
         course?.let { drawing.show(it, emptyList()) }
         showPins(context, drawing, party)
