@@ -16,10 +16,11 @@ class PartyPinsTest {
         assertEquals(20f, pin.avatarRadius)
     }
 
+    /** 파티는 함께달리기 탭이 되었다. 탭이라 정차 중에만 보인다(함께달리기 설계 6-1). */
     @Test
-    fun partyScreenOnlyWhenParked() {
-        assertEquals(Screen.Party, screenFor(com.byway.service.DriveState(parked = true), Nav(tab = Tab.MINE, party = true)))
-        assertEquals(Screen.Waiting, screenFor(com.byway.service.DriveState(parked = false), Nav(tab = Tab.MINE, party = true)))
+    fun togetherTabOnlyWhenParked() {
+        assertEquals(Screen.Browse(Tab.TOGETHER), screenFor(com.byway.service.DriveState(parked = true), Nav(tab = Tab.TOGETHER)))
+        assertEquals(Screen.Waiting, screenFor(com.byway.service.DriveState(parked = false), Nav(tab = Tab.TOGETHER)))
     }
 
     /** 확대 지도는 핀 아래에 닉네임을 적는다. 핀에 닉네임이 실려야 한다. 내 핀은 그리지 않는다. */

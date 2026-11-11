@@ -238,7 +238,6 @@ class MainActivity : AppCompatActivity() {
                     onDone = { go(nav.copy(share = null)) },
                     onCancel = { go(nav.copy(share = null)) },
                 )
-                screen == Screen.Party -> partyScreen(this, kit, onStart = ::start, onClose = { go(nav.copy(party = false)) })
                 screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
                 screen == Screen.SaveRecord -> saveRecordScreen(
                     this, kit, state.recorded.orEmpty(),
@@ -267,6 +266,7 @@ class MainActivity : AppCompatActivity() {
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
+        Tab.TOGETHER -> partyScreen(this, kit, onStart = ::start, onClose = { openTab(Tab.HOME) })
         Tab.MINE -> mineScreen(
             this,
             kit,
@@ -277,7 +277,7 @@ class MainActivity : AppCompatActivity() {
             onRecord = { go(nav.copy(recordConsent = true)) },
             onShare = { id -> go(nav.copy(share = id)) },
             onChanged = { go(nav) },
-            onParty = { go(nav.copy(party = true)) },
+            onParty = { openTab(Tab.TOGETHER) },
         )
     }
 

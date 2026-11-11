@@ -32,6 +32,17 @@ class NavTest {
         assertEquals(nav, restored)
     }
 
+    /** 함께달리기의 코스 고르기는 메뉴를 바꾸거나 주행하면 닫힌다. */
+    @Test
+    fun pickingClosesWhenTheMenuChanges() {
+        assertEquals(Nav(tab = Tab.HOME), Nav(tab = Tab.TOGETHER, picking = true).toTab(Tab.HOME))
+    }
+
+    @Test
+    fun pickingClosesWhenDriving() {
+        assertEquals(Nav(tab = Tab.TOGETHER), Nav(tab = Tab.TOGETHER, picking = true).whileDriving())
+    }
+
     @Test
     fun pickingAMenuClosesSettingsAndAbout() {
         val nav = Nav(settings = true, about = true, picked = "c1", atlas = AtlasCamera(1f, 2f, 3f)).toTab(Tab.RANKING)
