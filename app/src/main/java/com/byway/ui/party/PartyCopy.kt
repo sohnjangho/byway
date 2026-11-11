@@ -8,17 +8,19 @@ import com.byway.core.share.Visibility
 /** 위치 공유 동의(공유 설계 6-5). 항목, 목적, 보유 기간, 거부 권리를 적는다. 동의 버튼만 동의로 본다. */
 internal val LOCATION_CONSENT = listOf(
     "함께 달릴 친구에게 내 닉네임, 아바타, 차 위치를 보여 줍니다.",
-    "위치는 함께 달리는 동안 2초마다 보내고, 서버는 받은 지 60초가 지나면 지웁니다.",
-    "함께 달리기가 끝나거나 '위치 공유 끄기', '코스 끝내기'를 누르면 바로 멈추고 서버에서 지웁니다.",
-    "동의하지 않을 수 있습니다. 그러면 함께 출발하지 않고 함께 달리기에서 나갑니다. 코스는 언제든 혼자 달릴 수 있습니다.",
+    "위치는 함께 달리는 동안 2초마다 보냅니다.",
+    "서버는 받은 위치를 60초가 지나면 지웁니다.",
+    "'위치 공유 끄기'·'코스 끝내기'를 누르거나 끝나면\n바로 멈추고 서버에서 지웁니다.",
+    // PM이 문구 그대로 쓰기로 했다(11-11). 낱말은 그대로 두고 문장 사이에서만 줄을 나눈다.
+    "동의하지 않을 수 있습니다.\n그러면 함께 출발하지 않고 함께 달리기에서 나갑니다.\n코스는 언제든 혼자 달릴 수 있습니다.",
 )
 
-internal const val STAR_NOTE = "별표하면 이 함께 달리기가 끝나도 내 닉네임과 아바타가 남습니다. 별표를 끄거나 나가면 지웁니다"
+internal const val STAR_NOTE = "별표하면 끝나도 닉네임·아바타가 남습니다\n별표를 끄거나 나가면 지웁니다"
 
-internal const val PARTY_INTRO = "여러 차가 함께 달립니다. 사람을 먼저 모으고, 리더가 코스를 고릅니다. 정차 중에만 합니다"
+internal const val PARTY_INTRO = "여러 차가 함께 달립니다. 정차 중에만 씁니다\n사람을 먼저 모으고, 리더가 코스를 고릅니다"
 
 // 함께달리기 문구(함께달리기 설계 6-2~6-6). 위치가 나가는 버튼은 모두 "동의하고"로 시작한다.
-internal const val INVITE_NOTE = "다른 차에서 함께달리기 → 코드로 참여에 이 코드를 넣으면 들어옵니다"
+internal const val INVITE_NOTE = "다른 차에서 이 코드로 참여하면 함께 달립니다"
 internal const val PICK_BUTTON = "코스 고르기"
 internal const val START_BUTTON = "동의하고 출발"
 internal const val ACCEPT_BUTTON = "동의하고 함께 달리기"
@@ -66,8 +68,9 @@ internal fun memberTags(member: PartyMember, proposal: Int): String = listOfNotN
 
 /** 만들기·참여 요청에는 닉네임과 아바타가 실린다. 보내기 전에 알리고 동의 버튼으로 받는다. */
 internal val PARTY_JOIN_CONSENT = listOf(
-    "함께 달리기를 만들거나 참여하면 함께 달릴 친구에게 내 닉네임과 아바타가 보입니다.",
-    "함께 달리기가 끝나거나 나가면 서버에서 지웁니다. 별표한 함께 달리기는 별표를 끌 때 지웁니다.",
+    "함께 달릴 친구에게 내 닉네임과 아바타가 보입니다.",
+    "끝나거나 나가면 서버에서 지웁니다.",
+    "별표한 함께 달리기는 별표를 끌 때 지웁니다.",
 )
 /** 파티원 초대는 파티를 열며 내 닉네임과 아바타를 올린다. 그래서 동의 버튼이다. */
 internal const val INVITE_BUTTON = "동의하고 함께 달릴 친구 초대"
@@ -102,3 +105,6 @@ internal fun partyCourseGroups(courses: List<Course>, shared: List<SharedCourse>
     }
     return CourseGroups(mine, listed, received)
 }
+
+/** 줄머리표를 붙인다. 문구 안에서 직접 나눈 둘째 줄부터는 머리표 너비만큼 들여 쓴다. */
+internal fun bullet(text: String): String = "· " + text.replace("\n", "\n  ")

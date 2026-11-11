@@ -7,10 +7,10 @@ import com.byway.service.MyDrives
  * [panes]는 왼쪽부터의 칸 이름이다. 저장값은 이름의 소문자("split", "split_byway", "navi")다.
  * 3분할에서는 새로 띄운 앱이 가운데로 가고 가운데 있던 앱이 오른쪽으로 간다(주행 화면 3분할 설계, 11-11 실측).
  */
-enum class DriveLayout(val title: String, val panes: List<String>, private val needsThird: Boolean) {
-    SPLIT("3분할 · 차량 정보 + 내비 + 에움길", listOf("차량 정보", "내비", "에움길"), true),
-    SPLIT_BYWAY("3분할 · 차량 정보 + 에움길 + 내비", listOf("차량 정보", "에움길", "내비"), true),
-    NAVI("2분할 · 차량 정보 + 내비", listOf("차량 정보", "내비"), false);
+enum class DriveLayout(val title: String, val short: String, val panes: List<String>, private val needsThird: Boolean) {
+    SPLIT("3분할 · 차량 정보 + 내비 + 에움길", "3분할 · 내비 가운데", listOf("차량 정보", "내비", "에움길"), true),
+    SPLIT_BYWAY("3분할 · 차량 정보 + 에움길 + 내비", "3분할 · 에움길 가운데", listOf("차량 정보", "에움길", "내비"), true),
+    NAVI("2분할 · 차량 정보 + 내비", "2분할 · 내비 넓게", listOf("차량 정보", "내비"), false);
 
     /** 지금 창에서 바로 출발할 수 있는가. 3분할은 에움길이 1/3 칸일 때, 2분할은 넓은 칸일 때다. */
     fun fits(window: WindowClass): Boolean = needsThird == (window == WindowClass.THIRD)
@@ -23,7 +23,7 @@ enum class DriveLayout(val title: String, val panes: List<String>, private val n
 internal fun currentDriveLayout(): DriveLayout = DriveLayout.of(MyDrives.driveLayout)
 
 /** 설정의 "주행 화면" 아래 설명. 고른 값은 출발할 때 처음 골라져 있는 배치다. */
-const val DRIVE_LAYOUT_NOTE = "출발할 때 그림을 보고 다시 고를 수 있습니다. 여기서 고른 배치가 처음 골라져 있습니다"
+const val DRIVE_LAYOUT_NOTE = "여기서 고른 배치가 출발할 때 먼저 골라져 있습니다"
 
 const val START_CHOICE_TITLE = "어떤 화면으로 달릴까요"
 const val START_CHOICE_BUTTON = "이 화면으로 출발"

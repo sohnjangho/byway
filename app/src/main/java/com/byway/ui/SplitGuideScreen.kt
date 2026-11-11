@@ -69,7 +69,7 @@ private fun Context.choiceCard(layout: DriveLayout, third: Boolean, onPick: () -
     val text = column().apply {
         addView(label(kind, Dimens.SMALL, bold = true))
         addView(label(panes, Dimens.LABEL, palette.inkSecondary).atMostLines(2))
-        addSpaced(label(choiceNote(layout), Dimens.LABEL).atMostLines(3), Dimens.SPACE_2)
+        addSpaced(label(choiceNote(layout), Dimens.LABEL), Dimens.SPACE_2)
     }
     val picture = pleosScreen(layout)
     val pad = dp(Dimens.SPACE_4)
@@ -120,9 +120,9 @@ private fun Context.pleosScreen(layout: DriveLayout): View = column().apply {
 
 /** 고르기 칸마다 그 배치에서 칸이 하는 일. */
 internal fun choiceNote(layout: DriveLayout): String = when (layout) {
-    DriveLayout.SPLIT -> "내비가 가운데에서 길을 안내하고, 에움길은 오른쪽에서 남은 거리와 코스 주변을 보여 줍니다"
-    DriveLayout.SPLIT_BYWAY -> "에움길이 가운데에서 남은 거리와 코스 주변을 보여 주고, 내비는 오른쪽에서 길을 안내합니다"
-    DriveLayout.NAVI -> "내비가 넓게 길을 안내합니다. 에움길은 뒤에서 코스를 이어 가며 음성으로 알립니다"
+    DriveLayout.SPLIT -> "내비가 가운데에서 길을 안내하고\n에움길은 오른쪽에서 남은 거리를 보여 줍니다"
+    DriveLayout.SPLIT_BYWAY -> "에움길이 가운데에서 남은 거리를 보여 주고\n내비는 오른쪽에서 길을 안내합니다"
+    DriveLayout.NAVI -> "내비가 넓게 길을 안내합니다\n에움길은 뒤에서 음성으로 알립니다"
 }
 
 private const val PICTURE_HEIGHT = 190

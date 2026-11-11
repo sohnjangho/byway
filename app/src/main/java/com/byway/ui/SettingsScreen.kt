@@ -65,7 +65,7 @@ private fun Context.mapChoice(onChanged: () -> Unit): View =
 
 /** 코스를 달릴 때의 화면 배치. 바꿔도 지금 화면은 그대로라 다시 그리지 않는다. */
 private fun Context.layoutChoice(): View =
-    chipRow(DriveLayout.entries.map { Choice(it.name, it.title) }, currentDriveLayout().name, Dimens.SMALL) { key ->
+    chipRow(DriveLayout.entries.map { Choice(it.name, it.short) }, currentDriveLayout().name, Dimens.SMALL) { key ->
         MyDrives.driveLayout = key.lowercase()
     }
 

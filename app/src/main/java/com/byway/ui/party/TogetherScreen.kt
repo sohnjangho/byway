@@ -163,7 +163,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         text.addSpaced(section(null) { addView(profileBlock(context) { render() }) }, Dimens.SPACE_6)
         val profile = MyProfile.get(context)
         text.addSpaced(section("함께 달릴 친구 초대") {
-            PARTY_JOIN_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+            PARTY_JOIN_CONSENT.forEach { addSpaced(label(bullet(it), Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             addSpaced(primaryButton(INVITE_BUTTON) {
                 val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
                 call({ Share.client(context).createParty(NewParty(null, "", me)) }) { result -> (result.getOrNull() as? PartyView)?.let(::joined) }
@@ -270,7 +270,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val start = canStart(party)
         if (start) {
             text.addSpaced(section("위치 공유") {
-                LOCATION_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+                LOCATION_CONSENT.forEach { addSpaced(label(bullet(it), Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             }, Dimens.SPACE_4)
         }
         val labels = partyActions(party.owner, start)
@@ -319,10 +319,10 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             val meters = course.path.zipWithNext { a, b -> a.distanceTo(b) }.sum()
             detail.addView(label("${course.name} · ${kmText(meters)}", Dimens.BODY, bold = true))
             detail.addSpaced(label("위치 공유", Dimens.SMALL, bold = true), Dimens.SPACE_4)
-            LOCATION_CONSENT.forEach { detail.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+            LOCATION_CONSENT.forEach { detail.addSpaced(label(bullet(it), Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             if (choice.upload) {
                 detail.addSpaced(label("이 함께 달리기로 코스 공유", Dimens.SMALL, bold = true), Dimens.SPACE_4)
-                consentLines(Visibility.PARTY).forEach { detail.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+                consentLines(Visibility.PARTY).forEach { detail.addSpaced(label(bullet(it), Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             }
         }
 
