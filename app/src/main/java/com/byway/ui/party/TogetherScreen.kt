@@ -214,7 +214,12 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         text.addSpaced(label(party.name, Dimens.HEADING, bold = true), Dimens.SPACE_2)
         // 기능마다 칸으로 묶는다(PM 11-11): 코드 / 코스 / 함께 달릴 친구. 버튼 줄은 칸 밖 아래 칸이다.
         text.addSpaced(section("함께 달리기 코드") {
-            addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply { letterSpacing = 0.2f })
+            // 넓은 글자(W, M)가 섞여도 코드가 한 줄에 들게 칸 폭에 맞춰 글자를 줄인다.
+            addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply {
+                letterSpacing = 0.2f
+                maxLines = 1
+                setAutoSizeTextTypeUniformWithConfiguration(CODE_MIN_SP, Dimens.DRIVE_NUMBER.toInt(), 2, android.util.TypedValue.COMPLEX_UNIT_SP)
+            }, LinearLayout.LayoutParams(MATCH, WRAP))
             addSpaced(label(INVITE_NOTE, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         }, Dimens.SPACE_4)
         val courseLine = course?.name ?: if (party.courseId != null) "코스를 받는 중입니다" else NO_COURSE_YET
@@ -496,3 +501,6 @@ private fun Context.section(title: String?, fill: LinearLayout.() -> Unit): Line
     title?.let { addView(label(it, Dimens.SMALL, bold = true)) }
     fill()
 }
+
+/** 함께 달리기 코드가 칸 폭에 맞춰 줄어드는 가장 작은 글자 크기(sp). */
+private const val CODE_MIN_SP = 40
