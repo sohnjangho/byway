@@ -43,7 +43,7 @@ internal fun Context.chipRow(choices: List<Choice>, selected: String?, size: Flo
     }.bounceAtEnds(vertical = false)
 
 /** 고른 칩은 accent 면이 아니라 옅은 바탕이다. 한 화면의 accent 면은 주 버튼 하나다. */
-private fun Context.paint(chip: TextView, on: Boolean) {
+internal fun Context.paint(chip: TextView, on: Boolean) {
     chip.setTextColor(if (on) palette.accent else palette.ink)
     chip.typeface = if (on) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
     chip.background = if (on) {

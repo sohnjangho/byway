@@ -98,7 +98,7 @@ internal fun shareScreen(context: Context, kit: BrowseKit, course: Course, onDon
                     uploaded.code?.let { code ->
                         text.addSpaced(label("공유 코드", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_6)
                         text.addSpaced(label(code, Dimens.DRIVE_NUMBER, bold = true).apply { letterSpacing = 0.2f }, Dimens.SPACE_2)
-                        text.addSpaced(label("다른 차에서 둘러보기의 '코드로 받기'에 넣으면 받습니다", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
+                        text.addSpaced(label("다른 차에서 더 많은 코스의 '코드로 받기'에 넣으면 받습니다", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
                     }
                     text.addView(Space(context), fill())
                     text.addSpaced(primaryButton("확인", onDone), Dimens.SPACE_6)

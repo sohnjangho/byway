@@ -1,6 +1,7 @@
 package com.byway.ui
 
 import com.byway.core.course.Course
+import com.byway.core.course.CourseFilter
 import com.byway.core.course.RankBy
 import com.byway.service.DriveState
 import java.io.Serializable
@@ -8,7 +9,7 @@ import java.io.Serializable
 /** 레일 메뉴. */
 enum class Tab(val title: String) {
     HOME("홈"),
-    BROWSE("둘러보기"),
+    BROWSE("더 많은 코스"),
     RANKING("랭킹"),
     MINE("내 코스"),
     TOGETHER("함께달리기"),
@@ -38,12 +39,14 @@ data class Nav(
     /** 홈에 올린 코스. 없으면 지금 시간과 계절에 맞는 코스를 올린다. */
     val courseId: String? = null,
     val about: Boolean = false,
-    val theme: String? = null,
-    val region: String? = null,
+    /** 더 많은 코스의 검색어와 걸러 보기. 메뉴를 옮겨도 남는다. */
+    val filter: CourseFilter = CourseFilter(),
+    /** 더 많은 코스에서 칩 줄을 펼친 걸러 보기(near, mood, length, region, theme). */
+    val openFilter: String? = null,
     val rankBy: RankBy = RankBy.CURVES,
     /** 사용자가 움직인 한국 지도 자리. 없으면 화면이 정한다. */
     val atlas: AtlasCamera? = null,
-    /** 둘러보기에서 고른 코스. 지도가 이 코스로 확대되어 있다. */
+    /** 더 많은 코스에서 고른 코스. 지도가 이 코스로 확대되어 있다. */
     val picked: String? = null,
     /** 홈 코스 띠를 넘겨 둔 자리(px). */
     val stripX: Int? = null,
@@ -59,7 +62,10 @@ data class Nav(
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
-fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, picking = false, splitGuide = null)
+fun Nav.toTab(tab: Tab): Nav = copy(
+    tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, picking = false,
+    splitGuide = null, openFilter = null,
+)
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
 fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, picking = false, splitGuide = null)

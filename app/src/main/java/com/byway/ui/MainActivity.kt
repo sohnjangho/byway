@@ -1,5 +1,6 @@
 package com.byway.ui
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.drawable.ColorDrawable
@@ -13,6 +14,7 @@ import com.byway.core.course.Weather
 import com.byway.platform.showNavigation
 import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
+import com.byway.service.BrowseLocation
 import com.byway.service.DriveService
 import com.byway.service.DriveState
 import com.byway.service.MyParty
@@ -57,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
         (savedInstanceState?.getSerializable(NAV) as? Nav)?.let { nav = it }
+        demoQuery(intent)
         book = currentBook()
         root = FrameLayout(this)
         root.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
@@ -83,6 +86,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         DriveBoard.stopListening(render)
         PartyWatch.stop()
+        BrowseLocation.stop()
         super.onStop()
     }
 
@@ -174,6 +178,13 @@ class MainActivity : AppCompatActivity() {
         }
         val asking = partyCode != null && PartyWatch.view?.let(::needsAnswer) == true
         val next = screenFor(state, nav, resumable = saved != null, asking = asking)
+        // 더 많은 코스가 보이는 동안만 위치를 받는다. 내 주변이 걸려 있을 때만 크게 움직이면 다시 그린다(더 많은 코스 설계 5절).
+        BrowseLocation.keep(this, next == Screen.Browse(Tab.BROWSE)) {
+            if (nav.filter.near != null) {
+                stale = true
+                render(DriveBoard.state)
+            }
+        }
         // 정차 화면을 열 때 공유 코스 목록을 새로 받는다. 바뀌었을 때만 화면을 다시 그린다.
         if (next is Screen.Browse) ShareSync.refresh(this) { render(DriveBoard.state) }
         val width = widthDp()
@@ -305,6 +316,22 @@ class MainActivity : AppCompatActivity() {
             onShare = { id -> go(nav.copy(share = id)) },
             onChanged = { go(nav) },
         )
+    }
+
+    /** 시연용 debug 빌드에서만 --es query <글>로 더 많은 코스의 검색어를 넣는다. 에뮬레이터는 한글 입력을 adb 로 보낼 수 없다. */
+    private fun demoQuery(intent: Intent?) {
+        if (!BuildConfig.DEBUG) return
+        val query = intent?.getStringExtra("query") ?: return
+        nav = nav.toTab(Tab.BROWSE).copy(filter = nav.filter.copy(query = query))
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (BuildConfig.DEBUG && intent.hasExtra("query")) {
+            demoQuery(intent)
+            go(nav)
+        }
     }
 
     /** 날씨 입력이 아직 없다. 시연용 debug 빌드에서만 --es weather rain 으로 분위기를 고른다. */

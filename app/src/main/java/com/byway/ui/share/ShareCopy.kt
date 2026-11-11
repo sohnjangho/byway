@@ -8,7 +8,7 @@ internal val SHARE_SCOPES = listOf(Visibility.PUBLIC to "전체", Visibility.PAR
 internal fun scopeTitle(scope: String): String = SHARE_SCOPES.firstOrNull { it.first == scope }?.second ?: scope
 
 internal fun scopeHint(scope: String): String = when (scope) {
-    Visibility.PUBLIC -> "둘러보기와 랭킹에서 모든 사람이 봅니다"
+    Visibility.PUBLIC -> "더 많은 코스와 랭킹에서 모든 사람이 봅니다"
     Visibility.PARTY -> "고른 파티의 멤버만 봅니다"
     else -> "코드를 받은 사람만 봅니다"
 }

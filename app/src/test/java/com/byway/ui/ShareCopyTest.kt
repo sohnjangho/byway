@@ -17,7 +17,7 @@ class ShareCopyTest {
     @Test
     fun threeScopesInOrder() {
         assertEquals(listOf("public" to "전체", "party" to "파티", "link" to "링크"), SHARE_SCOPES)
-        assertTrue("둘러보기" in scopeHint("public"))
+        assertTrue("더 많은 코스" in scopeHint("public"))
         assertTrue("멤버" in scopeHint("party"))
         assertTrue("코드" in scopeHint("link"))
     }

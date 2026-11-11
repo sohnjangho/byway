@@ -81,7 +81,7 @@ internal fun Context.madeCourseActions(course: Course, onShare: () -> Unit, onCh
     addSpaced(buttons, Dimens.SPACE_2)
 }
 
-/** 둘러보기 위쪽의 코드로 받기. 받으면 기기에 저장하고 그 코스를 홈에 올린다. */
+/** 더 많은 코스 위쪽의 코드로 받기. 받으면 기기에 저장하고 그 코스를 홈에 올린다. */
 internal fun Context.codeEntry(onReceived: (Course) -> Unit): View = column().apply {
     val context = this@codeEntry
     val field = textField("받은 코드 6자리", 6, code = true)
