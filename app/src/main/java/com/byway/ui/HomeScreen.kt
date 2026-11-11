@@ -184,8 +184,9 @@ private fun Context.infoColumn(
 ): View = column().apply {
     val third = kit.window == WindowClass.THIRD
     val facts = kit.book.facts(course)
-    if (!third) addView(label(kick, Dimens.SMALL, palette.inkSecondary).atMostLines(1))
-    addView(label(withDummyMark(course, course.name), if (third) Dimens.THIRD_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
+    // 더미 표시는 넓은 창에서는 윗줄에 붙여 코스 이름이 잘리지 않게 한다. 1/3 창은 윗줄이 없어 이름 앞에 붙인다.
+    if (!third) addView(label(withDummyMark(course, kick), Dimens.SMALL, palette.inkSecondary).atMostLines(1))
+    addView(label(if (third) withDummyMark(course, course.name) else course.name, if (third) Dimens.THIRD_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     // 공유 코스는 요약 대신 완주 횟수와 신고를 보인다(공유 설계 6-4).
     if (isShared(course.id)) {

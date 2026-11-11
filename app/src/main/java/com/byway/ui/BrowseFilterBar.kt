@@ -24,7 +24,8 @@ import com.byway.core.course.isEmpty
 internal fun Context.searchField(query: String, onQuery: (String) -> Unit): View {
     val field = textField(SEARCH_HINT, SEARCH_MAX).apply {
         setText(query)
-        imeOptions = EditorInfo.IME_ACTION_SEARCH
+        // 가로 화면에서 키보드가 전체 화면 입력 칸을 띄우면 목록이 줄어드는 것을 볼 수 없다. 앱 화면 위에 키보드만 올린다.
+        imeOptions = EditorInfo.IME_ACTION_SEARCH or EditorInfo.IME_FLAG_NO_EXTRACT_UI or EditorInfo.IME_FLAG_NO_FULLSCREEN
         setPadding(dp(Dimens.SPACE_6), 0, dp(Dimens.TOUCH_MIN + Dimens.SPACE_2), 0)
     }
     val clear = label("×", Dimens.HEADING, palette.inkSecondary).apply {

@@ -82,7 +82,9 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             }
         }
         fun pick(id: String) {
-            val camera = atlas.cameraFor(id) ?: return
+            // 더미 코스는 선이 없어 확대할 것이 없다. 전국 지도에서 그 점만 강조해 어디인지 보인다.
+            val dummy = found.firstOrNull { it.course.id == id }?.course?.dummy == true
+            val camera = (if (dummy) atlas.overview() else atlas.cameraFor(id)) ?: return
             keep(current.copy(picked = id, atlas = camera))
             atlas.focusOn(camera, id)
             mark(id)

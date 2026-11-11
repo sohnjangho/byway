@@ -204,10 +204,15 @@ class CoursePathView(context: Context) : View(context) {
         val density = resources.displayMetrics.density
         val w = width.toFloat()
         val h = height.toFloat()
+        // 카드 썸네일은 카드 면(bgRaised) 위에 놓이므로 바탕색으로 칠해 그림 자리가 보이게 한다.
+        noMapFill.color = if (thin) colors.bg else colors.bgRaised
         noMapFill.alpha = if (thin) 255 else 150
         canvas.drawRoundRect(0f, 0f, w, h, density * Dimens.RADIUS_MD, density * Dimens.RADIUS_MD, noMapFill)
         noMapText.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, if (thin) Dimens.LABEL else Dimens.BODY, resources.displayMetrics)
-        val lines = if (noMapText.measureText(NO_MAP) > w * 0.9f) NO_MAP.split(" · ") else listOf(NO_MAP)
+        val lines = if (noMapText.measureText(NO_MAP) > w * 0.9f) listOf("지도 없음", DUMMY_WORD) else listOf(NO_MAP)
+        // 아주 작은 썸네일(홈 띠)에서도 두 줄이 칸 안에 들게 글을 줄인다.
+        val widest = lines.maxOf { noMapText.measureText(it) }
+        if (widest > w * 0.9f) noMapText.textSize *= w * 0.9f / widest
         val gap = noMapText.textSize * 1.3f
         val top = h / 2 - gap * (lines.size - 1) / 2 + noMapText.textSize * 0.35f
         lines.forEachIndexed { i, text -> canvas.drawText(text, w / 2, top + gap * i, noMapText) }
