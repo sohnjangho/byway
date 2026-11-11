@@ -49,6 +49,7 @@ import com.byway.ui.panes
 import com.byway.ui.primaryButton
 import com.byway.ui.railInset
 import com.byway.ui.quietButton
+import com.byway.ui.rounded
 import com.byway.ui.row
 import com.byway.ui.share.OFFLINE_NOTE
 import com.byway.ui.share.consentLines
@@ -157,17 +158,18 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         drawing.visibility = noPicture
         text.addView(label("함께달리기", Dimens.HEADING, bold = true))
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
-        text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
+        // 기능마다 칸으로 묶는다(PM 11-11 "각 기능별로 구획되지 않음"): 내 프로필 / 친구 초대 / 코드로 참여 / 즐겨찾기.
+        text.addSpaced(section(null) { addView(profileBlock(context) { render() }) }, Dimens.SPACE_6)
         val profile = MyProfile.get(context)
-        text.addSpaced(label("함께 달릴 친구 초대", Dimens.SMALL, bold = true), Dimens.SPACE_6)
-        PARTY_JOIN_CONSENT.forEach { text.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
-        text.addSpaced(primaryButton(INVITE_BUTTON) {
-            val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
-            call({ Share.client(context).createParty(NewParty(null, "", me)) }) { result -> (result.getOrNull() as? PartyView)?.let(::joined) }
-        }, Dimens.SPACE_3)
-        text.addSpaced(label("코드로 참여", Dimens.SMALL, bold = true), Dimens.SPACE_6)
+        text.addSpaced(section("함께 달릴 친구 초대") {
+            PARTY_JOIN_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+            addSpaced(primaryButton(INVITE_BUTTON) {
+                val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
+                call({ Share.client(context).createParty(NewParty(null, "", me)) }) { result -> (result.getOrNull() as? PartyView)?.let(::joined) }
+            }, Dimens.SPACE_4)
+        }, Dimens.SPACE_4)
         val field = textField("함께 달리기 코드 6자리", 6, code = true)
-        text.addSpaced(row().apply {
+        text.addSpaced(section("코드로 참여") { addSpaced(row().apply {
             addView(field, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
             addView(smallButton(JOIN_BUTTON) {
                 val me = profile ?: return@smallButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
@@ -175,15 +177,15 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 if (!isCode(code)) return@smallButton run { note.text = "코드는 숫자와 영문 6자리입니다" }
                 call({ Share.client(context).join(code, me) }) { result -> (result.getOrNull() as? PartyView)?.let(::joined) }
             })
-        }, Dimens.SPACE_2)
-        // 즐겨찾는 파티: 끝난 것은 다시 모이기, 누가 다시 열어 둔 것은 들어가기(설계 6-10.6).
-        val favorites = column()
-        text.addSpaced(favorites, Dimens.SPACE_6)
+        }, Dimens.SPACE_3) }, Dimens.SPACE_4)
+        // 즐겨찾는 함께 달리기: 끝난 것은 다시 모이기, 누가 다시 열어 둔 것은 들어가기(설계 6-10.6). 있을 때만 칸을 보인다.
+        val favorites = section("즐겨찾는 함께 달리기") {}.apply { visibility = View.GONE }
+        text.addSpaced(favorites, Dimens.SPACE_4)
         Share.io.execute {
             val list = Share.client(context).parties().getOrNull().orEmpty().filter { !it.open || !it.joined }
             favorites.post {
                 if (list.isEmpty()) return@post
-                favorites.addView(label("즐겨찾는 함께 달리기", Dimens.SMALL, bold = true))
+                favorites.visibility = View.VISIBLE
                 list.forEach { party ->
                     favorites.addSpaced(row().apply {
                         addView(label(party.name, Dimens.BODY), LinearLayout.LayoutParams(0, WRAP, 1f))
@@ -209,14 +211,17 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val code = party.code
         text.addView(label("함께달리기", Dimens.SMALL, palette.inkSecondary))
         text.addSpaced(label(party.name, Dimens.HEADING, bold = true), Dimens.SPACE_2)
-        text.addSpaced(label("함께 달리기 코드", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
-        text.addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply { letterSpacing = 0.2f })
-        text.addSpaced(label(INVITE_NOTE, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
-        val courseLine = course?.name?.let { "코스 · $it" } ?: if (party.courseId != null) "코스를 받는 중입니다" else NO_COURSE_YET
-        text.addSpaced(label(courseLine, Dimens.BODY), Dimens.SPACE_4)
-        text.addSpaced(label("함께 달릴 친구 ${party.members.size}명", Dimens.SMALL, bold = true), Dimens.SPACE_6)
+        // 기능마다 칸으로 묶는다(PM 11-11): 코드 / 코스 / 함께 달릴 친구. 버튼 줄은 칸 밖 아래 칸이다.
+        text.addSpaced(section("함께 달리기 코드") {
+            addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply { letterSpacing = 0.2f })
+            addSpaced(label(INVITE_NOTE, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
+        }, Dimens.SPACE_4)
+        val courseLine = course?.name ?: if (party.courseId != null) "코스를 받는 중입니다" else NO_COURSE_YET
+        text.addSpaced(section("코스") { addSpaced(label(courseLine, Dimens.BODY), Dimens.SPACE_2) }, Dimens.SPACE_4)
+        val friends = section("함께 달릴 친구 ${party.members.size}명") {}
+        text.addSpaced(friends, Dimens.SPACE_4)
         party.members.forEach { member ->
-            text.addSpaced(row().apply {
+            friends.addSpaced(row().apply {
                 addView(AvatarDot(context, member.avatar, chosen = false), LinearLayout.LayoutParams(dp(Dimens.TOUCH_MIN), dp(Dimens.TOUCH_MIN)))
                 addView(column().apply {
                     addView(label(member.nickname, Dimens.BODY, bold = true))
@@ -234,17 +239,17 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             }, Dimens.SPACE_2)
         }
         if (me?.sharing == true) {
-            text.addSpaced(quietButton("위치 공유 끄기") {
+            friends.addSpaced(quietButton("위치 공유 끄기") {
                 call({ Share.client(context).sharing(code, false) }) { if (it.isSuccess) refreshNow() }
-            }, Dimens.SPACE_6)
+            }, Dimens.SPACE_4)
         }
-        text.addSpaced(row().apply {
+        friends.addSpaced(row().apply {
             addView(label(STAR_NOTE, Dimens.LABEL, palette.inkSecondary), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
             addView(smallButton(if (me?.starred == true) "즐겨찾기 끄기" else "즐겨찾기") {
                 val on = me?.starred != true
                 call({ Share.client(context).star(code, on) }) { if (it.isSuccess) refreshNow() }
             })
-        }, Dimens.SPACE_6)
+        }, Dimens.SPACE_4)
         fun leave(end: Boolean) {
             call({ if (end) Share.client(context).end(code) else Share.client(context).leave(code) }) { result ->
                 // 실패하면 파티를 그대로 둔다. 이미 없는 파티(404)는 끝난 것으로 본다.
@@ -469,4 +474,13 @@ internal fun partyCourseOnDevice(context: Context, id: String): Course? {
     val mine = CourseStore.files(context).mine()
     val uploads = mine.mapNotNull { course -> CourseStore.uploadOf(context, course.id)?.let { course.id to it } }.toMap()
     return findPartyCourse(id, CourseCatalog.all(context), mine, uploads)
+}
+
+/** 기능 하나를 묶는 칸. 옅은 면과 테두리, 위에 제목(없으면 생략)을 둔다(PM 11-11 "각 기능별로 구획"). */
+private fun Context.section(title: String?, fill: LinearLayout.() -> Unit): LinearLayout = column().apply {
+    background = rounded(palette.bgRaised, Dimens.RADIUS_MD, palette.lineSubtle)
+    val pad = dp(Dimens.SPACE_6)
+    setPadding(pad, pad, pad, pad)
+    title?.let { addView(label(it, Dimens.SMALL, bold = true)) }
+    fill()
 }
