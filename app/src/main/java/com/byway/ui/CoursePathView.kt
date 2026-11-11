@@ -191,14 +191,25 @@ class CoursePathView(context: Context) : View(context) {
         pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, frame.x(it.point), frame.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
     }
 
-    /** 홈 지도 장면과 같은 순서로 그린다: 지도, 코스 선, 번호, 위치 점, 멤버 핀, 글. */
+    /**
+     * 홈 지도 장면과 같은 순서로 그린다: 지도, 코스 선, 번호, 위치 점, 멤버 핀, 글.
+     * 넓은 창은 지도가 글 칸 아래까지 이어지므로 선과 번호, 위치 점도 지도와 같은 띠로 옅게 한다. 멤버는 지도 자리 안에만 놓인다.
+     */
     private fun drawZoom(canvas: Canvas, map: MapProjection) {
         val density = resources.displayMetrics.density
+        val w = width.toFloat()
+        val h = height.toFloat()
         mapWindow?.let { drawTiles(canvas, map, it, density) }
+        val band = mapWindow?.let { zoomMarksFade(it, w / density, h / density) }
+        val layer = band?.let { canvas.saveLayer(0f, 0f, w, h, null) }
         MapMarks.route(canvas, context, zoomLines, stroke, colors)
         val dark = darkPinsOn(currentMapStyle(), context.night)
         placeSpots.forEach { (x, y, no) -> MapMarks.place(canvas, context, x, y, no, 1f, dark, pinFill, pinText, colors) }
         position?.let { MapMarks.marker(canvas, context, map.x(it), map.y(it), pinFill, colors) }
+        if (band != null && layer != null) {
+            MapMarks.fade(canvas, fadePaint, band, 0f, density, w, h)
+            canvas.restoreToCount(layer)
+        }
         pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, map.x(it.point), map.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
         drawZoomNotes(canvas, map, density)
     }

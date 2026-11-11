@@ -53,3 +53,19 @@ fun nightSatPixel(rgb: Int): Int {
     fun dark(c: Int) = Math.rint((c * NIGHT_BRIGHTNESS - SAT_PIVOT) * NIGHT_CONTRAST + SAT_PIVOT).toInt().coerceIn(0, 255)
     return opaque(dark(red(rgb)), dark(green(rgb)), dark(blue(rgb)))
 }
+
+/** 메모리에 두는 조각 수. 2/3 칸에 보이는 수의 두 배, 전체 창에 보이는 수 이상이다(RGB_565, 한 장 128KB). */
+const val MAP_TILE_MEMORY = 200
+
+private const val TILE_WANT_MS = 5_000L
+
+/** 받기 대기열. 가장 나중에 넣은 요청부터 꺼내, 범위가 바뀌면 새 조각부터 받는다. */
+class TileQueue : java.util.concurrent.LinkedBlockingDeque<Runnable>() {
+    override fun offer(e: Runnable): Boolean = offerFirst(e)
+}
+
+/** 화면이 [TILE_WANT_MS] 안에 찾은 조각만 받는다. 화면은 위치가 바뀔 때마다 다시 그리며 조각을 찾는다. */
+fun tileStillWanted(askedAt: Long?, now: Long): Boolean = askedAt != null && now - askedAt <= TILE_WANT_MS
+
+/** 그림 응답만 기기에 남긴다. 오류 쪽지를 남기면 그 자리가 영영 빈다. */
+fun isTileResponse(code: Int, contentType: String?): Boolean = code in 200..299 && contentType?.startsWith("image/") == true

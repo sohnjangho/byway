@@ -127,13 +127,13 @@ internal class DriveScreen(
         addView(context.label("남은 거리", Dimens.DRIVE_LINE, colors.inkSecondary).atMostLines(1), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginStart = context.dp(Dimens.SPACE_3) })
     }
 
-    /** 앞으로 만날 곳과 버튼. 버튼은 홈처럼 아래에 붙고 코스 끝내기의 오른쪽 끝은 물음이 떠도 그대로다. */
     /** 넓은 칸은 글 칸 오른쪽 지도 자리에 멤버를 맞춘다. 1/3 칸은 지도 칸 전체다. */
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         zoomView.zoomFit = if (third) null else Viewport(sideWidth.toFloat(), 0f, (w - sideWidth).toFloat(), h.toFloat())
     }
 
+    /** 앞으로 만날 곳과 버튼. 버튼은 홈처럼 아래에 붙고 코스 끝내기의 오른쪽 끝은 물음이 떠도 그대로다. */
     private fun nearColumn(): View = context.column().apply {
         if (!third) addView(aheadTitle)
         rows.forEachIndexed { i, row -> addSpaced(row.view, if (i == 0 && third) 0 else Dimens.SPACE_3) }
