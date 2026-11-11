@@ -93,9 +93,11 @@ class PartyCopyTest {
         listOf(START_BUTTON, RESTART_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
     }
 
+    /** 제안한 사람이 나간 뒤 내가 리더가 되었으면 내 이름을 적지 않는다(함께달리기 설계 6-10.4). */
     @Test
     fun askTitleNamesTheLeader() {
-        assertEquals("둘님이 코스를 골랐습니다", askTitle("둘"))
-        assertEquals("리더님이 코스를 골랐습니다", askTitle(""))
+        assertEquals("둘님이 코스를 골랐습니다", askTitle("둘", iAmLeader = false))
+        assertEquals("리더님이 코스를 골랐습니다", askTitle("", iAmLeader = false))
+        assertEquals("이 코스로 함께 달릴까요?", askTitle("하나", iAmLeader = true))
     }
 }

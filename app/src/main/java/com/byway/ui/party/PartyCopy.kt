@@ -32,8 +32,9 @@ internal const val LEFT_NOTE = "파티에서 나왔습니다"
 internal const val NO_COURSE_YET = "리더가 아직 코스를 고르지 않았습니다"
 internal val PICK_GROUPS = listOf("내가 저장한 코스", "목록 코스", "공유받은 코스")
 
-/** 질문 화면의 제목. */
-internal fun askTitle(leaderName: String): String = "${leaderName.ifEmpty { "리더" }}님이 코스를 골랐습니다"
+/** 질문 화면의 제목. 제안한 리더가 나가 내가 리더가 되었으면 내 이름 대신 묻기만 한다. */
+internal fun askTitle(leaderName: String, iAmLeader: Boolean): String =
+    if (iAmLeader) "이 코스로 함께 달릴까요?" else "${leaderName.ifEmpty { "리더" }}님이 코스를 골랐습니다"
 
 /**
  * 멤버 줄의 작은 글. 리더와, 리더가 코스를 골랐으면([proposal] > 0) 그 코스에 대한 응답을 함께 적는다(함께달리기 설계 6-3).

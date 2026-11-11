@@ -75,6 +75,8 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         addView(text)
     }
     val drawing = CoursePathView(this)
+    // 코스가 없으면 그림 칸을 비운다. 1/3 칸은 그림이 위에 있어 빈 칸을 접는다.
+    val noPicture = if (kit.wide) View.INVISIBLE else View.GONE
     val actions = LinearLayout(context)
     val note = label("", Dimens.SMALL, palette.accent)
     var view: PartyView? = null
@@ -152,7 +154,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
 
     fun outside() {
         mood.show(null)
-        drawing.visibility = View.INVISIBLE
+        drawing.visibility = noPicture
         text.addView(label("함께달리기", Dimens.HEADING, bold = true))
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
@@ -201,7 +203,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val me = party.members.firstOrNull { it.me }
         val course = party.courseId?.let(::localCourse)
         mood.show(course)
-        drawing.visibility = if (course == null) View.INVISIBLE else View.VISIBLE
+        drawing.visibility = if (course == null) noPicture else View.VISIBLE
         course?.let { drawing.show(it, emptyList()) }
         showPins(drawing, party)
         val code = party.code
@@ -281,7 +283,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         var picked: CourseChoice? = null
         val detail = column()
         mood.show(null)
-        drawing.visibility = View.INVISIBLE
+        drawing.visibility = noPicture
 
         fun courseOf(choice: CourseChoice): Course? = all.firstOrNull { it.id == choice.id } ?: localCourse(choice.id)
 
