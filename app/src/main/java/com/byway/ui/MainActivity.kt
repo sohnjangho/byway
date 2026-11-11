@@ -15,8 +15,14 @@ import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import com.byway.service.MyParty
+import com.byway.service.PartyWatch
+import com.byway.service.Share
 import com.byway.service.ShareSync
+import com.byway.service.shouldWatch
+import com.byway.core.share.needsAnswer
 import com.byway.ui.share.shareScreen
+import com.byway.ui.party.partyAskScreen
 import com.byway.ui.party.togetherScreen
 import com.byway.ui.record.RecordingView
 import com.byway.ui.record.recordConsentScreen
@@ -75,6 +81,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         DriveBoard.stopListening(render)
+        PartyWatch.stop()
         super.onStop()
     }
 
@@ -158,7 +165,14 @@ class MainActivity : AppCompatActivity() {
             stale = true
         }
         val saved = savedRun()
-        val next = screenFor(state, nav, resumable = saved != null)
+        // 정차 중 파티에 들어가 있으면 리더가 코스를 골랐는지 받아 둔다. 고른 코스는 어느 정차 화면에서든 묻는다(함께달리기 설계 6-6).
+        val partyCode = MyParty.code(this)
+        PartyWatch.keep(this, shouldWatch(state.parked, state.running, partyCode, Share.available)) {
+            stale = true
+            render(DriveBoard.state)
+        }
+        val asking = partyCode != null && PartyWatch.view?.let(::needsAnswer) == true
+        val next = screenFor(state, nav, resumable = saved != null, asking = asking)
         // 정차 화면을 열 때 공유 코스 목록을 새로 받는다. 바뀌었을 때만 화면을 다시 그린다.
         if (next is Screen.Browse) ShareSync.refresh(this) { render(DriveBoard.state) }
         val width = widthDp()
@@ -181,6 +195,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
+
+    /** 승낙한 파티 코스로 출발한다. 코스가 아직 기기에 없으면 서버 목록을 받은 뒤 출발한다. */
+    private fun startParty(courseId: String) {
+        if (CourseCatalog.all(this).any { it.id == courseId }) return start(courseId)
+        ShareSync.refresh(this, force = true) { if (CourseCatalog.all(this).any { it.id == courseId }) start(courseId) }
+    }
 
     /** 메뉴가 있는 정차 화면끼리는 메뉴를 두고 내용만 바꾼다. 주행 화면은 움직임 없이 그 자리에서 바꾼다. */
     private fun place(screen: Screen, state: DriveState, kit: BrowseKit, motion: ScreenMotion, sign: Int, reveal: Boolean, saved: SavedRun?) {
@@ -238,6 +258,12 @@ class MainActivity : AppCompatActivity() {
                     onDone = { go(nav.copy(share = null)) },
                     onCancel = { go(nav.copy(share = null)) },
                 )
+                screen == Screen.PartyAsk -> PartyWatch.view?.let { view ->
+                    val course = view.courseId?.let { id -> CourseCatalog.all(this).firstOrNull { it.id == id } }
+                    // 리더가 고른 코스가 기기에 없으면 서버 목록에서 받는다. 받으면 코스 책이 바뀌어 다시 그린다.
+                    if (course == null) ShareSync.refresh(this, force = true) { render(DriveBoard.state) }
+                    partyAskScreen(this, kit, view, course, onStart = ::startParty, onLeft = { openTab(Tab.TOGETHER) })
+                } ?: waitingScreen(this)
                 screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
                 screen == Screen.SaveRecord -> saveRecordScreen(
                     this, kit, state.recorded.orEmpty(),
