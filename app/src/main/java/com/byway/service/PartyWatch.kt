@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import com.byway.core.share.PartyView
 import com.byway.core.share.needsAnswer
+import com.byway.core.share.retryClear
 
 /** 리더가 고른 코스를 물으려고 파티를 받는 때. 정차 중이고, 코스가 달리지 않고, 파티에 들어가 있고, 서버가 있을 때뿐이다(함께달리기 설계 6-6, 6-10.1). */
 fun shouldWatch(parked: Boolean, running: Boolean, partyCode: String?, online: Boolean): Boolean =
@@ -40,6 +41,12 @@ object PartyWatch {
                         is PartyTick.Seen -> {
                             val before = view
                             view = tick.view
+                            // 코스를 달리는 동안 보내지 못한 비우기를 정차 중에 다시 보낸다(검토 I-2).
+                            if (retryClear(MyParty.pendingClear(app), tick.view)) {
+                                Share.io.execute {
+                                    if (Share.client(app).clearCourse(code).isSuccess) main.post { MyParty.setPendingClear(app, null) }
+                                }
+                            }
                             if (asking(before) != asking(tick.view) || before?.proposal != tick.view.proposal) onChanged?.invoke()
                         }
                         PartyTick.Ended -> {

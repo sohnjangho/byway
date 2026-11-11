@@ -19,6 +19,7 @@ import com.byway.core.share.Profile
 import com.byway.core.share.UploadCourse
 import com.byway.core.share.Visibility
 import com.byway.core.share.isCode
+import com.byway.core.share.canStart
 import com.byway.service.CourseCatalog
 import com.byway.service.CourseStore
 import com.byway.service.MyParty
@@ -260,12 +261,23 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             }
         }
         // 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3). 버튼이 셋 넘으면 나가기·끝내기를 둘째 줄에 둔다.
-        val labels = partyActions(party.owner)
+        // 승낙했는데 출발하지 않았으면(출발 화면 고르기를 닫음) 다시 출발한다. 위치 공유도 다시 켠다(검토 I-1).
+        val start = canStart(party)
+        if (start) {
+            text.addSpaced(section("위치 공유") {
+                LOCATION_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+            }, Dimens.SPACE_4)
+        }
+        val labels = partyActions(party.owner, start)
         val first = row()
         val second = row()
         labels.forEachIndexed { i, title ->
             val main = i == 0
             val button = when (title) {
+                START_BUTTON -> primaryButton(title) {
+                    val courseId = party.courseId ?: return@primaryButton
+                    call({ Share.client(context).sharing(code, true) }) { if (it.isSuccess) startWhenReady(courseId) }
+                }
                 PICK_BUTTON -> if (main) primaryButton(title) { go(nav.copy(picking = true)) } else quietButton(title) { go(nav.copy(picking = true)) }
                 LEAVE_BUTTON -> quietButton(title) { leave(end = false) }
                 else -> quietButton(title) { leave(end = true) }

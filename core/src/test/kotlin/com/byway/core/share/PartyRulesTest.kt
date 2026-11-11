@@ -38,13 +38,37 @@ class PartyRulesTest {
         assertFalse(needsAnswer(view(member(), joined = false)))
     }
 
-    /** 리더의 코스가 끝나면 코스를 비워 다음엔 다시 고른다(PM 11-11 "코스를 고르지 않았는데 이미 지정됨"). */
+    /**
+     * 리더가 함께 달리기 코스를 달리고 끝내면 코스를 비워 다음엔 다시 고른다(PM 11-11 "코스를 고르지 않았는데 이미 지정됨").
+     * 다른 코스를 혼자 달리고 끝낸 것은 비우지 않는다. 내가 올린 코스는 서버 id(s-)로 고르므로 기기 id(m-)와 함께 본다(검토 I-2).
+     */
     @Test
     fun leaderEndsRunClearsCourse() {
-        assertTrue(leaderEndsRun(view(member(leader = true, accepted = true))))
-        assertFalse(leaderEndsRun(view(member(accepted = true))))
-        assertFalse(leaderEndsRun(view(member(leader = true), proposal = 0, courseId = null)))
-        assertFalse(leaderEndsRun(null))
+        assertTrue(leaderEndsRun(view(member(leader = true, accepted = true)), setOf("c")))
+        assertFalse(leaderEndsRun(view(member(leader = true, accepted = true)), setOf("other")))
+        assertTrue(leaderEndsRun(view(member(leader = true, accepted = true), courseId = "s-9"), setOf("m-1", "s-9")))
+        assertFalse(leaderEndsRun(view(member(accepted = true)), setOf("c")))
+        assertFalse(leaderEndsRun(view(member(leader = true), proposal = 0, courseId = null), setOf("c")))
+        assertFalse(leaderEndsRun(null, setOf("c")))
+    }
+
+    /** 승낙했고 코스가 살아 있으면 출발할 수 있다. 출발 화면 고르기를 닫았어도 다시 출발한다(검토 I-1). */
+    @Test
+    fun canStartWhileCourseIsSet() {
+        assertTrue(canStart(view(member(accepted = true))))
+        assertFalse(canStart(view(member())))
+        assertFalse(canStart(view(member(accepted = true), proposal = 0, courseId = null)))
+    }
+
+    /** 비우기가 실패하면 다음에 다시 보낸다. 그사이 리더가 새로 고른 코스(제안 번호가 다름)는 지우지 않는다. */
+    @Test
+    fun clearIsRetriedOnlyForTheSameProposal() {
+        val leader = view(member(leader = true, accepted = true), proposal = 3)
+        assertTrue(retryClear(PendingClear("ABC234", 3), leader))
+        assertFalse(retryClear(PendingClear("ABC234", 2), leader))
+        assertFalse(retryClear(PendingClear("ZZZ999", 3), leader))
+        assertFalse(retryClear(null, leader))
+        assertFalse(retryClear(PendingClear("ABC234", 3), view(member(leader = true), proposal = 3, courseId = null)))
     }
 
     /** 함께 달리기 기본 이름(PM 11-11 "Road와 함께 달리기는 좀 이상함"): "닉네임님의 드라이브". */

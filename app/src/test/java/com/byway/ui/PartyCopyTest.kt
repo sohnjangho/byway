@@ -132,11 +132,13 @@ class PartyCopyTest {
         assertEquals(null, findPartyCourse("s-404", listed, mine, emptyMap()))
     }
 
-    /** 리더도 나갈 수 있다(설계 6-3). 코스가 끝나면 비우므로 "다시 출발"은 없다(PM 11-11). */
+    /** 리더도 나갈 수 있다(설계 6-3). 승낙했고 코스가 살아 있으면 맨 앞에 출발이 있다(검토 I-1, 코스가 끝나면 비워져 사라진다). */
     @Test
     fun everyoneCanLeaveAndTheLeaderCanAlsoEnd() {
-        assertEquals(listOf("코스 고르기", "나가기", "함께 달리기 끝내기"), partyActions(owner = true))
-        assertEquals(listOf("나가기"), partyActions(owner = false))
+        assertEquals(listOf("코스 고르기", "나가기", "함께 달리기 끝내기"), partyActions(owner = true, start = false))
+        assertEquals(listOf("동의하고 출발", "코스 고르기", "나가기", "함께 달리기 끝내기"), partyActions(owner = true, start = true))
+        assertEquals(listOf("동의하고 출발", "나가기"), partyActions(owner = false, start = true))
+        assertEquals(listOf("나가기"), partyActions(owner = false, start = false))
     }
 
     /** PM 11-11: 화면 말은 "파티" 대신 "함께 달리기", "파티원·멤버" 대신 "함께 달릴 친구"다. */

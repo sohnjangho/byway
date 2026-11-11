@@ -5,6 +5,7 @@ import com.byway.core.geo.GeoPoint
 import com.byway.core.share.PartyPin
 import com.byway.core.share.PartyView
 import com.byway.core.share.Position
+import com.byway.core.share.PendingClear
 
 /** 2초마다 한 번 파티와 주고받은 결과. */
 sealed interface PartyTick {
@@ -48,4 +49,18 @@ object MyParty {
     fun set(context: Context, code: String?) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply { if (code == null) remove(CODE) else putString(CODE, code) }.apply()
     }
+
+    /** 보내지 못한 코스 비우기("코드:제안 번호"). 정차 중 다시 보낸다(검토 I-2). */
+    fun pendingClear(context: Context): PendingClear? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PENDING, null)?.split(":")?.let { parts ->
+            parts.getOrNull(1)?.toIntOrNull()?.let { PendingClear(parts[0], it) }
+        }
+
+    fun setPendingClear(context: Context, pending: PendingClear?) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply {
+            if (pending == null) remove(PENDING) else putString(PENDING, "${pending.code}:${pending.proposal}")
+        }.apply()
+    }
+
+    private const val PENDING = "pending_clear"
 }

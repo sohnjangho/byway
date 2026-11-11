@@ -38,11 +38,12 @@ internal fun findPartyCourse(id: String, courses: List<Course>, mine: List<Cours
     courses.firstOrNull { it.id == id } ?: mine.firstOrNull { uploads[it.id] == id }
 
 /**
- * 파티 안 아래 칸의 버튼(앞이 주 버튼). 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3, 검토 I-4).
- * 리더의 코스가 끝나면 코스를 비우므로 "다시 출발"은 두지 않는다(PM 11-11).
+ * 함께 달리기 안 아래 칸의 버튼(앞이 주 버튼). 모두 나갈 수 있고 리더는 코스 고르기와 끝내기도 있다(설계 6-3, 검토 I-4).
+ * 승낙했고 코스가 살아 있으면([start]) 맨 앞에 출발이 있다. 출발 화면 고르기를 닫았어도 다시 출발한다(검토 I-1).
+ * 리더의 코스가 끝나면 코스를 비우므로 이 버튼도 사라진다(PM 11-11).
  */
-internal fun partyActions(owner: Boolean): List<String> =
-    listOfNotNull(PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
+internal fun partyActions(owner: Boolean, start: Boolean): List<String> =
+    listOfNotNull(START_BUTTON.takeIf { start }, PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
 
 internal const val LEAVE_BUTTON = "나가기"
 internal const val END_BUTTON = "함께 달리기 끝내기"

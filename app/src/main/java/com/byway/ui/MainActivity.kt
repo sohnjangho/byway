@@ -55,6 +55,15 @@ class MainActivity : AppCompatActivity() {
     private var builtCourse: String? = null
     private val render: (DriveState) -> Unit = ::render
 
+    /**
+     * "차량 정보 + 에움길 + 내비"에서 내비가 가운데로 간 뒤 에움길을 다시 부른다. 그사이 창이 나뉘지 않게 되었거나
+     * 코스가 멈췄거나 앱을 떠났으면 부르지 않는다(검토 I-3). 2분할에서 내비를 덮지 않는다.
+     */
+    private val bringBack = Runnable {
+        if (isFinishing || !DriveBoard.state.running || windowClassOf(widthDp()) != WindowClass.THIRD) return@Runnable
+        startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
@@ -152,11 +161,7 @@ class MainActivity : AppCompatActivity() {
     private fun launch(request: StartRequest, layout: DriveLayout) {
         DriveService.start(this, request.courseId, request.resumeFrom)
         showNavigation(this)
-        if (layout == DriveLayout.SPLIT_BYWAY) {
-            root.postDelayed({
-                startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-            }, BRING_BACK_MS)
-        }
+        if (layout == DriveLayout.SPLIT_BYWAY) root.postDelayed(bringBack, BRING_BACK_MS)
     }
 
     /** 달리다 만 코스. 코스 목록에 없는 것은 묻지 않는다. */
