@@ -5,9 +5,9 @@ import com.byway.core.course.Leg
 import com.byway.core.course.Stop
 import com.byway.core.geo.keyPointIndexes
 
-/** 코스를 내비에 올릴 지점 열로 바꾼다. 출발점은 현재 위치이므로 뺀다. */
+/** 코스를 내비에 올릴 지점 열로 바꾼다. 출발점은 현재 위치이므로 뺀다. 더미 코스는 줄이지 않고 지점(구간 끝)을 그대로 쓴다. */
 fun planStops(course: Course, toleranceMeters: Double): List<Stop> =
-    keyPointIndexes(course.path, toleranceMeters).drop(1).map { index ->
+    if (course.dummy) course.sections.map { Stop(it.name, course.path[it.endIndex], it.endIndex) } else keyPointIndexes(course.path, toleranceMeters).drop(1).map { index ->
         val section = course.sections.first { index in it.startIndex..it.endIndex }
         Stop(section.name, course.path[index], index)
     }

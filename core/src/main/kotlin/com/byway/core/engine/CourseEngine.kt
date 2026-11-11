@@ -4,6 +4,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.Leg
 import com.byway.core.course.Section
 import com.byway.core.course.Stop
+import com.byway.core.course.lengthScale
 import com.byway.core.drive.DriveCommand
 import com.byway.core.drive.DriveCommand.Ask
 import com.byway.core.drive.DriveCommand.FollowRoute
@@ -82,10 +83,11 @@ class CourseEngine(
         }.drop(1).map { it.first }
 
         /** 내비는 지점 사이 길을 스스로 고른다. 코스 허용 오차 안의 차이는 이탈로 보지 않는다. */
-        private val strayLimit = maxOf(
-            tuning.offCourseMeters,
-            (course.toleranceMeters ?: tuning.simplifyToleranceMeters) + STRAY_MARGIN_METERS,
-        )
+        private val strayLimit = if (course.dummy) {
+            DUMMY_REACH_METERS
+        } else {
+            maxOf(tuning.offCourseMeters, (course.toleranceMeters ?: tuning.simplifyToleranceMeters) + STRAY_MARGIN_METERS)
+        }
 
         /** 같은 구간에서 이탈이 되풀이되면 지점을 하나 더한다. */
         private var stops = planned
@@ -282,7 +284,8 @@ class CourseEngine(
         }
 
         private fun onStray(point: GeoPoint): List<DriveCommand> {
-            if (parked || progress < freeUntil) return emptyList()
+            // 더미 코스의 선은 지점을 이은 직선이라 실제 도로와 크게 어긋난다. 벗어남을 묻거나 되돌리지 않고 내비 경로를 따른다.
+            if (course.dummy || parked || progress < freeUntil) return emptyList()
             strayFixes++
             if (strayFixes < tuning.offCourseFixes) return emptyList()
             strayFixes = 0
@@ -458,7 +461,10 @@ class CourseEngine(
             return listOf(Say(Messages.sectionEntered(now.name)), Publish(DriveEvent.SectionEntered(now)))
         }
 
-        private fun isFinished() = progress == path.lastIndex || parkedAtEnd()
+        private fun isFinished() = (progress == path.lastIndex && (!course.dummy || nearLastPoint())) || parkedAtEnd()
+
+        /** 더미 코스는 직선 위로 비친 자리만으로는 끝에 닿았다고 보지 않는다. 마지막 지점 가까이 와야 한다. */
+        private fun nearLastPoint() = last?.let { it.distanceTo(path.last()) <= DUMMY_FINISH_METERS } ?: false
 
         /** 종점 앞 주차장에 세워도 끝까지 달린 것이다. 종점이 탐색 범위에 들어온 뒤에만 본다. 출발점과 종점이 같은 코스가 있다. */
         private fun parkedAtEnd(): Boolean = parked && nearEnd()
@@ -473,7 +479,10 @@ class CourseEngine(
             return unask() + listOf(Say(Messages.FINISHED), Publish(DriveEvent.CourseFinished))
         }
 
-        private fun report() = ShowProgress(course.sections.indexOf(section), travelled.last() - travelled[progress])
+        /** 더미 코스는 직선 길이를 표기 거리로 늘려 알린다. */
+        private fun report() = ShowProgress(course.sections.indexOf(section), (travelled.last() - travelled[progress]) * scale)
+
+        private val scale = course.lengthScale()
 
         private fun sectionAt(index: Int) = course.sections.first { index in it.startIndex..it.endIndex }
 
@@ -519,6 +528,12 @@ class CourseEngine(
 
     private companion object {
         const val STRAY_MARGIN_METERS = 100.0
+
+        /** 더미 코스에서 직선 위 자리로 칠 거리. 실제 도로가 지점 사이 직선에서 벗어나는 폭을 넉넉히 덮는다. 밖이면 진행만 멈춘다. */
+        const val DUMMY_REACH_METERS = 10_000.0
+
+        /** 더미 코스가 끝났다고 볼 마지막 지점까지 거리. 내비 도착 지점이 도로 위로 옮겨지는 차이를 덮는다. */
+        const val DUMMY_FINISH_METERS = 1_000.0
 
         /** 위치가 끊겼다 돌아오면 건너뛴 직선 거리의 이만큼을 더 찾는다. 길은 직선보다 길다. */
         const val GAP_REACH = 2.0
