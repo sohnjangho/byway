@@ -161,7 +161,7 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
                 } else {
                     courseLine(course.region, meters, pickLabels(course.tags).firstOrNull().orEmpty())
                 }
-                addView(label(line, Dimens.LABEL, palette.inkSecondary).atMostLines(1))
+                addView(label(withDummyMark(course, line), Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text)
         }

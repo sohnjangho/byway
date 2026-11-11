@@ -36,7 +36,8 @@ internal class DriveScreen(
     private val colors = context.palette
     private val sectionMeters = book.sectionMeters(course)
     private val scene: CourseScene? = SceneCatalog.of(context, course.id)
-    private val places = shownPlaces(scene?.places.orEmpty())
+    // 더미 코스는 장면이 없다. 코스 주변 대신 남은 지점(경유·도착)을 보인다(더 많은 코스 설계 7절).
+    private val places = if (course.dummy) dummyPlaces(course, sectionMeters) else shownPlaces(scene?.places.orEmpty())
     private val third = window == WindowClass.THIRD
     private val full = window == WindowClass.FULL
 
@@ -50,7 +51,7 @@ internal class DriveScreen(
     private val bar = context.sectionBar(book, course)
     // 1/3 칸은 지도에 자리를 내느라 안내 문구를 한 단계 작게 둔다. 행동을 알리는 문구가 잘리지 않게 두 줄은 남긴다.
     private val spoken = context.label("", if (third) Dimens.BODY else Dimens.DRIVE_LINE).fixedLines(2)
-    private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
+    private val aheadTitle = context.label(if (course.dummy) "남은 지점" else "코스 주변", Dimens.SMALL, bold = true)
     private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
     private val end = context.driveButton("코스 끝내기", onEnd)
@@ -147,7 +148,7 @@ internal class DriveScreen(
     fun show(state: DriveState) {
         val readout = readoutOf(sectionMeters, state.sectionIndex, state.remainingMeters)
         val current = course.sections[readout.sectionIndex]
-        where.text = sectionCount(readout.sectionIndex, course.sections.size)
+        where.text = withDummyMark(course, sectionCount(readout.sectionIndex, course.sections.size))
         section.text = current.name
         section.setTextColor(colors.moodColor(current.mood))
         backdrop.setTint(colors.airColor(current.mood))
@@ -157,7 +158,8 @@ internal class DriveScreen(
         val title = promptButton(state.prompt)
         answer.text = title.orEmpty()
         answer.visibility = if (title == null) GONE else VISIBLE
-        val driven = scene?.let { drivenKm(it.totalKm, state.remainingMeters) } ?: 0.0
+        val driven = scene?.let { drivenKm(it.totalKm, state.remainingMeters) }
+            ?: if (course.dummy) drivenKm(sectionMeters.sum() / 1_000, state.remainingMeters) else 0.0
         showAhead(driven)
         scene?.let { sceneView.setMarker(trackAt(it.track, driven)) }
         sceneView.moveFallbackTo(state.position)

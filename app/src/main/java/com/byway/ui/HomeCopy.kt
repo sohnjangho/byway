@@ -88,7 +88,7 @@ internal fun choiceFacts(
         Fact(kmText(facts.meters), "거리"),
         seasonFit(course.tags.seasons, dayOfYear)?.let { Fact("$it%", "계절 적합") },
         timeFit(course.tags.times, minuteOfDay, lightMinutes, sun)?.let { Fact("$it%", "시간 적합") },
-        Fact("${funScore(facts, course.elevation.isNotEmpty())}점", "운전 즐거움"),
+        Fact(measured(course, "${funScore(facts, course.elevation.isNotEmpty())}점"), "운전 즐거움"),
         energy?.let { Fact(energyText(facts.meters, it), "연료량") },
     )
 }

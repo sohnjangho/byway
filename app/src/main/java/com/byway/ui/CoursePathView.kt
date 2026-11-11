@@ -47,6 +47,13 @@ class CoursePathView(context: Context) : View(context) {
     }
     private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.ink }
     private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.accent }
+
+    /** 더미 코스의 지도 자리. 선 대신 옅은 면과 [NO_MAP] 글을 그린다(더 많은 코스 설계 6절). */
+    private val noMapFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.bgRaised }
+    private val noMapText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = colors.inkSecondary
+        textAlign = Paint.Align.CENTER
+    }
     private var pins: List<com.byway.ui.party.MapPin> = emptyList()
 
     /** 파티 확대 지도의 범위와 범위 밖 먼 멤버 수. 범위가 없으면 코스 전체를 맞춘다. */
@@ -169,6 +176,7 @@ class CoursePathView(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
+        if (course?.dummy == true) return drawNoMap(canvas)
         val map = projection
         if (zoomed != null) {
             if (map != null) drawZoom(canvas, map)
@@ -189,6 +197,20 @@ class CoursePathView(context: Context) : View(context) {
         stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * Dimens.STOP_RADIUS, stop) }
         position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * Dimens.CAR_RADIUS, car) }
         pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, frame.x(it.point), frame.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
+    }
+
+    /** 더미 코스는 선, 위치 점, 핀을 그리지 않는다. 움직이는 것이 없다. 좁은 카드는 글을 두 줄로 나눈다. */
+    private fun drawNoMap(canvas: Canvas) {
+        val density = resources.displayMetrics.density
+        val w = width.toFloat()
+        val h = height.toFloat()
+        noMapFill.alpha = if (thin) 255 else 150
+        canvas.drawRoundRect(0f, 0f, w, h, density * Dimens.RADIUS_MD, density * Dimens.RADIUS_MD, noMapFill)
+        noMapText.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, if (thin) Dimens.LABEL else Dimens.BODY, resources.displayMetrics)
+        val lines = if (noMapText.measureText(NO_MAP) > w * 0.9f) NO_MAP.split(" · ") else listOf(NO_MAP)
+        val gap = noMapText.textSize * 1.3f
+        val top = h / 2 - gap * (lines.size - 1) / 2 + noMapText.textSize * 0.35f
+        lines.forEachIndexed { i, text -> canvas.drawText(text, w / 2, top + gap * i, noMapText) }
     }
 
     /**

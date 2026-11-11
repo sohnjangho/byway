@@ -185,7 +185,7 @@ private fun Context.infoColumn(
     val third = kit.window == WindowClass.THIRD
     val facts = kit.book.facts(course)
     if (!third) addView(label(kick, Dimens.SMALL, palette.inkSecondary).atMostLines(1))
-    addView(label(course.name, if (third) Dimens.THIRD_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
+    addView(label(withDummyMark(course, course.name), if (third) Dimens.THIRD_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     // 공유 코스는 요약 대신 완주 횟수와 신고를 보인다(공유 설계 6-4).
     if (isShared(course.id)) {

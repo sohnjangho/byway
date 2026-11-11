@@ -172,10 +172,10 @@ private fun Context.courseCard(
     setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
     val facts = kit.book.facts(course)
     addView(label(mineKind(course.id, recent), Dimens.LABEL).atMostLines(1))
-    addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
+    addView(label(withDummyMark(course, course.name), Dimens.TITLE, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
-    addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addSpaced(label(listOf(course.region, kmText(facts.meters), if (course.dummy) DUMMY_WORD else "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
     if (course.id.startsWith("m-")) addSpaced(madeCourseActions(course, onShare, onChanged), Dimens.SPACE_4)
     addView(android.widget.Space(context), fill())
     val buttons = LinearLayout(context).apply {
