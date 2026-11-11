@@ -7,13 +7,13 @@ import com.byway.core.share.Visibility
 
 /** 위치 공유 동의(공유 설계 6-5). 항목, 목적, 보유 기간, 거부 권리를 적는다. 동의 버튼만 동의로 본다. */
 internal val LOCATION_CONSENT = listOf(
-    "같은 파티 멤버에게 내 닉네임, 아바타, 차 위치를 보여 줍니다.",
+    "함께 달릴 친구에게 내 닉네임, 아바타, 차 위치를 보여 줍니다.",
     "위치는 함께 달리는 동안 2초마다 보내고, 서버는 받은 지 60초가 지나면 지웁니다.",
-    "파티가 끝나거나 '위치 공유 끄기', '코스 끝내기'를 누르면 바로 멈추고 서버에서 지웁니다.",
-    "동의하지 않을 수 있습니다. 그러면 함께 출발하지 않고, 파티원은 파티에서 나갑니다. 코스는 언제든 혼자 달릴 수 있습니다.",
+    "함께 달리기가 끝나거나 '위치 공유 끄기', '코스 끝내기'를 누르면 바로 멈추고 서버에서 지웁니다.",
+    "동의하지 않을 수 있습니다. 그러면 함께 출발하지 않고 함께 달리기에서 나갑니다. 코스는 언제든 혼자 달릴 수 있습니다.",
 )
 
-internal const val STAR_NOTE = "별표하면 이 파티가 끝나도 내 닉네임과 아바타가 이 파티에 남습니다. 별표를 끄거나 파티를 나가면 지웁니다"
+internal const val STAR_NOTE = "별표하면 이 함께 달리기가 끝나도 내 닉네임과 아바타가 남습니다. 별표를 끄거나 나가면 지웁니다"
 
 internal const val PARTY_INTRO = "여러 차가 함께 달립니다. 사람을 먼저 모으고, 리더가 코스를 고릅니다. 정차 중에만 합니다"
 
@@ -22,12 +22,12 @@ internal const val INVITE_NOTE = "다른 차에서 함께달리기 → 코드로
 internal const val PICK_BUTTON = "코스 고르기"
 internal const val START_BUTTON = "동의하고 출발"
 internal const val ACCEPT_BUTTON = "동의하고 함께 달리기"
-internal const val DECLINE_BUTTON = "거부하고 파티 나가기"
+internal const val DECLINE_BUTTON = "거부하고 함께 달리기에서 나가기"
 internal const val PASS_LEADER = "리더 넘기기"
 internal const val KICK = "내보내기"
 internal const val REOPEN_BUTTON = "다시 모이기"
 internal const val ENTER_BUTTON = "열려 있음 · 들어가기"
-internal const val LEFT_NOTE = "파티에서 나왔습니다"
+internal const val LEFT_NOTE = "함께 달리기에서 나왔습니다"
 internal const val NO_COURSE_YET = "리더가 아직 코스를 고르지 않았습니다"
 internal val PICK_GROUPS = listOf("내가 저장한 코스", "목록 코스", "공유받은 코스")
 
@@ -45,7 +45,7 @@ internal fun partyActions(owner: Boolean): List<String> =
     listOfNotNull(PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
 
 internal const val LEAVE_BUTTON = "나가기"
-internal const val END_BUTTON = "파티 끝내기"
+internal const val END_BUTTON = "함께 달리기 끝내기"
 
 /** 질문 화면의 제목. 제안한 리더가 나가 내가 리더가 되었으면 내 이름 대신 묻기만 한다. */
 internal fun askTitle(leaderName: String, iAmLeader: Boolean): String =
@@ -59,17 +59,17 @@ internal fun memberTags(member: PartyMember, proposal: Int): String = listOfNotN
     "리더".takeIf { member.leader },
     "나".takeIf { member.me },
     "위치 공유 중".takeIf { member.me && member.sharing },
-    "시연용 가상 멤버".takeIf { member.demo },
+    "시연용 가상 친구".takeIf { member.demo },
     (if (member.accepted) "함께 달림" else "응답 기다림").takeIf { proposal > 0 },
 ).joinToString(" · ")
 
 /** 만들기·참여 요청에는 닉네임과 아바타가 실린다. 보내기 전에 알리고 동의 버튼으로 받는다. */
 internal val PARTY_JOIN_CONSENT = listOf(
-    "파티를 만들거나 참여하면 같은 파티 멤버에게 내 닉네임과 아바타가 보입니다.",
-    "파티가 끝나거나 파티를 나가면 서버에서 지웁니다. 별표한 파티는 별표를 끌 때 지웁니다.",
+    "함께 달리기를 만들거나 참여하면 함께 달릴 친구에게 내 닉네임과 아바타가 보입니다.",
+    "함께 달리기가 끝나거나 나가면 서버에서 지웁니다. 별표한 함께 달리기는 별표를 끌 때 지웁니다.",
 )
 /** 파티원 초대는 파티를 열며 내 닉네임과 아바타를 올린다. 그래서 동의 버튼이다. */
-internal const val INVITE_BUTTON = "동의하고 파티원 초대"
+internal const val INVITE_BUTTON = "동의하고 함께 달릴 친구 초대"
 internal const val JOIN_BUTTON = "동의하고 참여"
 
 /** 코스 고르기의 한 줄. [upload]면 아직 공유하지 않은 내 코스라 고를 때 이 파티 범위로 올린다([id]는 기기의 m- id). */

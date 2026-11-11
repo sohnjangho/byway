@@ -159,14 +159,14 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
         val profile = MyProfile.get(context)
-        text.addSpaced(label("파티원 초대", Dimens.SMALL, bold = true), Dimens.SPACE_6)
+        text.addSpaced(label("함께 달릴 친구 초대", Dimens.SMALL, bold = true), Dimens.SPACE_6)
         PARTY_JOIN_CONSENT.forEach { text.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
         text.addSpaced(primaryButton(INVITE_BUTTON) {
             val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
             call({ Share.client(context).createParty(NewParty(null, "", me)) }) { result -> (result.getOrNull() as? PartyView)?.let(::joined) }
         }, Dimens.SPACE_3)
         text.addSpaced(label("코드로 참여", Dimens.SMALL, bold = true), Dimens.SPACE_6)
-        val field = textField("파티 코드 6자리", 6, code = true)
+        val field = textField("함께 달리기 코드 6자리", 6, code = true)
         text.addSpaced(row().apply {
             addView(field, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
             addView(smallButton(JOIN_BUTTON) {
@@ -183,7 +183,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             val list = Share.client(context).parties().getOrNull().orEmpty().filter { !it.open || !it.joined }
             favorites.post {
                 if (list.isEmpty()) return@post
-                favorites.addView(label("즐겨찾는 파티", Dimens.SMALL, bold = true))
+                favorites.addView(label("즐겨찾는 함께 달리기", Dimens.SMALL, bold = true))
                 list.forEach { party ->
                     favorites.addSpaced(row().apply {
                         addView(label(party.name, Dimens.BODY), LinearLayout.LayoutParams(0, WRAP, 1f))
@@ -209,12 +209,12 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val code = party.code
         text.addView(label("함께달리기", Dimens.SMALL, palette.inkSecondary))
         text.addSpaced(label(party.name, Dimens.HEADING, bold = true), Dimens.SPACE_2)
-        text.addSpaced(label("파티 코드", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
+        text.addSpaced(label("함께 달리기 코드", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
         text.addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply { letterSpacing = 0.2f })
         text.addSpaced(label(INVITE_NOTE, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         val courseLine = course?.name?.let { "코스 · $it" } ?: if (party.courseId != null) "코스를 받는 중입니다" else NO_COURSE_YET
         text.addSpaced(label(courseLine, Dimens.BODY), Dimens.SPACE_4)
-        text.addSpaced(label("파티원 ${party.members.size}명", Dimens.SMALL, bold = true), Dimens.SPACE_6)
+        text.addSpaced(label("함께 달릴 친구 ${party.members.size}명", Dimens.SMALL, bold = true), Dimens.SPACE_6)
         party.members.forEach { member ->
             text.addSpaced(row().apply {
                 addView(AvatarDot(context, member.avatar, chosen = false), LinearLayout.LayoutParams(dp(Dimens.TOUCH_MIN), dp(Dimens.TOUCH_MIN)))
@@ -299,7 +299,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             detail.addSpaced(label("위치 공유", Dimens.SMALL, bold = true), Dimens.SPACE_4)
             LOCATION_CONSENT.forEach { detail.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             if (choice.upload) {
-                detail.addSpaced(label("이 파티로 코스 공유", Dimens.SMALL, bold = true), Dimens.SPACE_4)
+                detail.addSpaced(label("이 함께 달리기로 코스 공유", Dimens.SMALL, bold = true), Dimens.SPACE_4)
                 consentLines(Visibility.PARTY).forEach { detail.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
             }
         }
@@ -358,7 +358,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 text.addSpaced(label(OFFLINE_NOTE, Dimens.BODY, palette.inkSecondary), Dimens.SPACE_3)
             }
             MyParty.code(context) == null -> outside()
-            party == null -> text.addView(label("파티를 불러오는 중", Dimens.BODY, palette.inkSecondary))
+            party == null -> text.addView(label("함께 달리기를 불러오는 중", Dimens.BODY, palette.inkSecondary))
             nav.picking && party.owner -> picker(party)
             else -> inside(party)
         }
@@ -410,7 +410,7 @@ private fun profileBlock(context: Context, onSaved: () -> Unit): View = with(con
             })
             return@apply
         }
-        addView(label("파티에서 보일 닉네임과 아바타", Dimens.SMALL, bold = true))
+        addView(label("함께 달리기에서 보일 닉네임과 아바타", Dimens.SMALL, bold = true))
         val name = textField("닉네임 (${NICKNAME_MAX}자 안)", NICKNAME_MAX)
         addSpaced(name, Dimens.SPACE_2)
         var avatar: String? = null

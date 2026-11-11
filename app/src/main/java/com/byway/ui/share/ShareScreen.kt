@@ -49,7 +49,7 @@ internal fun shareScreen(context: Context, kit: BrowseKit, course: Course, onDon
     }
     fun loadParties() {
         parties.removeAllViews()
-        parties.addView(label("파티를 불러오는 중", Dimens.SMALL, palette.inkSecondary))
+        parties.addView(label("함께 달리기를 불러오는 중", Dimens.SMALL, palette.inkSecondary))
         Share.io.execute {
             val found = Share.client(context).parties()
             parties.post {
@@ -83,7 +83,7 @@ internal fun shareScreen(context: Context, kit: BrowseKit, course: Course, onDon
     val buttons = LinearLayout(context)
     val agree = primaryButton("동의하고 공유") {
         val chosen = scope ?: return@primaryButton run { problem.text = "공유 범위를 골라 주세요" }
-        if (chosen == Visibility.PARTY && party == null) return@primaryButton run { problem.text = "파티를 골라 주세요" }
+        if (chosen == Visibility.PARTY && party == null) return@primaryButton run { problem.text = "함께 달리기를 골라 주세요" }
         problem.text = "올리는 중"
         val upload = UploadCourse(chosen, party.takeIf { chosen == Visibility.PARTY }, writeCourse(course))
         Share.io.execute {

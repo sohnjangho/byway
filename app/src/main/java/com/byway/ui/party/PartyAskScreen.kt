@@ -45,7 +45,7 @@ internal fun partyAskScreen(context: Context, kit: BrowseKit, view: PartyView, c
         addSpaced(label(line, Dimens.BODY), Dimens.SPACE_3)
         addSpaced(label("위치 공유", Dimens.SMALL, bold = true), Dimens.SPACE_6)
         LOCATION_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
-        addSpaced(label("거부하면 이 파티에서 나갑니다.", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
+        addSpaced(label("거부하면 이 함께 달리기에서 나갑니다.", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
     }
 
     fun answer(accept: Boolean) {

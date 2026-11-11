@@ -98,8 +98,8 @@ private fun uploadProblem(server: Server, me: String, upload: UploadCourse): Str
     if (lengthOf(course) < RecordRules().minMeters) return "5km보다 짧은 코스는 공유할 수 없습니다"
     if (runCatching { planStops(course, DriveTuning().simplifyToleranceMeters) }.getOrNull().isNullOrEmpty()) return "내비에 올릴 수 없는 코스입니다"
     if (upload.visibility == Visibility.PARTY) {
-        val code = upload.partyCode ?: return "파티를 골라 주세요"
-        if (server.store.party(code) == null || server.store.members(code).none { it.device == me && !it.blocked }) return "그 파티의 멤버가 아닙니다"
+        val code = upload.partyCode ?: return "함께 달리기를 골라 주세요"
+        if (server.store.party(code) == null || server.store.members(code).none { it.device == me && !it.blocked }) return "그 함께 달리기에 들어 있지 않습니다"
     }
     return null
 }

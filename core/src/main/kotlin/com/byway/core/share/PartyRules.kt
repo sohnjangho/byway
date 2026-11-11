@@ -14,3 +14,12 @@ fun needsAnswer(view: PartyView): Boolean {
  * 비우면 다음 코스는 리더가 다시 고른다. 한 번 고른 코스가 남아 "고르지 않았는데 정해져 있음"이 되지 않게 한다(PM 11-11).
  */
 fun leaderEndsRun(view: PartyView?): Boolean = view != null && view.owner && view.courseId != null
+
+/** 함께 달리기 기본 이름(PM 11-11 "파티" 대신 "함께 달리기"). 받침이 있으면 "과", 없거나 한글이 아니면 "와"다. */
+fun togetherName(nickname: String): String {
+    val name = nickname.trim()
+    if (name.isEmpty()) return "함께 달리기"
+    val last = name.last()
+    val batchim = last in '가'..'힣' && (last - '가') % 28 != 0
+    return "$name${if (batchim) "과" else "와"} 함께 달리기"
+}
