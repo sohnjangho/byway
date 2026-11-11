@@ -4,7 +4,11 @@ import com.byway.ui.party.LOCATION_CONSENT
 import com.byway.ui.party.STAR_NOTE
 import com.byway.ui.party.memberTags
 import com.byway.ui.party.PARTY_JOIN_CONSENT
+import com.byway.ui.party.ACCEPT_BUTTON
 import com.byway.ui.party.INVITE_BUTTON
+import com.byway.ui.party.RESTART_BUTTON
+import com.byway.ui.party.START_BUTTON
+import com.byway.ui.party.askTitle
 import com.byway.ui.party.JOIN_BUTTON
 import com.byway.ui.party.CourseChoice
 import com.byway.ui.party.partyCourseGroups
@@ -81,5 +85,17 @@ class PartyCopyTest {
         assertEquals("시연용 가상 멤버 · 함께 달림", memberTags(demo, proposal = 1))
         assertEquals("응답 기다림", memberTags(other, proposal = 1))
         assertEquals("", memberTags(other, proposal = 0))
+    }
+
+    /** 위치가 나가기 시작하는 버튼은 동의 버튼이다(함께달리기 설계 6-7). */
+    @Test
+    fun buttonsThatShareLocationSayAgree() {
+        listOf(START_BUTTON, RESTART_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
+    }
+
+    @Test
+    fun askTitleNamesTheLeader() {
+        assertEquals("둘님이 코스를 골랐습니다", askTitle("둘"))
+        assertEquals("리더님이 코스를 골랐습니다", askTitle(""))
     }
 }

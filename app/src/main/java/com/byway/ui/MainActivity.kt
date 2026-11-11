@@ -17,7 +17,7 @@ import com.byway.service.DriveService
 import com.byway.service.DriveState
 import com.byway.service.ShareSync
 import com.byway.ui.share.shareScreen
-import com.byway.ui.party.partyScreen
+import com.byway.ui.party.togetherScreen
 import com.byway.ui.record.RecordingView
 import com.byway.ui.record.recordConsentScreen
 import com.byway.ui.record.saveRecordScreen
@@ -266,7 +266,7 @@ class MainActivity : AppCompatActivity() {
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
-        Tab.TOGETHER -> partyScreen(this, kit, onStart = ::start, onClose = { openTab(Tab.HOME) })
+        Tab.TOGETHER -> togetherScreen(this, kit, nav, ::go, onStart = ::start)
         Tab.MINE -> mineScreen(
             this,
             kit,
@@ -277,7 +277,6 @@ class MainActivity : AppCompatActivity() {
             onRecord = { go(nav.copy(recordConsent = true)) },
             onShare = { id -> go(nav.copy(share = id)) },
             onChanged = { go(nav) },
-            onParty = { openTab(Tab.TOGETHER) },
         )
     }
 

@@ -15,7 +15,25 @@ internal val LOCATION_CONSENT = listOf(
 
 internal const val STAR_NOTE = "별표하면 이 파티가 끝나도 내 닉네임과 아바타가 이 파티에 남습니다. 별표를 끄거나 파티를 나가면 지웁니다"
 
-internal const val PARTY_INTRO = "같은 코스를 여러 차가 함께 달립니다. 만들기와 참여는 정차 중에만 합니다"
+internal const val PARTY_INTRO = "여러 차가 함께 달립니다. 사람을 먼저 모으고, 리더가 코스를 고릅니다. 정차 중에만 합니다"
+
+// 함께달리기 문구(함께달리기 설계 6-2~6-6). 위치가 나가는 버튼은 모두 "동의하고"로 시작한다.
+internal const val INVITE_NOTE = "다른 차에서 함께달리기 → 코드로 참여에 이 코드를 넣으면 들어옵니다"
+internal const val PICK_BUTTON = "코스 고르기"
+internal const val START_BUTTON = "동의하고 출발"
+internal const val RESTART_BUTTON = "동의하고 다시 출발"
+internal const val ACCEPT_BUTTON = "동의하고 함께 달리기"
+internal const val DECLINE_BUTTON = "거부하고 파티 나가기"
+internal const val PASS_LEADER = "리더 넘기기"
+internal const val KICK = "내보내기"
+internal const val REOPEN_BUTTON = "다시 모이기"
+internal const val ENTER_BUTTON = "열려 있음 · 들어가기"
+internal const val LEFT_NOTE = "파티에서 나왔습니다"
+internal const val NO_COURSE_YET = "리더가 아직 코스를 고르지 않았습니다"
+internal val PICK_GROUPS = listOf("내가 저장한 코스", "목록 코스", "공유받은 코스")
+
+/** 질문 화면의 제목. */
+internal fun askTitle(leaderName: String): String = "${leaderName.ifEmpty { "리더" }}님이 코스를 골랐습니다"
 
 /**
  * 멤버 줄의 작은 글. 리더와, 리더가 코스를 골랐으면([proposal] > 0) 그 코스에 대한 응답을 함께 적는다(함께달리기 설계 6-3).
