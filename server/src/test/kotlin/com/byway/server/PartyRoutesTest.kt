@@ -1,10 +1,13 @@
 package com.byway.server
 
 import com.byway.core.geo.GeoPoint
+import com.byway.core.share.Answer
+import com.byway.core.share.MemberRef
 import com.byway.core.share.NewParty
 import com.byway.core.share.PartyView
 import com.byway.core.share.Position
 import com.byway.core.share.Profile
+import com.byway.core.share.Propose
 import com.byway.core.share.Reopen
 import com.byway.core.share.Toggle
 import com.byway.core.share.Uploaded
@@ -56,6 +59,24 @@ class PartyRoutesTest {
     private suspend fun HttpClient.star(token: String, code: String) = send("/v1/parties/$code/star", token, Json.encodeToString(Toggle(true)), "PUT")
 
     private suspend fun HttpClient.end(token: String, code: String) = send("/v1/parties/$code/end", token, "")
+
+    /** 함께달리기: 코스 없이 연다. */
+    private suspend fun HttpClient.gather(token: String, nickname: String = "하나"): PartyView =
+        Json.decodeFromString(send("/v1/parties", token, Json.encodeToString(NewParty(null, "", profile(nickname)))).bodyAsText())
+
+    private suspend fun HttpClient.propose(token: String, code: String, courseId: String = river.id) =
+        send("/v1/parties/$code/course", token, Json.encodeToString(Propose(courseId)))
+
+    private suspend fun HttpClient.answer(token: String, code: String, proposal: Int, accept: Boolean) =
+        send("/v1/parties/$code/answer", token, Json.encodeToString(Answer(proposal, accept)))
+
+    private suspend fun HttpClient.passLeader(token: String, code: String, memberId: String) =
+        send("/v1/parties/$code/leader", token, Json.encodeToString(MemberRef(memberId)))
+
+    private suspend fun HttpClient.kick(token: String, code: String, memberId: String) =
+        send("/v1/parties/$code/kick", token, Json.encodeToString(MemberRef(memberId)))
+
+    private fun PartyView.idOf(nickname: String) = members.first { it.nickname == nickname }.id
 
     /** 코스 위 가장 가까운 점까지의 누적 거리. */
     private fun alongOf(point: GeoPoint): Double {
@@ -306,5 +327,169 @@ class PartyRoutesTest {
         val left = client.seen(a, code)
         assertEquals(listOf("하나"), left.members.map { it.nickname })
         assertTrue(left.pins.isEmpty())
+    }
+
+    @Test
+    fun partyStartsWithoutACourse() = testApplication {
+        startParty()
+        val a = client.token()
+        val created = client.send("/v1/parties", a, Json.encodeToString(NewParty(null, "", profile("하나"))))
+        assertEquals(HttpStatusCode.Created, created.status)
+        val party = Json.decodeFromString<PartyView>(created.bodyAsText())
+        assertNull(party.courseId)
+        assertEquals(0, party.proposal)
+        assertTrue(party.owner && party.members.single().leader)
+        assertEquals("하나", party.leaderName)
+    }
+
+    @Test
+    fun onlyLeaderProposes() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code)
+        assertEquals(HttpStatusCode.Forbidden, client.propose(b, code).status)
+        val proposed = client.propose(a, code)
+        assertEquals(HttpStatusCode.OK, proposed.status)
+        val view = Json.decodeFromString<PartyView>(proposed.bodyAsText())
+        assertEquals(1, view.proposal)
+        assertEquals(river.id, view.courseId)
+        assertEquals(listOf(true, false), view.members.map { it.accepted })
+    }
+
+    @Test
+    fun acceptAndDecline() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val (b, c) = client.token() to client.token()
+        client.join(b, code, "둘")
+        client.join(c, code, "셋")
+        client.propose(a, code)
+        assertEquals(HttpStatusCode.NoContent, client.answer(b, code, 1, accept = true).status)
+        assertEquals(HttpStatusCode.NoContent, client.answer(c, code, 1, accept = false).status)
+        val seen = client.seen(a, code)
+        assertEquals(listOf("하나", "둘"), seen.members.map { it.nickname })
+        assertTrue(seen.members.all { it.accepted })
+        assertEquals(HttpStatusCode.NotFound, client.view(c, code).status)
+    }
+
+    /** 리더가 다시 고르면 앞 제안에 한 답은 받지 않는다. */
+    @Test
+    fun staleAnswerIsRejected() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code)
+        client.propose(a, code)
+        client.propose(a, code)
+        assertEquals(HttpStatusCode.Conflict, client.answer(b, code, 1, accept = true).status)
+        assertEquals(HttpStatusCode.NoContent, client.answer(b, code, 2, accept = true).status)
+    }
+
+    @Test
+    fun leaderTransfer() = testApplication {
+        startParty(demoMembers = 2)
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        val before = client.seen(a, code)
+        assertEquals(HttpStatusCode.BadRequest, client.passLeader(a, code, before.idOf("시연용 1")).status)
+        assertEquals(HttpStatusCode.Forbidden, client.passLeader(b, code, before.idOf("하나")).status)
+        assertEquals(HttpStatusCode.NoContent, client.passLeader(a, code, before.idOf("둘")).status)
+        assertTrue(client.seen(b, code).owner)
+        val fromA = client.seen(a, code)
+        assertFalse(fromA.owner)
+        assertEquals("둘", fromA.leaderName)
+        assertEquals(listOf(false, true), fromA.members.filter { !it.demo }.map { it.leader })
+    }
+
+    /** 위치 공유를 껐다 켜도 들어온 순서는 그대로이고, 리더가 나가면 그 순서로 넘어간다. */
+    @Test
+    fun leaderLeavingPassesToEarliestPresent() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val (b, c) = client.token() to client.token()
+        client.join(b, code, "둘")
+        client.join(c, code, "셋")
+        client.sharing(b, code, true)
+        client.sharing(b, code, false)
+        client.send("/v1/parties/$code/leave", a, "")
+        assertTrue(client.seen(b, code).owner)
+        assertFalse(client.seen(c, code).owner)
+        assertEquals(listOf("둘", "셋"), client.seen(c, code).members.map { it.nickname })
+    }
+
+    @Test
+    fun kickedMemberCannotRejoin() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        assertEquals(HttpStatusCode.BadRequest, client.kick(a, code, client.seen(a, code).idOf("하나")).status)
+        assertEquals(HttpStatusCode.NoContent, client.kick(a, code, client.seen(a, code).idOf("둘")).status)
+        assertEquals(HttpStatusCode.NotFound, client.view(b, code).status)
+        assertEquals(HttpStatusCode.Forbidden, client.join(b, code, "둘").status)
+        assertEquals(listOf("하나"), client.seen(a, code).members.map { it.nickname })
+    }
+
+    /** 앞 리더가 이 파티로 올린 코스는 새 리더도 고른다. 다른 파티에 묶인 남의 코스는 막는다. */
+    @Test
+    fun samePartyCourseIsChoosableByNewLeader() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        val ours = Json.decodeFromString<Uploaded>(client.upload(a, "party", partyCode = code).bodyAsText()).id
+        val c = client.token()
+        val other = client.gather(c, "셋").code
+        val theirs = Json.decodeFromString<Uploaded>(client.upload(c, "party", partyCode = other).bodyAsText()).id
+        client.passLeader(a, code, client.seen(a, code).idOf("둘"))
+        assertEquals(HttpStatusCode.OK, client.propose(b, code, ours).status)
+        assertEquals(HttpStatusCode.BadRequest, client.propose(b, code, theirs).status)
+    }
+
+    /** 코스를 고르기 전에도 가상 멤버는 목록에 있고 핀은 없다. 고르면 승낙한 것으로 보이고 핀이 생긴다. */
+    @Test
+    fun demoMembersWaitForACourse() = testApplication {
+        startParty(demoMembers = 2)
+        val a = client.token()
+        val code = client.gather(a).code
+        val waiting = client.seen(a, code)
+        assertEquals(listOf("하나", "시연용 1", "시연용 2"), waiting.members.map { it.nickname })
+        assertTrue(waiting.pins.isEmpty())
+        client.propose(a, code)
+        val going = client.seen(a, code)
+        assertTrue(going.members.filter { it.demo }.all { it.accepted })
+        assertEquals(2, going.pins.size)
+    }
+
+    /** 다시 모이기는 다시 연 사람만 들어간 채로 연다. 다른 별표 멤버는 들어가기를 눌러야 들어온다. */
+    @Test
+    fun reopenGathersOnlyTheReopener() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        client.star(a, code)
+        client.star(b, code)
+        client.end(a, code)
+        val reopened = client.send("/v1/parties/$code/reopen", b, Json.encodeToString(Reopen(null)))
+        assertEquals(HttpStatusCode.OK, reopened.status)
+        val view = Json.decodeFromString<PartyView>(reopened.bodyAsText())
+        assertEquals(listOf("둘"), view.members.map { it.nickname })
+        assertTrue(view.owner && view.courseId == null)
+        val fromA = client.seen(a, code)
+        assertFalse(fromA.joined)
+        assertTrue(Json.decodeFromString<List<PartyView>>(client.authed("/v1/parties", a).bodyAsText()).any { it.code == code && it.open })
+        assertEquals(HttpStatusCode.OK, client.join(a, code, "하나").status)
+        assertEquals(setOf("하나", "둘"), client.seen(b, code).members.map { it.nickname }.toSet())
     }
 }
