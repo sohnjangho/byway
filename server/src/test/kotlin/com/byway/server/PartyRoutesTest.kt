@@ -492,4 +492,39 @@ class PartyRoutesTest {
         assertEquals(HttpStatusCode.OK, client.join(a, code, "하나").status)
         assertEquals(setOf("하나", "둘"), client.seen(b, code).members.map { it.nickname }.toSet())
     }
+
+    /** 내보낸 기기는 그 파티의 코스를 더 받지 못하고 그 파티로 올리지도 못한다(검토 I-1). */
+    @Test
+    fun kickedMemberLosesPartyCourses() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        val id = Json.decodeFromString<Uploaded>(client.upload(a, "party", partyCode = code).bodyAsText()).id
+        assertTrue(client.courses(b).any { it.id == id })
+        client.kick(a, code, client.seen(a, code).idOf("둘"))
+        assertFalse(client.courses(b).any { it.id == id })
+        assertEquals(HttpStatusCode.BadRequest, client.upload(b, "party", partyCode = code).status)
+    }
+
+    /** 아직 들어오지 않은 별표 멤버에게는 파티원 목록과 위치가 보이지 않는다(검토 I-2). */
+    @Test
+    fun notJoinedSeesNoOneOnTheMap() = testApplication {
+        startParty()
+        val a = client.token()
+        val code = client.gather(a).code
+        val b = client.token()
+        client.join(b, code, "둘")
+        client.star(a, code)
+        client.star(b, code)
+        client.end(a, code)
+        client.send("/v1/parties/$code/reopen", b, Json.encodeToString(Reopen(null)))
+        client.sharing(b, code, true)
+        client.at(b, code, river.path[10])
+        val fromA = client.seen(a, code)
+        assertFalse(fromA.joined)
+        assertTrue(fromA.pins.isEmpty())
+        assertTrue(fromA.members.isEmpty())
+    }
 }

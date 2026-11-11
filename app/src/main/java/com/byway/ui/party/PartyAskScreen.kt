@@ -51,6 +51,8 @@ internal fun partyAskScreen(context: Context, kit: BrowseKit, view: PartyView, c
     fun answer(accept: Boolean) {
         val code = view.code
         val courseId = view.courseId ?: return
+        // 코스를 기기에서 열 수 없으면 승낙하지 않는다. 승낙만 남고 출발하지 못하는 일을 막는다(검토 C-1).
+        if (accept && course == null) return run { note.text = "코스를 아직 받지 못했습니다. 잠시 뒤 다시 눌러 주세요" }
         note.text = "서버와 주고받는 중"
         Share.io.execute {
             val client = Share.client(context)

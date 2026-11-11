@@ -9,6 +9,8 @@ import com.byway.ui.party.INVITE_BUTTON
 import com.byway.ui.party.RESTART_BUTTON
 import com.byway.ui.party.START_BUTTON
 import com.byway.ui.party.askTitle
+import com.byway.ui.party.findPartyCourse
+import com.byway.ui.party.partyActions
 import com.byway.ui.party.JOIN_BUTTON
 import com.byway.ui.party.CourseChoice
 import com.byway.ui.party.partyCourseGroups
@@ -24,7 +26,9 @@ class PartyCopyTest {
     @Test
     fun locationConsentNamesItemsTimeAndRefusal() {
         val text = LOCATION_CONSENT.joinToString(" ")
-        listOf("닉네임", "아바타", "위치", "60초", "지웁니다", "동의하지 않아도").forEach { assertTrue(it, it in text) }
+        listOf("닉네임", "아바타", "위치", "60초", "지웁니다", "동의하지 않을 수").forEach { assertTrue(it, it in text) }
+        // 동의 없이 함께 달리는 길은 없다. 거부의 결과를 그대로 적는다(검토 I-3).
+        assertTrue(LOCATION_CONSENT.none { "동의하지 않아도 파티 코스는" in it })
     }
 
     /** 만들기·참여 요청에 닉네임과 아바타가 실리므로 그 전에 알리고 동의 버튼으로 받는다. */
@@ -99,5 +103,25 @@ class PartyCopyTest {
         assertEquals("둘님이 코스를 골랐습니다", askTitle("둘", iAmLeader = false))
         assertEquals("리더님이 코스를 골랐습니다", askTitle("", iAmLeader = false))
         assertEquals("이 코스로 함께 달릴까요?", askTitle("하나", iAmLeader = true))
+    }
+
+    /** 내가 올린 공유본(s-)은 기기에 내 코스(m-)로만 있다. 리더가 그 id 로 골라도 내 코스로 찾는다(검토 C-1). */
+    @Test
+    fun myOwnUploadIsFoundAsTheMineCourse() {
+        fun course(id: String) = com.byway.core.course.Course(id, id, listOf(com.byway.core.geo.GeoPoint(37.0, 127.0), com.byway.core.geo.GeoPoint(37.0, 127.1)), listOf(com.byway.core.course.Section("1구간", 0, 1)))
+        val listed = listOf(course("paldang-sunset"))
+        val mine = listOf(course("m-1"))
+        assertEquals("m-1", findPartyCourse("s-9", listed, mine, mapOf("m-1" to "s-9"))?.id)
+        assertEquals("paldang-sunset", findPartyCourse("paldang-sunset", listed, mine, emptyMap())?.id)
+        assertEquals(null, findPartyCourse("s-404", listed, mine, emptyMap()))
+    }
+
+    /** 리더도 나갈 수 있다(설계 6-3). 다시 출발이 있으면 맨 앞이다(검토 I-4). */
+    @Test
+    fun everyoneCanLeaveAndTheLeaderCanAlsoEnd() {
+        assertEquals(listOf("코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = false))
+        assertEquals(listOf("동의하고 다시 출발", "코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = true))
+        assertEquals(listOf("동의하고 다시 출발", "나가기"), partyActions(owner = false, restart = true))
+        assertEquals(listOf("나가기"), partyActions(owner = false, restart = false))
     }
 }

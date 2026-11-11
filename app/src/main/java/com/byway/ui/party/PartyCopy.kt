@@ -10,7 +10,7 @@ internal val LOCATION_CONSENT = listOf(
     "같은 파티 멤버에게 내 닉네임, 아바타, 차 위치를 보여 줍니다.",
     "위치는 함께 달리는 동안 2초마다 보내고, 서버는 받은 지 60초가 지나면 지웁니다.",
     "파티가 끝나거나 '위치 공유 끄기', '코스 끝내기'를 누르면 바로 멈추고 서버에서 지웁니다.",
-    "동의하지 않아도 파티 코스는 달릴 수 있습니다.",
+    "동의하지 않을 수 있습니다. 그러면 함께 출발하지 않고, 파티원은 파티에서 나갑니다. 코스는 언제든 혼자 달릴 수 있습니다.",
 )
 
 internal const val STAR_NOTE = "별표하면 이 파티가 끝나도 내 닉네임과 아바타가 이 파티에 남습니다. 별표를 끄거나 파티를 나가면 지웁니다"
@@ -31,6 +31,19 @@ internal const val ENTER_BUTTON = "열려 있음 · 들어가기"
 internal const val LEFT_NOTE = "파티에서 나왔습니다"
 internal const val NO_COURSE_YET = "리더가 아직 코스를 고르지 않았습니다"
 internal val PICK_GROUPS = listOf("내가 저장한 코스", "목록 코스", "공유받은 코스")
+
+/**
+ * 리더가 고른 코스 id 로 기기의 코스를 찾는다. 내가 올린 공유본(s-)은 기기에 내 코스(m-)로만 있으므로 [uploads](m- → 서버 id)로 찾는다(검토 C-1).
+ */
+internal fun findPartyCourse(id: String, courses: List<Course>, mine: List<Course>, uploads: Map<String, String>): Course? =
+    courses.firstOrNull { it.id == id } ?: mine.firstOrNull { uploads[it.id] == id }
+
+/** 파티 안 아래 칸의 버튼(앞이 주 버튼). 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3, 검토 I-4). */
+internal fun partyActions(owner: Boolean, restart: Boolean): List<String> =
+    listOfNotNull(RESTART_BUTTON.takeIf { restart }, PICK_BUTTON.takeIf { owner }, LEAVE_BUTTON, END_BUTTON.takeIf { owner })
+
+internal const val LEAVE_BUTTON = "나가기"
+internal const val END_BUTTON = "파티 끝내기"
 
 /** 질문 화면의 제목. 제안한 리더가 나가 내가 리더가 되었으면 내 이름 대신 묻기만 한다. */
 internal fun askTitle(leaderName: String, iAmLeader: Boolean): String =

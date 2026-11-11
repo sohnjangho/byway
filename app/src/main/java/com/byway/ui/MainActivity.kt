@@ -23,6 +23,7 @@ import com.byway.service.shouldWatch
 import com.byway.core.share.needsAnswer
 import com.byway.ui.share.shareScreen
 import com.byway.ui.party.partyAskScreen
+import com.byway.ui.party.partyCourseOnDevice
 import com.byway.ui.party.togetherScreen
 import com.byway.ui.record.RecordingView
 import com.byway.ui.record.recordConsentScreen
@@ -198,8 +199,8 @@ class MainActivity : AppCompatActivity() {
 
     /** 승낙한 파티 코스로 출발한다. 코스가 아직 기기에 없으면 서버 목록을 받은 뒤 출발한다. */
     private fun startParty(courseId: String) {
-        if (CourseCatalog.all(this).any { it.id == courseId }) return start(courseId)
-        ShareSync.refresh(this, force = true) { if (CourseCatalog.all(this).any { it.id == courseId }) start(courseId) }
+        partyCourseOnDevice(this, courseId)?.let { return start(it.id) }
+        ShareSync.refresh(this, force = true) { partyCourseOnDevice(this, courseId)?.let { start(it.id) } }
     }
 
     /** 메뉴가 있는 정차 화면끼리는 메뉴를 두고 내용만 바꾼다. 주행 화면은 움직임 없이 그 자리에서 바꾼다. */
@@ -259,7 +260,7 @@ class MainActivity : AppCompatActivity() {
                     onCancel = { go(nav.copy(share = null)) },
                 )
                 screen == Screen.PartyAsk -> PartyWatch.view?.let { view ->
-                    val course = view.courseId?.let { id -> CourseCatalog.all(this).firstOrNull { it.id == id } }
+                    val course = view.courseId?.let { partyCourseOnDevice(this, it) }
                     // 리더가 고른 코스가 기기에 없으면 서버 목록에서 받는다. 받으면 코스 책이 바뀌어 다시 그린다.
                     if (course == null) ShareSync.refresh(this, force = true) { render(DriveBoard.state) }
                     partyAskScreen(this, kit, view, course, onStart = ::startParty, onLeft = { openTab(Tab.TOGETHER) })

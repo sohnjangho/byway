@@ -242,6 +242,8 @@ internal fun Server.view(code: String, me: String): PartyView {
         leaderName = present.firstOrNull { it.device == party.owner }?.nickname.orEmpty(),
         joined = rows.firstOrNull { it.device == me }?.present == true,
     )
+    // 다시 모인 파티에 아직 들어오지 않은 별표 멤버에게는 파티원과 위치를 보이지 않는다(검토 I-2).
+    if (party.open && !base.joined) return base.copy(members = emptyList(), pins = emptyList())
     if (!party.open || demoMembers == 0) return base
     // 가상 멤버는 코스를 고르기 전에도 목록에 있고, 고르면 바로 승낙한 것으로 본다. 핀은 코스가 있을 때만 찍는다.
     fun demo(i: Int) = PartyMember(

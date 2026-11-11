@@ -21,8 +21,8 @@ sealed interface PartyTick {
 fun partyTick(me: GeoPoint?, sharing: Boolean, send: (Position) -> Result<Unit>, fetch: () -> Result<PartyView>): PartyTick {
     if (sharing && me != null) send(Position(me.lat, me.lon))
     val got = fetch()
-    // 끝난 파티는 별표한 멤버에게도 끝난 것이다. 다시 열기는 파티 밖 화면에서 한다.
-    got.getOrNull()?.let { return if (it.open) PartyTick.Seen(it) else PartyTick.Ended }
+    // 끝난 파티는 별표한 멤버에게도 끝난 것이다. 다시 모인 파티에 아직 들어가지 않았어도 그렇다. 둘 다 파티 밖 화면에서 다시 들어간다.
+    got.getOrNull()?.let { return if (it.open && it.joined) PartyTick.Seen(it) else PartyTick.Ended }
     return if ((got.exceptionOrNull() as? ShareError.Http)?.code == 404) PartyTick.Ended else PartyTick.Unreachable
 }
 

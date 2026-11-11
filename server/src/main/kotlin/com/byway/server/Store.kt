@@ -119,8 +119,8 @@ class Store private constructor(private val db: Connection) {
     @Synchronized
     fun visibleCourses(device: String): List<CourseRow> = query(
         "SELECT $COURSE_COLUMNS FROM course WHERE (visibility = 'public' AND hidden = 0) OR owner = ? " +
-            "OR (visibility = 'party' AND hidden = 0 AND party_code IN (SELECT party_code FROM member WHERE device = ?)) " +
-            "OR (hidden = 0 AND id IN (SELECT course_id FROM party WHERE code IN (SELECT party_code FROM member WHERE device = ?))) ORDER BY created_at",
+            "OR (visibility = 'party' AND hidden = 0 AND party_code IN (SELECT party_code FROM member WHERE device = ? AND blocked = 0)) " +
+            "OR (hidden = 0 AND id IN (SELECT course_id FROM party WHERE code IN (SELECT party_code FROM member WHERE device = ? AND blocked = 0))) ORDER BY created_at",
         device, device, device, mapper = ::courseRow,
     )
 

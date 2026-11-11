@@ -53,6 +53,7 @@ import com.byway.ui.quietButton
 import com.byway.ui.row
 import com.byway.ui.share.OFFLINE_NOTE
 import com.byway.ui.share.consentLines
+import com.byway.ui.share.sharedInfo
 import com.byway.ui.smallButton
 import com.byway.ui.textField
 
@@ -77,14 +78,14 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
     val drawing = CoursePathView(this)
     // 코스가 없으면 그림 칸을 비운다. 1/3 칸은 그림이 위에 있어 빈 칸을 접는다.
     val noPicture = if (kit.wide) View.INVISIBLE else View.GONE
-    val actions = LinearLayout(context)
+    // 아래 버튼 칸. 버튼이 많으면 두 줄로 놓는다.
+    val actions = column()
     val note = label("", Dimens.SMALL, palette.accent)
     var view: PartyView? = null
     lateinit var render: () -> Unit
 
     /** 파티 코스. 내가 올린 공유본이면 기기에는 내 코스(m-)로 있다. */
-    fun localCourse(id: String): Course? = CourseCatalog.all(context).firstOrNull { it.id == id }
-        ?: CourseStore.files(context).mine().firstOrNull { CourseStore.uploadOf(context, it.id) == id }
+    fun localCourse(id: String): Course? = partyCourseOnDevice(context, id)
 
     fun call(work: () -> Result<*>, then: (Result<*>) -> Unit) {
         note.text = "서버와 주고받는 중"
@@ -251,18 +252,8 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 call({ Share.client(context).star(code, on) }) { if (it.isSuccess) refreshNow() }
             })
         }, Dimens.SPACE_6)
-        if (restart) {
-            actions.addView(primaryButton(RESTART_BUTTON) {
-                val courseId = party.courseId ?: return@primaryButton
-                call({ Share.client(context).sharing(code, true) }) { if (it.isSuccess) startWhenReady(courseId) }
-            }, LinearLayout.LayoutParams(0, WRAP, 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
-        }
-        if (party.owner) {
-            val pick = if (restart) quietButton(PICK_BUTTON) { go(nav.copy(picking = true)) } else primaryButton(PICK_BUTTON) { go(nav.copy(picking = true)) }
-            actions.addView(pick, LinearLayout.LayoutParams(0, if (restart) MATCH else WRAP, if (restart) 1f else 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
-        }
-        val leave = quietButton(if (party.owner) "파티 끝내기" else "나가기") {
-            call({ if (party.owner) Share.client(context).end(code) else Share.client(context).leave(code) }) { result ->
+        fun leave(end: Boolean) {
+            call({ if (end) Share.client(context).end(code) else Share.client(context).leave(code) }) { result ->
                 // 실패하면 파티를 그대로 둔다. 이미 없는 파티(404)는 끝난 것으로 본다.
                 if (result.isFailure && (result.exceptionOrNull() as? ShareError.Http)?.code != 404) return@call
                 MyParty.set(context, null)
@@ -270,7 +261,27 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 render()
             }
         }
-        actions.addView(leave, LinearLayout.LayoutParams(0, MATCH, 1f))
+        // 모두 나갈 수 있고 리더는 코스 고르기와 파티 끝내기도 있다(설계 6-3). 버튼이 셋 넘으면 나가기·끝내기를 둘째 줄에 둔다.
+        val labels = partyActions(party.owner, restart)
+        val first = row()
+        val second = row()
+        labels.forEachIndexed { i, title ->
+            val main = i == 0
+            val button = when (title) {
+                RESTART_BUTTON -> primaryButton(title) {
+                    val courseId = party.courseId ?: return@primaryButton
+                    call({ Share.client(context).sharing(code, true) }) { if (it.isSuccess) startWhenReady(courseId) }
+                }
+                PICK_BUTTON -> if (main) primaryButton(title) { go(nav.copy(picking = true)) } else quietButton(title) { go(nav.copy(picking = true)) }
+                LEAVE_BUTTON -> quietButton(title) { leave(end = false) }
+                else -> quietButton(title) { leave(end = true) }
+            }
+            val lower = labels.size > 2 && (title == LEAVE_BUTTON || title == END_BUTTON)
+            val target = if (lower) second else first
+            target.addView(button, LinearLayout.LayoutParams(0, if (main) WRAP else MATCH, if (main) 1.4f else 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
+        }
+        actions.addView(first)
+        if (second.childCount > 0) actions.addSpaced(second, Dimens.SPACE_2)
     }
 
     /** 리더의 코스 고르기(설계 6-5). 세 묶음에서 하나를 고르고, 동의하고 출발하면 제안·위치 공유·출발을 차례로 한다. */
@@ -278,7 +289,8 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val code = party.code
         val all = CourseCatalog.all(context)
         val uploads = all.filter { it.id.startsWith("m-") }.mapNotNull { course -> CourseStore.uploadOf(context, course.id)?.let { course.id to it } }.toMap()
-        val groups = partyCourseGroups(all, CourseStore.files(context).shared(), uploads, code)
+        // 서버 목록과 코드로 받은 코스를 함께 넘겨야 링크 코스가 "공유받은 코스"로 간다(검토 I-5).
+        val groups = partyCourseGroups(all, sharedInfo().values.toList(), uploads, code)
         val byId = (groups.mine + groups.listed + groups.received).associateBy { it.id }
         var picked: CourseChoice? = null
         val detail = column()
@@ -316,7 +328,9 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         if (byId.isEmpty()) text.addSpaced(label("고를 수 있는 코스가 없습니다", Dimens.BODY, palette.inkSecondary), Dimens.SPACE_6)
         text.addSpaced(detail, Dimens.SPACE_6)
 
-        actions.addView(primaryButton(START_BUTTON) {
+        val buttons = row()
+        actions.addView(buttons)
+        buttons.addView(primaryButton(START_BUTTON) {
             val choice = picked ?: return@primaryButton run { note.text = "코스를 골라 주세요" }
             val local = courseOf(choice) ?: return@primaryButton run { note.text = "코스를 받는 중입니다" }
             call({
@@ -342,7 +356,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
                 onStart(local.id)
             }
         }, LinearLayout.LayoutParams(0, WRAP, 1.4f).apply { marginEnd = dp(Dimens.SPACE_3) })
-        actions.addView(quietButton("취소") { go(nav.copy(picking = false)) }, LinearLayout.LayoutParams(0, MATCH, 1f))
+        buttons.addView(quietButton("취소") { go(nav.copy(picking = false)) }, LinearLayout.LayoutParams(0, MATCH, 1f))
     }
 
     render = {
@@ -459,4 +473,11 @@ internal class AvatarDot(context: Context, val name: String, chosen: Boolean) : 
         ring.strokeWidth = radius * 0.14f
         canvas.drawCircle(width / 2f, height / 2f, radius + ring.strokeWidth, ring)
     }
+}
+
+/** 파티 코스를 기기에서 찾는다. 내가 올린 공유본은 내 코스(m-)로 찾는다(검토 C-1). */
+internal fun partyCourseOnDevice(context: Context, id: String): Course? {
+    val mine = CourseStore.files(context).mine()
+    val uploads = mine.mapNotNull { course -> CourseStore.uploadOf(context, course.id)?.let { course.id to it } }.toMap()
+    return findPartyCourse(id, CourseCatalog.all(context), mine, uploads)
 }

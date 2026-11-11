@@ -3,6 +3,7 @@ package com.byway.ui
 import com.byway.core.share.SharedCourse
 import com.byway.service.DriveState
 import com.byway.service.sameShared
+import com.byway.ui.share.PARTY_NEEDED
 import com.byway.ui.share.SHARE_SCOPES
 import com.byway.ui.share.consentLines
 import com.byway.ui.share.finishesText
@@ -51,5 +52,11 @@ class ShareCopyTest {
         assertTrue(sameShared(listOf(a), listOf(a.copy())))
         assertFalse(sameShared(listOf(a), listOf(a.copy(finishes = 1))))
         assertFalse(sameShared(listOf(a), emptyList()))
+    }
+
+    /** 파티는 함께달리기 메뉴에서 만든다. 없앤 내 코스의 파티 버튼을 가리키지 않는다(검토 M-5). */
+    @Test
+    fun partyScopeSendsYouToTogether() {
+        assertTrue("함께달리기" in PARTY_NEEDED)
     }
 }
