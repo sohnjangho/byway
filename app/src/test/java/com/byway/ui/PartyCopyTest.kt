@@ -4,10 +4,13 @@ import com.byway.ui.party.LOCATION_CONSENT
 import com.byway.ui.party.STAR_NOTE
 import com.byway.ui.party.memberTags
 import com.byway.ui.party.PARTY_JOIN_CONSENT
-import com.byway.ui.party.CREATE_BUTTON
+import com.byway.ui.party.INVITE_BUTTON
 import com.byway.ui.party.JOIN_BUTTON
-import com.byway.ui.party.partyCourseChoices
+import com.byway.ui.party.CourseChoice
+import com.byway.ui.party.partyCourseGroups
 import com.byway.core.share.PartyMember
+import com.byway.core.share.SharedCourse
+import com.byway.core.share.Visibility
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,19 +28,33 @@ class PartyCopyTest {
     fun joiningAsksBeforeNicknameAndAvatarLeave() {
         val text = PARTY_JOIN_CONSENT.joinToString(" ")
         listOf("닉네임", "아바타", "멤버", "지웁니다").forEach { assertTrue(it, it in text) }
-        assertTrue(CREATE_BUTTON.startsWith("동의하고") && JOIN_BUTTON.startsWith("동의하고"))
+        assertTrue(INVITE_BUTTON == "동의하고 파티원 초대" && JOIN_BUTTON.startsWith("동의하고"))
     }
 
-    /** 내가 만든 코스는 공유한 뒤 서버 id 로 고를 수 있다. 남의 파티 코스와 공유 안 한 내 코스는 뺀다. */
+    /**
+     * 코스 고르기는 세 묶음이다(함께달리기 설계 6-5). 공유 안 한 내 코스는 고르면 이 파티로 올린다.
+     * 이 파티에 묶인 파티 코스는 받은 코스로 고르고, 다른 파티에 묶인 남의 코스는 뺀다(설계 6-10.3).
+     */
     @Test
-    fun partyCoursesIncludeMySharedOnes() {
+    fun coursesSplitIntoThreeGroups() {
         fun course(id: String, name: String) = com.byway.core.course.Course(id, name, listOf(com.byway.core.geo.GeoPoint(37.0, 127.0), com.byway.core.geo.GeoPoint(37.0, 127.1)), listOf(com.byway.core.course.Section("1구간", 0, 1)))
-        val choices = partyCourseChoices(
-            courses = listOf(course("paldang-sunset", "팔당 노을"), course("m-mine", "내 길"), course("m-local", "공유 안 한 길"), course("s-other", "남의 파티 코스")),
-            hidden = setOf("s-other"),
-            uploads = mapOf("m-mine" to "s-mine"),
+        fun shared(id: String, visibility: String, mine: Boolean = false, partyCode: String? = null) =
+            SharedCourse(id, null, visibility, finishes = 0, mine = mine, body = "", partyCode = partyCode)
+        val groups = partyCourseGroups(
+            courses = listOf(
+                course("paldang-sunset", "팔당 노을"), course("m-1", "내 길"), course("m-2", "공유 안 한 길"),
+                course("s1", "공개 길"), course("s2", "링크 길"), course("s3", "이 파티 길"), course("s4", "남의 파티 길"), course("s-m1", "내 길"),
+            ),
+            shared = listOf(
+                shared("s1", Visibility.PUBLIC), shared("s2", Visibility.LINK), shared("s3", Visibility.PARTY, partyCode = "ABC234"),
+                shared("s4", Visibility.PARTY, partyCode = "ZZZ999"), shared("s-m1", Visibility.PUBLIC, mine = true),
+            ),
+            uploads = mapOf("m-1" to "s-m1"),
+            partyCode = "ABC234",
         )
-        assertEquals(listOf("paldang-sunset" to "팔당 노을", "s-mine" to "내 길"), choices)
+        assertEquals(listOf(CourseChoice("s-m1", "내 길", upload = false), CourseChoice("m-2", "공유 안 한 길", upload = true)), groups.mine)
+        assertEquals(listOf("paldang-sunset", "s1"), groups.listed.map { it.id })
+        assertEquals(listOf("s2", "s3"), groups.received.map { it.id })
     }
 
     @Test
@@ -49,8 +66,20 @@ class PartyCopyTest {
     fun demoMembersAreLabelled() {
         val demo = PartyMember("demo-1", "시연용 1", "avatar-09", demo = true, me = false, sharing = true, starred = false)
         val me = PartyMember("m-1", "하나", "avatar-01", demo = false, me = true, sharing = true, starred = false)
-        assertEquals("시연용 가상 멤버", memberTags(demo))
-        assertEquals("나 · 위치 공유 중", memberTags(me))
-        assertEquals("", memberTags(me.copy(me = false, sharing = false)))
+        assertEquals("시연용 가상 멤버", memberTags(demo, proposal = 0))
+        assertEquals("나 · 위치 공유 중", memberTags(me, proposal = 0))
+        assertEquals("", memberTags(me.copy(me = false, sharing = false), proposal = 0))
+    }
+
+    /** 리더와 응답 상태를 목록에서 바로 본다(함께달리기 설계 6-3). */
+    @Test
+    fun tagsShowLeaderMeDemoAndAnswer() {
+        val me = PartyMember("m-1", "하나", "avatar-01", demo = false, me = true, sharing = false, starred = false, leader = true, accepted = true)
+        val demo = PartyMember("demo-1", "시연용 1", "avatar-09", demo = true, me = false, sharing = true, starred = false, accepted = true)
+        val other = PartyMember("m-2", "둘", "avatar-02", demo = false, me = false, sharing = false, starred = false)
+        assertEquals("리더 · 나 · 함께 달림", memberTags(me, proposal = 1))
+        assertEquals("시연용 가상 멤버 · 함께 달림", memberTags(demo, proposal = 1))
+        assertEquals("응답 기다림", memberTags(other, proposal = 1))
+        assertEquals("", memberTags(other, proposal = 0))
     }
 }

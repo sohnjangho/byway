@@ -114,6 +114,7 @@ internal fun CourseRow.toShared(me: String) = SharedCourse(
     finishes = finishes,
     mine = owner == me,
     body = body,
+    partyCode = partyCode,
 )
 
 internal fun Server.freeCode(): String = generateSequence { newCode(Random.Default) }.first { !store.codeTaken(it) }

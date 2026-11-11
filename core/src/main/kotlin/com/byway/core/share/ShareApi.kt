@@ -22,7 +22,7 @@ data class UploadCourse(val visibility: String, val partyCode: String? = null, v
 @Serializable
 data class Uploaded(val id: String, val code: String?)
 
-/** 서버에 있는 공유 코스. 파티 코스와 남이 올린 링크 코스는 [code]가 없다. */
+/** 서버에 있는 공유 코스. 파티 코스와 남이 올린 링크 코스는 [code]가 없다. 파티 코스는 묶인 파티 [partyCode]가 온다. */
 @Serializable
 data class SharedCourse(
     val id: String,
@@ -31,6 +31,7 @@ data class SharedCourse(
     val finishes: Int,
     val mine: Boolean,
     val body: String,
+    val partyCode: String? = null,
 )
 
 @Serializable

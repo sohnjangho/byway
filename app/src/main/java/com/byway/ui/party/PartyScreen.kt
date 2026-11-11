@@ -129,10 +129,9 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         text.addSpaced(profileBlock(context) { render() }, Dimens.SPACE_6)
         val profile = MyProfile.get(context)
-        val hidden = CourseStore.files(context).shared().filter { it.visibility == Visibility.PARTY && !it.mine }.map { it.id }.toSet()
         val all = CourseCatalog.all(context)
         val uploads = all.filter { it.id.startsWith("m-") }.mapNotNull { course -> CourseStore.uploadOf(context, course.id)?.let { course.id to it } }.toMap()
-        val choices = partyCourseChoices(all, hidden, uploads)
+        val choices = partyCourseGroups(all, CourseStore.files(context).shared(), uploads, "").let { g -> (g.mine.filter { !it.upload } + g.listed + g.received).map { it.id to it.name } }
         var picked = choices.firstOrNull()?.first
         picked?.let { id -> localCourse(id)?.let { drawing.show(it, emptyList()) } }
         text.addSpaced(label("파티 만들기", Dimens.SMALL, bold = true), Dimens.SPACE_6)
@@ -142,7 +141,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
             localCourse(id)?.let { drawing.show(it, emptyList()) }
         }, Dimens.SPACE_2)
         PARTY_JOIN_CONSENT.forEach { text.addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
-        text.addSpaced(primaryButton(CREATE_BUTTON) {
+        text.addSpaced(primaryButton(INVITE_BUTTON) {
             val me = profile ?: return@primaryButton run { note.text = "먼저 닉네임과 아바타를 정해 주세요" }
             val courseId = picked ?: return@primaryButton
             call({ Share.client(context).createParty(NewParty(courseId, "", me)) }) { result ->
@@ -212,7 +211,7 @@ internal fun partyScreen(context: Context, kit: BrowseKit, onStart: (String) -> 
                 addView(AvatarDot(context, member.avatar, chosen = false), LinearLayout.LayoutParams(dp(Dimens.TOUCH_MIN), dp(Dimens.TOUCH_MIN)))
                 addView(column().apply {
                     addView(label(member.nickname, Dimens.BODY, bold = true))
-                    memberTags(member).takeIf { it.isNotEmpty() }?.let { addView(label(it, Dimens.LABEL, palette.inkSecondary)) }
+                    memberTags(member, party.proposal).takeIf { it.isNotEmpty() }?.let { addView(label(it, Dimens.LABEL, palette.inkSecondary)) }
                 }, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginStart = dp(Dimens.SPACE_3) })
             }, Dimens.SPACE_2)
         }
