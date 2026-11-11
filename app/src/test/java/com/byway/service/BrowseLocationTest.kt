@@ -15,4 +15,13 @@ class BrowseLocationTest {
         assertFalse(BrowseLocation.shouldTell(p, GeoPoint(p.lat + 0.0045, p.lon)))
         assertTrue(BrowseLocation.shouldTell(p, GeoPoint(p.lat + 0.011, p.lon)))
     }
+
+    /** 위치 권한이 없으면 위치를 묻지 않는다. 앱은 출발·기록 때만 권한을 묻는다(검토 I-3). */
+    @Test
+    fun startsOnlyWithPermission() {
+        assertTrue(BrowseLocation.shouldStart(on = true, granted = true, running = false))
+        assertFalse(BrowseLocation.shouldStart(on = true, granted = false, running = false))
+        assertFalse(BrowseLocation.shouldStart(on = false, granted = true, running = false))
+        assertFalse(BrowseLocation.shouldStart(on = true, granted = true, running = true))
+    }
 }

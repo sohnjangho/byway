@@ -51,6 +51,10 @@ fun filterButtonText(kind: String, filter: CourseFilter): String = when (kind) {
     else -> null
 } ?: FILTER_NAMES.getValue(kind)
 
+/** 내 주변을 걸었거나 그 줄을 펼쳤는데 위치를 모르면 이유를 보인다. 그동안 내 주변 조건은 걸리지 않는다. */
+fun nearNote(filter: CourseFilter, open: String?, located: Boolean): String? =
+    NO_POSITION.takeIf { !located && (filter.near != null || open == "near") }
+
 fun awayText(meters: Double): String = String.format(Locale.ROOT, "%dkm 거리", maxOf(1, Math.round(meters / 1_000).toInt()))
 
 /** 검색에 함께 쓰는 무드 이름. "비 오는 날"로 찾으면 비 오는 날 코스가 나온다. */

@@ -145,7 +145,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
             }
             addView(number, LinearLayout.LayoutParams(dp(Dimens.PLACE_NUMBER), dp(Dimens.PLACE_NUMBER)).apply { marginEnd = dp(Dimens.SPACE_3) })
             val text = column().apply {
-                addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
+                addView(label(mineListName(course), Dimens.SMALL, bold = true).atMostLines(1))
                 addView(label(mineKind(course.id, recent), Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
@@ -191,3 +191,6 @@ internal fun mineKind(id: String, recent: List<String>): String = when {
     id in recent -> "달린 코스"
     else -> "저장한 코스"
 }
+
+/** 내 코스 목록 줄의 이름. 더미 코스는 "더미"를 붙인다(더 많은 코스 설계 6절). */
+internal fun mineListName(course: com.byway.core.course.Course): String = withDummyMark(course, course.name)

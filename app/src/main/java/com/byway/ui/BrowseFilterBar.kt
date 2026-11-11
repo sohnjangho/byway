@@ -125,12 +125,17 @@ internal fun Context.filterOptions(kind: String, filter: CourseFilter, located: 
         Choice(choice.key, if (kind == "near") choice.title else "${choice.title} ${counts(next)}") to next
     }
     val pick = { key: String -> onPick(if (key == selected) cleared else titled.first { it.first.key == key }.second) }
-    val row = chipRow(titled.map { it.first }, selected, Dimens.SMALL) { key -> pick(key) }
-    if (kind != "near" || located) return row
-    return column().apply {
-        addView(row.apply { alpha = DIM })
-        addSpaced(label(NO_POSITION, Dimens.LABEL, palette.inkSecondary).atMostLines(1), Dimens.SPACE_2)
+    // 위치를 모르면 내 주변 칩은 흐리게 두고 누를 수 없다. 이유는 걸러 보기 줄 아래 안내([nearNote])가 보인다(검토 I-2).
+    if (kind == "near" && !located) {
+        return chipRow(titled.map { it.first }, selected, Dimens.SMALL) {}.apply {
+            alpha = DIM
+            isEnabled = false
+            ((this as? android.view.ViewGroup)?.getChildAt(0) as? android.view.ViewGroup)?.let { line ->
+                for (i in 0 until line.childCount) line.getChildAt(i).isClickable = false
+            }
+        }
     }
+    return chipRow(titled.map { it.first }, selected, Dimens.SMALL) { key -> pick(key) }
 }
 
 private const val SEARCH_MAX = 30

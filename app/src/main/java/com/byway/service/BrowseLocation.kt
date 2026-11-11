@@ -1,6 +1,7 @@
 package com.byway.service
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import com.byway.core.geo.GeoPoint
 import com.byway.platform.PleosLocation
@@ -13,11 +14,17 @@ object BrowseLocation {
     /** 처음이거나 이만큼 넘게 움직였을 때만 화면을 다시 그린다. 위치는 1초마다 온다. */
     private const val TELL_METERS = 1_000.0
 
+    /** 앱이 출발·기록 때 묻는 위치 권한과 같다. */
+    private const val LOCATION = "pleos.car.permission.FUSED_LOCATION"
+
     var last: GeoPoint? = null
         private set
     private var told: GeoPoint? = null
     private var reader: PleosLocation? = null
     private var onMoved: () -> Unit = {}
+
+    /** 화면이 보이고, 위치 권한이 있고, 아직 받고 있지 않을 때만 시작한다(검토 I-3). */
+    internal fun shouldStart(on: Boolean, granted: Boolean, running: Boolean): Boolean = on && granted && !running
 
     internal fun shouldTell(before: GeoPoint?, now: GeoPoint): Boolean = before == null || before.distanceTo(now) > TELL_METERS
 
@@ -25,7 +32,8 @@ object BrowseLocation {
     fun keep(context: Context, on: Boolean, moved: () -> Unit) {
         onMoved = moved
         if (!on) return stop()
-        if (reader != null) return
+        val granted = context.checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!shouldStart(on, granted, reader != null)) return
         reader = try {
             PleosLocation(context.applicationContext) { point ->
                 last = point

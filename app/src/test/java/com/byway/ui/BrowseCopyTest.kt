@@ -43,4 +43,13 @@ class BrowseCopyTest {
         assertEquals("12km 거리", awayText(12_400.0))
         assertEquals("1km 거리", awayText(300.0))
     }
+
+    /** 위치를 모르면 내 주변은 걸리지 않는다. 걸어 두었거나 줄을 펼친 동안에는 이유를 계속 보인다(검토 I-2). */
+    @Test
+    fun nearNoteShowsWhileNearCannotWork() {
+        assertEquals(NO_POSITION, nearNote(CourseFilter(near = NearRange.KM25), null, located = false))
+        assertEquals(NO_POSITION, nearNote(CourseFilter(), "near", located = false))
+        assertEquals(null, nearNote(CourseFilter(near = NearRange.KM25), null, located = true))
+        assertEquals(null, nearNote(CourseFilter(), "mood", located = false))
+    }
 }

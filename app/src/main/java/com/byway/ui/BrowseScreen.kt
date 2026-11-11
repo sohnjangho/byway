@@ -137,6 +137,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             addSpaced(filterBar(filter, nav.openFilter, { open -> go(current.copy(openFilter = open)) }) {
                 go(current.copy(filter = CourseFilter(query = current.filter.query), openFilter = null, picked = null, atlas = null))
             }, Dimens.SPACE_3)
+            nearNote(filter, nav.openFilter, here != null)?.let { addSpaced(label(it, Dimens.LABEL, palette.inkSecondary).atMostLines(1), Dimens.SPACE_2) }
             nav.openFilter?.let { kind ->
                 val options = filterOptions(kind, filter, here != null, { find(it).size }) { next ->
                     go(current.copy(filter = next.copy(query = current.filter.query), openFilter = null, picked = null, atlas = null))

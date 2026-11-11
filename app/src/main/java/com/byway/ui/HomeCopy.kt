@@ -130,4 +130,6 @@ fun paceCells(pace: Pace): List<PaceCell> = listOf(
 
 /** 경치 줄과 예상치 안내. 1/3 칸은 버튼 줄까지 화면에 들도록 한 줄로 합친다(화면 다듬기 설계 2절). */
 fun sceneryNotes(scenery: String, third: Boolean): List<String> =
-    if (third) listOf("$scenery · 예상치, 교통 제외") else listOf(scenery, "적합도·즐거움·소요 시간은 예상 · 교통 상황 제외")
+    // 더미 코스는 경치 줄이 비어 있다. 빈 줄이나 앞의 구분점을 남기지 않는다.
+    if (third) listOf(listOf(scenery, "예상치, 교통 제외").filter { it.isNotEmpty() }.joinToString(" · "))
+    else listOf(scenery, "적합도·즐거움·소요 시간은 예상 · 교통 상황 제외").filter { it.isNotEmpty() }
