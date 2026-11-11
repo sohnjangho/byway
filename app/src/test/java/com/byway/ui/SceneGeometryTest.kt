@@ -169,4 +169,21 @@ class SceneGeometryTest {
         assertTrue(two.alphaFrom <= MAP_UNDER_TEXT)
         assertNull(zoomMarksFade(WindowClass.THIRD, 841f, 752f))
     }
+
+    /** 장면 그림이 없는 코스(더미)는 선을 지도가 다 드러나는 자리에만 그린다. 글 칸·띠·출처 아래로 들어가지 않는다(PM 11-11). */
+    @Test
+    fun fallbackRouteStaysInTheOpenMap() {
+        val wide = fallbackFit(WindowClass.TWO, 1680f, 605f)!!
+        assertEquals(1680f - 2404f + 1530f, wide.left, 0.01f)
+        assertTrue(wide.left >= Dimens.RAIL_WIDTH + Dimens.SIDE_WIDTH)
+        assertTrue(wide.top + wide.height <= 605f - Dimens.SCENE_CREDIT_BOTTOM)
+        assertTrue(wide.left + wide.width <= 1680f)
+        val third = fallbackFit(WindowClass.THIRD, 525f, 605f, strip = true)!!
+        assertTrue(third.top >= Dimens.RAIL_TOP_HEIGHT)
+        assertEquals(26f + 332f, third.top + third.height, 0.01f)
+        assertEquals(0f, third.left, 0.01f)
+        assertEquals(525f, third.width, 0.01f)
+        // 주행·랭킹의 넓은 창은 장면 칸 자체가 지도 자리라 칸 전체를 쓴다.
+        assertEquals(null, fallbackFit(WindowClass.TWO, 800f, 605f, list = true))
+    }
 }

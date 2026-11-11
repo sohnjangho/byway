@@ -10,6 +10,7 @@ import android.widget.Space
 import android.widget.TextView
 import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
+import com.byway.core.course.lengthScale
 import com.byway.core.geo.GeoFrame
 import com.byway.core.geo.GeoPoint
 import com.byway.core.geo.Viewport
@@ -39,6 +40,7 @@ internal class DriveScreen(
     // 더미 코스는 장면이 없다. 코스 주변 대신 남은 지점(경유·도착)을 보인다(더 많은 코스 설계 7절).
     private val places = if (course.dummy) dummyPlaces(course, sectionMeters) else shownPlaces(scene?.places.orEmpty())
     private val third = window == WindowClass.THIRD
+    private val dummyScale = course.lengthScale()
     private val full = window == WindowClass.FULL
 
     // 넓은 창에서 list 는 아래에 사진 띠가 없으니 출처를 아래로 내린다는 뜻이다.
@@ -162,7 +164,8 @@ internal class DriveScreen(
             ?: if (course.dummy) drivenKm(sectionMeters.sum() / 1_000, state.remainingMeters) else 0.0
         showAhead(driven)
         scene?.let { sceneView.setMarker(trackAt(it.track, driven)) }
-        sceneView.moveFallbackTo(state.position)
+        // 더미 코스의 선은 예시라 실제 위치와 어긋난다. 위치 점은 달린 거리만큼 예시 경로를 따라간 자리에 둔다.
+        sceneView.moveFallbackTo(if (course.dummy) dummyDot(course, driven, dummyScale) else state.position)
         val pins = partyPins(state)
         sceneView.setPins(pins)
         showZoom(state.position, pins)

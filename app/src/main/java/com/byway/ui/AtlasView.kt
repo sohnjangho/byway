@@ -355,7 +355,8 @@ private class AtlasCanvas(context: Context) : View(context) {
 
     private fun drawLines(canvas: Canvas, s: Float) {
         courses.forEach { (course, spot) ->
-            if (course.dummy) return@forEach
+            // 더미 코스는 150개 선이 겹치지 않게 고른 코스만 예시 경로를 그린다.
+            if (course.dummy && course.id != chosen) return@forEach
             val dim = chosen != null && chosen != course.id
             spot.lines.forEach { segment ->
                 val path = Path()
@@ -393,11 +394,11 @@ private class AtlasCanvas(context: Context) : View(context) {
         pinHits.clear()
         val radius = 18f * density
         val pad = 4f * density
-        // 더미 코스는 번호 없는 작은 점으로 먼저 그려 실제 코스 핀 아래에 둔다. 고르면 실제 코스처럼 이름표를 단다.
+        // 더미 코스는 번호 없는 작은 점으로 먼저 그려 실제 코스 핀 아래에 둔다. 고르면 실제 코스처럼 이름표와 선을 보인다.
         courses.withIndex().sortedBy { !it.value.first.dummy }.forEach { (i, pair) ->
             val (course, spot) = pair
             val isChosen = course.id == chosen
-            if (isChosen && close && !course.dummy) return@forEach
+            if (isChosen && close) return@forEach
             val at = toScreen(spot.x, spot.y, camera, focus)
             val cx = at.x * density
             val cy = at.y * density

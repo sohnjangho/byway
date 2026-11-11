@@ -52,4 +52,17 @@ class BrowseCopyTest {
         assertEquals(null, nearNote(CourseFilter(near = NearRange.KM25), null, located = true))
         assertEquals(null, nearNote(CourseFilter(), "mood", located = false))
     }
+
+    /** 목록 한 줄의 둘째 줄: 더미 표시, 내 주변 거리, 지역 · 거리 · 추천. */
+    @Test
+    fun rowLineJoinsRegionDistanceAndPick() {
+        val path = listOf(com.byway.core.geo.GeoPoint(37.0, 127.0), com.byway.core.geo.GeoPoint(37.0, 127.1))
+        val dummy = com.byway.core.course.Course(
+            "dummy-1-01", "더미 길", path, listOf(com.byway.core.course.Section("끝", 0, 1)),
+            tags = com.byway.core.course.CourseTags(seasons = listOf("spring")), region = "수도권", dummy = true, declaredMeters = 85_000.0,
+        )
+        assertEquals("더미 · 12km 거리 · 수도권 · 85.0km · 봄에 추천", rowLine(dummy, 85_000.0, 12_400.0, showAway = true))
+        assertEquals("더미 · 수도권 · 85.0km · 봄에 추천", rowLine(dummy, 85_000.0, 12_400.0, showAway = false))
+        assertEquals("수도권 · 85.0km · 봄에 추천", rowLine(dummy.copy(dummy = false), 85_000.0, null, showAway = true))
+    }
 }

@@ -31,6 +31,7 @@ import com.byway.core.course.CourseScene
 import com.byway.core.course.Px
 import com.byway.core.course.ScenePlace
 import com.byway.core.geo.GeoPoint
+import com.byway.core.geo.Viewport
 import com.byway.service.SceneCatalog
 import kotlin.math.abs
 import kotlin.math.sign
@@ -47,11 +48,11 @@ private val routeEase = PathInterpolator(0.33f, 0f, 0.2f, 1f)
 internal class SceneView(
     context: Context,
     private val window: WindowClass,
-    list: Boolean = false,
+    private val list: Boolean = false,
     /** 풍경으로 넘기는 단추를 지도 위에 둘지. 넓은 창의 홈은 버튼 줄에 따로 둔다. */
     private val hintOnMap: Boolean = true,
     /** 1/3 창에서 지도 아래쪽에 훑어보기 사진 띠가 놓이는지. 경로가 띠 뒤로 들어가지 않게 장면을 줄인다. */
-    strip: Boolean = false,
+    private val strip: Boolean = false,
 ) : FrameLayout(context) {
     /** 풍경 사진이 보이는지 바뀔 때 부른다. */
     var onPhoto: (Boolean) -> Unit = {}
@@ -194,6 +195,14 @@ internal class SceneView(
         if (mapShown == shown) return
         mapShown = shown
         applyMap()
+    }
+
+    /** 그림 없는 코스의 선은 지도가 다 드러나는 자리에만 그린다([fallbackFit]). */
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        val density = resources.displayMetrics.density
+        fallback.routeFit = fallbackFit(window, w / density, h / density, list, strip)
+            ?.let { Viewport(it.left * density, it.top * density, it.width * density, it.height * density) }
     }
 
     private fun applyMap() {

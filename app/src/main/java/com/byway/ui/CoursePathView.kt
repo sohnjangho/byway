@@ -48,12 +48,9 @@ class CoursePathView(context: Context) : View(context) {
     private val stop = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.ink }
     private val car = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.accent }
 
-    /** 더미 코스의 지도 자리. 선 대신 옅은 면과 [NO_MAP] 글을 그린다(더 많은 코스 설계 6절). */
-    private val noMapFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.bgRaised }
-    private val noMapText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = colors.inkSecondary
-        textAlign = Paint.Align.CENTER
-    }
+    /** 더미 코스는 예시 경로 선 위 왼쪽 위에 [DUMMY_ROUTE] 표를 단다(PM 11-11). */
+    private val tagFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.photoScrim }
+    private val tagText = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.onPhoto }
     private var pins: List<com.byway.ui.party.MapPin> = emptyList()
 
     /** 파티 확대 지도의 범위와 범위 밖 먼 멤버 수. 범위가 없으면 코스 전체를 맞춘다. */
@@ -62,6 +59,15 @@ class CoursePathView(context: Context) : View(context) {
 
     /** 확대 범위를 맞출 칸(px). 없으면 뷰 전체다. 2/3 칸은 글 칸 오른쪽의 지도 자리이고, 지도는 글 칸 아래까지 이어진다. */
     var zoomFit: Viewport? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            prepare()
+            invalidate()
+        }
+
+    /** 코스 선을 맞출 칸(px). 없으면 칸 전체다. 장면 그림이 없는 코스를 홈 지도 자리에만 그릴 때 쓴다. */
+    var routeFit: Viewport? = null
         set(value) {
             if (field == value) return
             field = value
@@ -147,7 +153,8 @@ class CoursePathView(context: Context) : View(context) {
             return
         }
         projection = null
-        val frame = Frame.of(course.path, width.toFloat(), height.toFloat()).also { frame = it }
+        val fit = routeFit ?: Viewport(0f, 0f, width.toFloat(), height.toFloat())
+        val frame = Frame.of(course.path, fit).also { frame = it }
         lines = course.sections.map { section ->
             val drawn = Path().apply {
                 val points = sectionPoints(course, section)
@@ -176,7 +183,6 @@ class CoursePathView(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
-        if (course?.dummy == true) return drawNoMap(canvas)
         val map = projection
         if (zoomed != null) {
             if (map != null) drawZoom(canvas, map)
@@ -197,25 +203,22 @@ class CoursePathView(context: Context) : View(context) {
         stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * Dimens.STOP_RADIUS, stop) }
         position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * Dimens.CAR_RADIUS, car) }
         pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, frame.x(it.point), frame.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
+        // 목록·띠의 작은 썸네일은 옆 글줄에 "더미"가 있어 표를 달지 않는다. 표가 선을 가린다.
+        if (course?.dummy == true && !thin) drawDummyTag(canvas, density)
     }
 
-    /** 더미 코스는 선, 위치 점, 핀을 그리지 않는다. 움직이는 것이 없다. 좁은 카드는 글을 두 줄로 나눈다. */
-    private fun drawNoMap(canvas: Canvas) {
-        val density = resources.displayMetrics.density
-        val w = width.toFloat()
-        val h = height.toFloat()
-        // 카드 썸네일은 카드 면(bgRaised) 위에 놓이므로 바탕색으로 칠해 그림 자리가 보이게 한다.
-        noMapFill.color = if (thin) colors.bg else colors.bgRaised
-        noMapFill.alpha = if (thin) 255 else 150
-        canvas.drawRoundRect(0f, 0f, w, h, density * Dimens.RADIUS_MD, density * Dimens.RADIUS_MD, noMapFill)
-        noMapText.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, if (thin) Dimens.LABEL else Dimens.BODY, resources.displayMetrics)
-        val lines = if (noMapText.measureText(NO_MAP) > w * 0.9f) listOf("지도 없음", DUMMY_WORD) else listOf(NO_MAP)
-        // 아주 작은 썸네일(홈 띠)에서도 두 줄이 칸 안에 들게 글을 줄인다.
-        val widest = lines.maxOf { noMapText.measureText(it) }
-        if (widest > w * 0.9f) noMapText.textSize *= w * 0.9f / widest
-        val gap = noMapText.textSize * 1.3f
-        val top = h / 2 - gap * (lines.size - 1) / 2 + noMapText.textSize * 0.35f
-        lines.forEachIndexed { i, text -> canvas.drawText(text, w / 2, top + gap * i, noMapText) }
+    /** 예시 경로임을 밝히는 작은 표. */
+    private fun drawDummyTag(canvas: Canvas, density: Float) {
+        tagText.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Dimens.LABEL, resources.displayMetrics)
+        val pad = density * Dimens.SPACE_2
+        val edge = density * Dimens.SPACE_4
+        val w = tagText.measureText(DUMMY_ROUTE) + pad * 2
+        val h = tagText.textSize + pad * 1.6f
+        // 선을 맞춘 칸(지도 자리)의 왼쪽 위에 둔다. 글 칸이나 메뉴 아래로 들어가지 않는다.
+        val x = (routeFit?.left ?: 0f) + edge
+        val y = (routeFit?.top ?: 0f) + edge
+        canvas.drawRoundRect(x, y, x + w, y + h, h / 2, h / 2, tagFill)
+        canvas.drawText(DUMMY_ROUTE, x + pad, y + h / 2 + tagText.textSize * 0.36f, tagText)
     }
 
     /**
@@ -298,6 +301,8 @@ class CoursePathView(context: Context) : View(context) {
         width: Float,
         height: Float,
         padRatio: Float,
+        private val offsetX: Float = 0f,
+        private val offsetY: Float = 0f,
     ) {
         // 경도 1도는 위도 1도보다 짧다. 그대로 그리면 코스가 옆으로 늘어난다.
         private val lonScale = cos(Math.toRadians((minLat + maxLat) / 2))
@@ -308,12 +313,14 @@ class CoursePathView(context: Context) : View(context) {
         private val left = (width - spanX * scale) / 2
         private val bottom = height - (height - spanY * scale) / 2
 
-        fun x(p: GeoPoint) = (left + (p.lon - minLon) * lonScale * scale).toFloat()
-        fun y(p: GeoPoint) = (bottom - (p.lat - minLat) * scale).toFloat()
+        fun x(p: GeoPoint) = (offsetX + left + (p.lon - minLon) * lonScale * scale).toFloat()
+        fun y(p: GeoPoint) = (offsetY + bottom - (p.lat - minLat) * scale).toFloat()
 
         companion object {
-            fun of(path: List<GeoPoint>, width: Float, height: Float) =
-                Frame(path.minOf { it.lon }, path.minOf { it.lat }, path.maxOf { it.lon }, path.maxOf { it.lat }, width, height, 0.1f)
+            fun of(path: List<GeoPoint>, fit: Viewport) = Frame(
+                path.minOf { it.lon }, path.minOf { it.lat }, path.maxOf { it.lon }, path.maxOf { it.lat },
+                fit.width, fit.height, 0.1f, fit.left, fit.top,
+            )
         }
     }
 }

@@ -67,3 +67,9 @@ fun moodWords(tags: CourseTags): List<String> = MOOD_KEYS.filter { key ->
         else -> tags.times
     }
 }.map(::moodLabel)
+
+/** 목록 한 줄의 둘째 줄. 더미 표시, 내 주변 거리(켰을 때), 지역 · 거리 · 추천 순서다. */
+fun rowLine(course: com.byway.core.course.Course, meters: Double, away: Double?, showAway: Boolean): String {
+    val near = away?.takeIf { showAway }?.let { "${awayText(it)} · " }.orEmpty()
+    return withDummyMark(course, near + courseLine(course.region, meters, pickLabels(course.tags).firstOrNull().orEmpty()))
+}

@@ -82,9 +82,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             }
         }
         fun pick(id: String) {
-            // 더미 코스는 선이 없어 확대할 것이 없다. 전국 지도에서 그 점만 강조해 어디인지 보인다.
-            val dummy = found.firstOrNull { it.course.id == id }?.course?.dummy == true
-            val camera = (if (dummy) atlas.overview() else atlas.cameraFor(id)) ?: return
+            val camera = atlas.cameraFor(id) ?: return
             keep(current.copy(picked = id, atlas = camera))
             atlas.focusOn(camera, id)
             mark(id)
@@ -159,21 +157,16 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
     }
 }
 
-/** 코스 카드 격자. 화면에 보이는 칸만 만들고 넘기면 다시 쓴다. */
-private class CardAdapter(private val context: Context, private val kit: BrowseKit, panel: Int, private val showAway: Boolean) : BaseAdapter() {
-    private val columns = if (kit.window == WindowClass.FULL) 3 else 2
-    private val width: Int
-    private val picture: Int
+/**
+ * 코스 목록(PM 11-11: 카드 대신 목록). 한 줄에 왼쪽 작은 지도, 오른쪽 이름 · 지역과 거리 · 설명.
+ * 화면에 보이는 줄만 만들고 넘기면 다시 쓴다. 전체 화면은 두 열, 나머지는 한 열이다.
+ */
+private class CardAdapter(private val context: Context, private val kit: BrowseKit, @Suppress("UNUSED_PARAMETER") panel: Int, private val showAway: Boolean) : BaseAdapter() {
+    private val columns = if (kit.window == WindowClass.FULL) 2 else 1
     private val shared = context.sharedInfo()
     private var items: List<Found> = emptyList()
     private var selected: String? = null
     var onPick: (String) -> Unit = {}
-
-    init {
-        val inner = (if (kit.window == WindowClass.THIRD) kit.widthDp else panel) - 2 * Dimens.SPACE_8
-        width = (inner - Dimens.SPACE_3 * (columns - 1)) / columns
-        picture = width * 10 / 16
-    }
 
     fun submit(next: List<Found>) {
         items = next
@@ -201,30 +194,35 @@ private class CardAdapter(private val context: Context, private val kit: BrowseK
     override fun getItemId(position: Int) = position.toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val card = (convertView as? Card) ?: Card(context).apply {
-            layoutParams = AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, context.dp(picture + Dimens.MAP_CARD_TEXT))
+        val row = (convertView as? Row) ?: Row(context).apply {
+            // 설명 두 줄이 다 보이게 높이는 글에 맞추고, 작은 지도보다 낮아지지는 않는다.
+            layoutParams = AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AbsListView.LayoutParams.WRAP_CONTENT)
+            minimumHeight = context.dp(THUMB_HEIGHT + 2 * Dimens.SPACE_3)
         }
-        card.bind(items[position])
-        return card
+        row.bind(items[position])
+        return row
     }
 
-    private inner class Card(context: Context) : LinearLayout(context) {
+    private inner class Row(context: Context) : LinearLayout(context) {
         private val cover = FrameLayout(context)
         private val name: TextView = context.label("", Dimens.SMALL, bold = true).atMostLines(1)
         private val line: TextView = context.label("", Dimens.LABEL, context.palette.inkSecondary).atMostLines(1)
+        private val about: TextView = context.label("", Dimens.LABEL).atMostLines(2)
         private var id: String? = null
 
         init {
-            orientation = VERTICAL
-            clipToOutline = true
+            orientation = HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val pad = context.dp(Dimens.SPACE_3)
+            setPadding(pad, pad, pad, pad)
             pressMotion()
             setOnClickListener { id?.let(onPick) }
-            addView(cover, LayoutParams(MATCH, context.dp(picture)))
+            addView(cover, LayoutParams(context.dp(THUMB_WIDTH), context.dp(THUMB_HEIGHT)))
             addView(context.column().apply {
-                setPadding(context.dp(Dimens.SPACE_3), context.dp(Dimens.SPACE_2), context.dp(Dimens.SPACE_3), context.dp(Dimens.SPACE_3))
                 addView(name)
                 addView(line)
-            })
+                addView(about, LayoutParams(MATCH, WRAP).apply { topMargin = context.dp(Dimens.SPACE_2) })
+            }, LayoutParams(0, WRAP, 1f).apply { marginStart = context.dp(Dimens.SPACE_4) })
         }
 
         fun bind(item: Found) {
@@ -237,21 +235,24 @@ private class CardAdapter(private val context: Context, private val kit: BrowseK
             if (id != course.id) {
                 id = course.id
                 cover.removeAllViews()
-                cover.addView(context.cover(course, context.dp(width)), matchFrame())
+                cover.addView(context.cover(course, context.dp(THUMB_WIDTH)), matchFrame())
             }
             name.text = course.name
-            line.text = cardLine(course, item.awayMeters)
+            line.text = rowText(course, item.awayMeters)
+            about.text = course.summary
+            about.visibility = if (course.summary.isBlank()) View.GONE else View.VISIBLE
         }
     }
 
-    private fun cardLine(course: Course, away: Double?): String {
+    private fun rowText(course: Course, away: Double?): String {
         val meters = kit.book.facts(course).meters
-        val base = if (isShared(course.id)) {
-            listOf("공유", kmText(meters), finishesText(shared[course.id]?.finishes ?: 0)).joinToString(" · ")
-        } else {
-            courseLine(course.region, meters, pickLabels(course.tags).firstOrNull().orEmpty())
-        }
-        val near = away?.takeIf { showAway }?.let { "${awayText(it)} · " }.orEmpty()
-        return withDummyMark(course, near + base)
+        if (!isShared(course.id)) return rowLine(course, meters, away, showAway)
+        return listOf("공유", kmText(meters), finishesText(shared[course.id]?.finishes ?: 0)).joinToString(" · ")
+    }
+
+    private companion object {
+        /** 작은 지도 칸(dp). 카드 그림과 같은 16:10 이다. */
+        const val THUMB_HEIGHT = 92
+        const val THUMB_WIDTH = THUMB_HEIGHT * 16 / 10
     }
 }

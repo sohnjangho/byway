@@ -35,9 +35,22 @@ class DummyCopyTest {
         assertEquals(listOf(1, 2, 3), places.map { it.no })
     }
 
+    /** PM 11-11: 지도는 없더라도 코스 경로는 더미로 그린다. 선 옆에 예시 경로임을 밝힌다. */
     @Test
     fun copyIsFixed() {
-        assertEquals("지도 없음 · 더미 데이터입니다", NO_MAP)
-        assertEquals("더미 데이터입니다 · 경로선이 없습니다", ATLAS_DUMMY_NOTE)
+        assertEquals("더미 경로", DUMMY_ROUTE)
+        assertEquals("더미 데이터입니다 · 경로는 예시입니다", ATLAS_DUMMY_NOTE)
+    }
+
+    /** 주행 화면의 위치 점은 더미 경로 위에서 달린 거리(표기 거리 기준)만큼 나아간 자리다. */
+    @Test
+    fun dummyDotFollowsDrivenDistance() {
+        val scale = 2.0
+        assertEquals(dummy.path.first(), dummyDot(dummy, 0.0, scale))
+        val line = dummy.path.zipWithNext { a, b -> a.distanceTo(b) }.sum()
+        val end = dummyDot(dummy, line * scale / 1_000, scale)!!
+        assertEquals(dummy.path.last().lon, end.lon, 1e-6)
+        val half = dummyDot(dummy, line * scale / 2_000, scale)!!
+        assertEquals(127.15, half.lon, 0.001)
     }
 }
