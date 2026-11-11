@@ -215,10 +215,11 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         // 기능마다 칸으로 묶는다(PM 11-11): 코드 / 코스 / 함께 달릴 친구. 버튼 줄은 칸 밖 아래 칸이다.
         text.addSpaced(section("함께 달리기 코드") {
             // 넓은 글자(W, M)가 섞여도 코드가 한 줄에 들게 칸 폭에 맞춰 글자를 줄인다.
-            addView(label(code, Dimens.DRIVE_NUMBER, bold = true).apply {
+            // 코드는 주행 숫자(112sp)보다 작게 둔다. 크면 아래 친구 칸과 별표 줄이 화면 밖으로 밀려 반쯤 잘린다.
+            addView(label(code, CODE_MAX_SP.toFloat(), bold = true).apply {
                 letterSpacing = 0.2f
                 maxLines = 1
-                setAutoSizeTextTypeUniformWithConfiguration(CODE_MIN_SP, Dimens.DRIVE_NUMBER.toInt(), 2, android.util.TypedValue.COMPLEX_UNIT_SP)
+                setAutoSizeTextTypeUniformWithConfiguration(CODE_MIN_SP, CODE_MAX_SP, 2, android.util.TypedValue.COMPLEX_UNIT_SP)
             }, LinearLayout.LayoutParams(MATCH, WRAP))
             addSpaced(label(INVITE_NOTE, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         }, Dimens.SPACE_4)
@@ -504,3 +505,6 @@ private fun Context.section(title: String?, fill: LinearLayout.() -> Unit): Line
 
 /** 함께 달리기 코드가 칸 폭에 맞춰 줄어드는 가장 작은 글자 크기(sp). */
 private const val CODE_MIN_SP = 40
+
+/** 함께 달리기 코드의 가장 큰 글자 크기(sp). 1/3 창 주행 숫자와 같다. */
+private const val CODE_MAX_SP = 72
