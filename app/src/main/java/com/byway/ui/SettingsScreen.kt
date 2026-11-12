@@ -14,7 +14,7 @@ import com.byway.service.Share
 import com.byway.service.ShareSync
 
 /**
- * 설정. 지도 보기, 달릴 때 켜고 끄는 것, 앱 정보, 내 기록 지우기를 한 화면에 둔다. 대화상자는 쓰지 않는다.
+ * 설정. 지도 보기, 주행 화면 배치, 달릴 때 켜고 끄는 것, 앱 정보, 내 기록 지우기를 한 화면에 둔다. 대화상자는 쓰지 않는다.
  * 넓은 창은 오른쪽에 지금 고른 지도가 보인다. [onChanged]는 지도 종류가 바뀌어 화면을 다시 그려야 할 때 부른다.
  */
 internal fun settingsScreen(context: Context, kit: BrowseKit, onAbout: () -> Unit, onChanged: () -> Unit): View = with(context) {
@@ -37,6 +37,8 @@ internal fun settingsScreen(context: Context, kit: BrowseKit, onAbout: () -> Uni
             addView(label("정차 중에만 바꿀 수 있습니다", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             addSpaced(group("지도 보기", mapChoice(onChanged)), Dimens.SPACE_8)
             addSpaced(label("일반 지도는 길과 물이 또렷하고, 위성은 실제 땅 모습이 보입니다", Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
+            addSpaced(group("주행 화면", layoutChoice()), Dimens.SPACE_8)
+            addSpaced(label(DRIVE_LAYOUT_NOTE, Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
             addSpaced(group("코스를 달릴 때", driveToggles(full)), Dimens.SPACE_8)
             addSpaced(group("정보와 기록", recordButtons(onAbout)), Dimens.SPACE_8)
             addSpaced(label("내 기록 지우기는 달린 기록, 만든 코스, 받은 코스, 프로필을 이 차와 공유 서버에서 지웁니다", Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
@@ -59,6 +61,12 @@ private fun Context.mapChoice(onChanged: () -> Unit): View =
     chipRow(MapStyle.entries.map { Choice(it.name, it.title) }, currentMapStyle().name, Dimens.SMALL) { key ->
         MyDrives.mapStyle = key.lowercase()
         onChanged()
+    }
+
+/** 코스를 달릴 때의 화면 배치. 바꿔도 지금 화면은 그대로라 다시 그리지 않는다. */
+private fun Context.layoutChoice(): View =
+    chipRow(DriveLayout.entries.map { Choice(it.name, it.title) }, currentDriveLayout().name, Dimens.SMALL) { key ->
+        MyDrives.driveLayout = key.lowercase()
     }
 
 private fun Context.driveToggles(full: Boolean): View {

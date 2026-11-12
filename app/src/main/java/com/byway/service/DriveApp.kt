@@ -32,6 +32,6 @@ class DriveApp : Application() {
     private fun publish() {
         val parked = parkedFrom(gearParked, requiresDo)
         Log.i("DRIVE", "gearParked=$gearParked requiresDo=$requiresDo parked=$parked")
-        DriveBoard.update { it.copy(parked = parked) }
+        DriveBoard.update { withParked(it, parked) }
     }
 }

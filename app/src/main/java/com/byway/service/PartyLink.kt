@@ -28,6 +28,10 @@ fun partyTick(me: GeoPoint?, sharing: Boolean, send: (Position) -> Result<Unit>,
 
 private const val STALE_MS = 30_000L
 
+/** 서버에 잠깐 닿지 못해도 마지막으로 받은 파티를 받은 뒤 30초까지 그대로 둔다. 주행 중 확대 지도가 깜빡이지 않는다. */
+fun keptParty(previous: PartyView?, seenAt: Long?, now: Long): PartyView? =
+    previous?.takeIf { seenAt != null && now - seenAt <= STALE_MS }
+
 /** 지도에 그릴 핀. 내 핀과 30초 넘게 소식이 없는 핀은 뺀다. */
 fun livePins(view: PartyView): List<PartyPin> {
     val mine = view.members.filter { it.me }.map { it.id }.toSet()

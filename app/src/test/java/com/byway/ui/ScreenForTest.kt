@@ -201,4 +201,23 @@ class ScreenForTest {
         assertEquals(Screen.RecordConsent, screenFor(parked, Nav(tab = Tab.MINE, recordConsent = true)))
         assertEquals(Screen.Waiting, screenFor(moving, Nav(tab = Tab.MINE, recordConsent = true)))
     }
+
+    private val request = StartRequest("c1", 0)
+
+    /** 3분할 설정에서 화면을 나누라는 안내. 정차 중에만 보인다. */
+    @Test
+    fun splitGuideShowsWhenParked() {
+        assertEquals(Screen.SplitGuide, screenFor(parked, Nav(splitGuide = request)))
+    }
+
+    /** 이어 달리기 버튼도 안내를 띄운다. 안내가 이어 달리기 물음보다 앞서야 보인다. */
+    @Test
+    fun splitGuideComesBeforeResume() {
+        assertEquals(Screen.SplitGuide, screenFor(parked, Nav(splitGuide = request), resumable = true))
+    }
+
+    @Test
+    fun splitGuideHiddenWhileMoving() {
+        assertEquals(Screen.Waiting, screenFor(moving, Nav(splitGuide = request)))
+    }
 }

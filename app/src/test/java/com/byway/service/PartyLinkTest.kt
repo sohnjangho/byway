@@ -7,6 +7,8 @@ import com.byway.core.share.PartyView
 import com.byway.core.share.Position
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class PartyLinkTest {
@@ -49,5 +51,15 @@ class PartyLinkTest {
     fun stalePinsDropAfterThirtySeconds() {
         val pins = livePins(view(PartyPin("m-me", 37.5, 127.0, 0), PartyPin("m-2", 37.6, 127.1, 29_000), PartyPin("demo-1", 37.7, 127.2, 31_000)))
         assertEquals(listOf("m-2"), pins.map { it.memberId })
+    }
+
+    /** 서버에 잠깐 닿지 못해도 마지막 파티를 30초까지 그대로 둔다. 확대 지도가 깜빡이지 않는다. */
+    @Test
+    fun briefOutageKeepsTheLastParty() {
+        val view = com.byway.core.share.PartyView("ABC234", "파티", "c1", true, true, emptyList(), emptyList())
+        assertSame(view, keptParty(view, seenAt = 1_000L, now = 1_000L + 30_000L))
+        assertNull(keptParty(view, seenAt = 1_000L, now = 1_000L + 30_001L))
+        assertNull(keptParty(view, seenAt = null, now = 5_000L))
+        assertNull(keptParty(null, seenAt = 1_000L, now = 2_000L))
     }
 }

@@ -28,6 +28,9 @@ fun windowClassOf(widthDp: Int): WindowClass = when {
 /** 한국 지도를 보는 자리. 창이 바뀌어도 남도록 Nav 에 담는다. */
 data class AtlasCamera(val cx: Float, val cy: Float, val scale: Float) : Serializable
 
+/** 화면을 나눈 뒤 이어 할 출발. 3분할 안내 중에 [Nav]에 담는다. [stop]은 안내를 띄운 정차 회차다. */
+data class StartRequest(val courseId: String, val resumeFrom: Int, val stop: Int = 0) : Serializable
+
 /** 운전자가 고른 것들. 창 막대를 끌어 Activity 가 다시 만들어져도 남도록 Bundle 에 담는다. */
 data class Nav(
     val tab: Tab = Tab.HOME,
@@ -50,13 +53,15 @@ data class Nav(
     val share: String? = null,
     /** 드라이빙 파티 화면(만들기·참여·멤버·위치 공유). */
     val party: Boolean = false,
+    /** 3분할 설정에서 화면을 나누라고 안내하는 중인 출발. 나뉘면 이 출발을 시작한다. */
+    val splitGuide: StartRequest? = null,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
-fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, party = false)
+fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, party = false, splitGuide = null)
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
-fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, party = false)
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, party = false, splitGuide = null)
 
 /** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
 fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }
@@ -86,6 +91,9 @@ sealed interface Screen {
 
     /** 드라이빙 파티. 정차 중에만. */
     data object Party : Screen
+
+    /** 3분할로 출발하려면 화면을 나누라는 안내. 정차 중에만. */
+    data object SplitGuide : Screen
 }
 
 /**
@@ -99,6 +107,7 @@ fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
     if (!state.parked) return Screen.Waiting
     if (state.recorded != null) return Screen.SaveRecord
     state.finished?.let { return Screen.Summary(it) }
+    if (nav.splitGuide != null) return Screen.SplitGuide
     if (resumable) return Screen.Resume
     if (nav.recordConsent) return Screen.RecordConsent
     nav.share?.let { return Screen.Share(it) }
