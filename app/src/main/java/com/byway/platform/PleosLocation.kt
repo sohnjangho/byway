@@ -6,6 +6,7 @@ import ai.pleos.playground.location.fused.model.LocationData
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import com.byway.core.geo.GeoPoint
 
@@ -13,12 +14,21 @@ import com.byway.core.geo.GeoPoint
 class PleosLocation(context: Context, private val onPoint: (GeoPoint) -> Unit) {
     private val fused = FusedLocation(context)
     private val handler = Handler(Looper.getMainLooper())
-    private var last: GeoPoint? = null
+    /** 마지막으로 받은 자리. 코스를 시작할 때 첫 경로를 맞추는 데 쓴다. */
+    var last: GeoPoint? = null
+        private set
+    private var stamp = 0L
+    private var stampAt = 0L
 
     private val reader = object : FusedLocationListener {
         override fun onChanged(location: LocationData?) {
             val point = location?.let { GeoPoint(it.latitude, it.longitude) } ?: return
+            val time = location.timestampMillis
             handler.post {
+                if (time != stamp) {
+                    stamp = time
+                    stampAt = SystemClock.elapsedRealtime()
+                }
                 if (point != last) {
                     last = point
                     onPoint(point)
@@ -34,6 +44,9 @@ class PleosLocation(context: Context, private val onPoint: (GeoPoint) -> Unit) {
             handler.postDelayed(this, INTERVAL_MS)
         }
     }
+
+    /** 위치의 시각이 마지막으로 바뀐 뒤 지난 시간. 차가 서 있어도 위치가 살아 있으면 시각은 바뀐다. 받은 적이 없으면 null 이다. */
+    fun fixAgeMs(): Long? = if (stampAt == 0L) null else SystemClock.elapsedRealtime() - stampAt
 
     fun start() {
         fused.initialize()

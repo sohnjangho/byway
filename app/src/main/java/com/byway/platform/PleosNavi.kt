@@ -2,39 +2,84 @@ package com.byway.platform
 
 import ai.pleos.playground.navi.constants.NaviErrorCode
 import ai.pleos.playground.navi.constants.WaypointIndex
+import ai.pleos.playground.navi.data.DestinationArrivedInfo
+import ai.pleos.playground.navi.data.DestinationInfo
 import ai.pleos.playground.navi.data.RequestWaypointInfo
 import ai.pleos.playground.navi.data.RouteInfo
 import ai.pleos.playground.navi.data.RouteStartInfo
 import ai.pleos.playground.navi.data.RouteWithWaypointsRequest
+import ai.pleos.playground.navi.data.WaypointChangedInfo
 import ai.pleos.playground.navi.helper.NaviHelper
 import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import com.byway.core.course.Leg
 import com.byway.core.course.Stop
 import com.byway.core.drive.DriveCommand
+import com.byway.core.drive.DriveEvent
 import com.byway.core.drive.RouteAbility
 import com.byway.core.drive.RouteFollower
+import com.byway.core.geo.GeoPoint
 
-/** 차의 내장 내비에 구간을 올린다. */
-class PleosNavi(context: Context) : RouteFollower {
+/**
+ * 차의 내장 내비에 구간을 올린다. 운전자가 내비를 직접 만지면(다른 목적지, 경유지 추가, 안내 종료) [onDriver]로 알리고,
+ * 끝낼 때는 우리가 올린 경로만 지운다. 누구의 경로인지는 [RouteLedger]가 가린다.
+ */
+class PleosNavi(context: Context, private val onDriver: (DriveEvent) -> Unit) : RouteFollower {
     override val ability = RouteAbility()
     private val navi = NaviHelper(context)
+    private val main = Handler(Looper.getMainLooper())
+    private val ledger = RouteLedger()
     private var connected = false
     private var waiting: Leg? = null
+    private var lastLeg: Leg? = null
 
+    /** 이벤트는 다른 스레드로 온다. 판단은 메인 스레드에서만 한다. */
     private val listener = object : NaviHelperEventListener {
-        override fun onRouteStarted(routeStartInfo: RouteStartInfo) { Log.i(TAG, "route started $routeStartInfo") }
-        override fun onError(errorCode: NaviErrorCode) { Log.w(TAG, "navi error $errorCode") }
+        override fun onRouteStarted(routeStartInfo: RouteStartInfo) {
+            main.post {
+                Log.i(TAG, "route started ${routeStartInfo.name}")
+                // 시작 이벤트에는 좌표가 없다. 목적지를 물어 누구의 경로인지 본다.
+                navi.getDestinationInfo()
+            }
+        }
+
+        override fun onDestinationInfo(destinationInfo: DestinationInfo) {
+            val point = GeoPoint(destinationInfo.latitude, destinationInfo.longitude)
+            main.post { destination(point) }
+        }
+
+        override fun onRouteCancelled() {
+            main.post(::cancelled)
+        }
+
+        /** 우리 요청에는 오지 않는다(실측). 운전자가 내비에서 경유지를 더했을 때 온다. */
+        override fun onWaypointChanged(waypointChangedInfo: WaypointChangedInfo) {
+            val added = "${waypointChangedInfo.cmdType}" == WAYPOINT_ADDED
+            main.post { if (added) takenOver("waypoint added") }
+        }
+
+        override fun onDestinationArrived(destinationArrivedInfo: DestinationArrivedInfo) {
+            main.post(::arrived)
+        }
+
+        override fun onError(errorCode: NaviErrorCode) {
+            main.post { failed(errorCode) }
+        }
     }
 
     fun connect(onFailed: (Throwable) -> Unit) {
         navi.initialize(
             onConnected = {
-                connected = true
-                navi.addListener(listener)
-                waiting?.let(::show)
-                waiting = null
+                main.post {
+                    connected = true
+                    navi.addListener(listener)
+                    waiting?.let(::show)
+                    waiting = null
+                }
             },
             onFailed = onFailed,
         )
@@ -47,7 +92,9 @@ class PleosNavi(context: Context) : RouteFollower {
             waiting = leg
             return
         }
-        Log.i(TAG, "show leg via=${leg.waypoints.size} to=${leg.destination.pathIndex}")
+        Log.i(TAG, "show leg via=${leg.waypoints.map { it.pathIndex }} to=${leg.destination.pathIndex}")
+        lastLeg = leg
+        ledger.requested(leg.destination.point, SystemClock.elapsedRealtime())
         if (leg.waypoints.isEmpty()) {
             navi.requestRoute(leg.destination.toRouteInfo())
         } else {
@@ -60,11 +107,56 @@ class PleosNavi(context: Context) : RouteFollower {
         }
     }
 
-    fun release() {
-        if (connected) {
-            navi.cancelRoute()
-            navi.removeListener(listener)
+    /** 경로를 찾지 못한 오류만 우리 요청의 실패다. 한 번 다시 올리고, 또 실패하면 엔진에 알린다. */
+    private fun failed(errorCode: NaviErrorCode) {
+        Log.w(TAG, "navi error $errorCode")
+        if (errorCode !in ROUTE_ERRORS) return
+        if (ledger.failed()) {
+            main.postDelayed({ lastLeg?.let(::show) }, RETRY_MS)
+        } else {
+            onDriver(DriveEvent.RouteFailed)
         }
+    }
+
+    /** 경로가 꺼질 때는 묻지 않아도 (0, 0)이 온다. 목적지가 없다는 뜻이다. */
+    private fun destination(point: GeoPoint) {
+        if (point.lat == 0.0 && point.lon == 0.0) return
+        if (!ledger.seen(point)) takenOver("destination ${point.lat},${point.lon}")
+    }
+
+    private fun cancelled() {
+        val ours = ledger.cancelIsOurs(SystemClock.elapsedRealtime())
+        Log.i(TAG, if (ours) "route replaced by ours" else "driver cancelled the route")
+        if (!ours) onDriver(DriveEvent.RouteCancelled)
+    }
+
+    private fun takenOver(why: String) {
+        Log.i(TAG, "driver took over: $why")
+        onDriver(DriveEvent.RouteTakenOver)
+    }
+
+    private fun arrived() {
+        if (ledger.oursIsActive) {
+            Log.i(TAG, "arrived at our destination")
+            ledger.arrived(SystemClock.elapsedRealtime())
+        } else {
+            Log.i(TAG, "arrived at the driver's destination")
+            onDriver(DriveEvent.DestinationArrived)
+        }
+    }
+
+    /**
+     * 우리가 올린 경로만 지운다. 운전자가 넣은 경로는 둔다. 서비스를 멈추기 전에 부른다.
+     * 에뮬레이터에서는 이 호출 뒤에도 경로가 남고 이벤트도 오지 않았다(2026-11-09, 원인 미확인). 실차에서 확인한다.
+     */
+    fun clearOurRoute() {
+        Log.i(TAG, "clear route, ours=${ledger.oursIsActive}")
+        if (connected && ledger.oursIsActive) navi.cancelRoute()
+    }
+
+    fun release() {
+        main.removeCallbacksAndMessages(null)
+        if (connected) navi.removeListener(listener)
         navi.release()
     }
 
@@ -79,6 +171,13 @@ class PleosNavi(context: Context) : RouteFollower {
 
     private companion object {
         const val TAG = "DRIVE"
+        const val WAYPOINT_ADDED = "ADD"
+        const val RETRY_MS = 3_000L
+        val ROUTE_ERRORS = setOf(
+            NaviErrorCode.CAUSE_SEARCH_ROUTE,
+            NaviErrorCode.CAUSE_SEARCH_ROUTE_OVER_DISTANCE,
+            NaviErrorCode.CAUSE_SEARCH_ROUTE_TOO_SHORT_DISTANCE,
+        )
         val INDEXES = listOf(WaypointIndex.FIRST, WaypointIndex.SECOND)
     }
 }

@@ -3,6 +3,7 @@ package com.byway.service
 import android.os.Handler
 import android.os.Looper
 import com.byway.core.course.Course
+import com.byway.core.drive.Prompt
 import com.byway.core.geo.GeoPoint
 
 /** 화면이 그리는 주행 상태. 화면은 이것만 안다. */
@@ -23,6 +24,10 @@ data class DriveState(
     /** 지금 분위기 곡. 없으면 빈 값이다. 연결된 음악 앱이 재생한다. */
     val music: String = "",
     val position: GeoPoint? = null,
+    /** 엔진이 운전자에게 묻고 있는 것. 주행 화면이 버튼 하나로 답을 받는다. */
+    val prompt: Prompt? = null,
+    /** 달리는 중인데 위치의 시각이 오래 멈췄다. */
+    val stale: Boolean = false,
 )
 
 object DriveBoard {

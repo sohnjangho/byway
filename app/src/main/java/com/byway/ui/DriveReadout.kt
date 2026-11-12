@@ -1,5 +1,7 @@
 package com.byway.ui
 
+import com.byway.core.course.Section
+import com.byway.core.drive.Prompt
 import java.util.Locale
 
 /** 주행 화면이 그리는 값. [filled]는 구간마다 지나온 비율이다. */
@@ -21,3 +23,20 @@ private fun filledShares(sectionMeters: List<Double>, travelled: Double): List<F
         share.toFloat()
     }
 }
+
+/** 엔진의 물음에 답하는 버튼의 글. 물음이 없으면 버튼도 없다. 누르면 그렇다는 답이다. */
+fun promptButton(prompt: Prompt?): String? = when (prompt) {
+    Prompt.DETOUR -> "잠깐 들러요"
+    Prompt.RESUME -> "코스 이어가기"
+    null -> null
+}
+
+/** 주행 화면의 한 줄. 달리는 중에 위치를 놓치면 안내 문구 대신 그 사실을 적는다. */
+fun driveLine(line: String, stale: Boolean): String = if (stale) "위치 확인 중" else line
+
+/** 달리다 만 코스를 이어갈지 묻는 글. */
+fun resumeLine(courseName: String, sectionNo: Int): String = "$courseName 코스 ${sectionNo}구간을 이어갈까요?"
+
+/** 코스 위의 지점이 몇 번째 구간인지. 1부터 센다. 코스 밖의 지점은 마지막 구간으로 본다. */
+fun sectionNoAt(sections: List<Section>, pathIndex: Int): Int =
+    sections.indexOfFirst { pathIndex in it.startIndex..it.endIndex }.let { if (it < 0) sections.size else it + 1 }

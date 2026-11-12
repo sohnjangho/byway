@@ -39,6 +39,19 @@ class ScreenForTest {
         assertEquals(listOf(Tab.HOME, Tab.BROWSE, Tab.RANKING, Tab.MINE), Tab.entries)
     }
 
+    /** 달리다 만 코스가 있으면 정차 화면보다 먼저 이어갈지 묻는다. 달리는 중에는 묻지 않는다. */
+    @Test
+    fun aSavedRunIsOfferedBeforeTheMenusButOnlyWhenParked() {
+        assertEquals(Screen.Resume, screenFor(parked, Nav(tab = Tab.RANKING, settings = true), resumable = true))
+        assertEquals(Screen.Waiting, screenFor(moving, Nav(), resumable = true))
+        assertEquals(Screen.Drive, screenFor(parked.copy(running = true, course = course), Nav(), resumable = true))
+    }
+
+    @Test
+    fun aFinishedCourseIsShownBeforeTheOffer() {
+        assertEquals(Screen.Summary(course), screenFor(parked.copy(finished = course), Nav(), resumable = true))
+    }
+
     @Test
     fun parkedWithAboutOpenIsAbout() {
         assertEquals(Screen.About, screenFor(parked, Nav(about = true)))
