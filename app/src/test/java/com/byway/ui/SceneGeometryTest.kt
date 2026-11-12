@@ -110,4 +110,20 @@ class SceneGeometryTest {
         assertEquals(FadeBand(false, 1256f, 1336f, 0f), photoFade(WindowClass.FULL, 1210f))
         assertEquals(FadeBand(true, 365f, 657f, 1f), photoFade(WindowClass.THIRD, 730f))
     }
+
+    @Test
+    fun theDriveBackdropMeetsTheMapWhereTheMapFadesInWideWindows() {
+        val band = sceneFadeOnScreen(WindowClass.TWO, 1680f, 1210f)
+        assertEquals(false, band.vertical)
+        assertEquals(736f, band.from)
+        assertEquals(806f, band.to)
+    }
+
+    @Test
+    fun theDriveBackdropMeetsTheMapBelowItInTheThirdWindow() {
+        val band = sceneFadeOnScreen(WindowClass.THIRD, 840f, 1210f, strip = true)
+        assertEquals(true, band.vertical)
+        assertEquals(316f, band.from)
+        assertEquals(576f, band.to)
+    }
 }

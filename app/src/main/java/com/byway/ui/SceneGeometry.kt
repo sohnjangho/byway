@@ -42,6 +42,14 @@ fun sceneFade(window: WindowClass, list: Boolean = false, strip: Boolean = false
     }
 }
 
+/** 지도가 글 칸과 만나는 띠를 화면 좌표로 옮긴 값. 주행 화면 배경은 이 띠에서 지도와 서로 넘어간다. */
+fun sceneFadeOnScreen(window: WindowClass, viewW: Float, viewH: Float, strip: Boolean = false): FadeBand {
+    val rect = sceneRect(window, viewW, viewH, strip = strip)
+    val band = sceneFade(window, strip = strip)
+    val start = if (band.vertical) rect.top else rect.left
+    return band.copy(from = start + band.from, to = start + band.to)
+}
+
 /** 풍경 사진이 글 칸과 만나는 띠. 값은 화면 좌표다. */
 fun photoFade(window: WindowClass, viewH: Float): FadeBand = when (window) {
     WindowClass.TWO -> FadeBand(false, 756f, 826f, 0f)

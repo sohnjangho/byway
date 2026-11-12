@@ -19,6 +19,16 @@ fun shortMapCredit(style: MapStyle): String = when (style) {
     MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors · 사진 띠 Sentinel-2 cloudless · 전체 출처는 앱 정보"
 }
 
+/** 지도 칸이 좁은 1/3 창 주행 화면의 지도 출처. 사진 띠가 없어 지도와 길의 권리자만 적는다. 전문은 앱 정보에 있다. */
+fun driveMapCredit(style: MapStyle): String = when (style) {
+    MapStyle.SATELLITE -> "Sentinel-2 cloudless © EOX · 코스 © OpenStreetMap contributors"
+    MapStyle.MAP -> "Terrain Light © EOX · © OpenStreetMap contributors"
+}
+
+/** 주행 화면의 출처. 글 칸 배경에 코스 사진을 쓰면 그 출처와 흐리게 바꿨다는 사실을 함께 적는다. */
+fun driveCredit(map: String, backdropCredit: String?): String =
+    if (backdropCredit == null) map else "$map · 배경 $backdropCredit, 흐리게 변형"
+
 private val FIXED_CREDITS = listOf(
     "© OpenStreetMap contributors (ODbL)",
     SATELLITE,
@@ -28,7 +38,7 @@ private val FIXED_CREDITS = listOf(
 
 /** 앱에 실린 코스, 사진, 지도 자료의 출처. */
 fun creditLines(courses: List<Course>): List<String> =
-    (courses.map { it.attribution } + courses.map { it.sceneryCredit } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
+    (courses.map { it.attribution } + courses.map { it.sceneryDetail.ifBlank { it.sceneryCredit } } + FIXED_CREDITS).filter { it.isNotBlank() }.distinct()
 
 /** 앱에 함께 배포되는 오픈소스. docs/권리점검.md 와 같은 목록이다. */
 val OPEN_SOURCE_NOTICES = listOf(

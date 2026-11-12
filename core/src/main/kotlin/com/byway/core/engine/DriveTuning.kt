@@ -9,6 +9,10 @@ data class DriveTuning(
     val lookaheadMeters: Double = 3_000.0,
     /** 목적지에 닿기 전에 다음 경로로 잇는 거리. 내비가 "목적지 도착"으로 안내를 끝내지 않게 한다. */
     val legSwapAheadMeters: Double = 1_000.0,
+    /** 경로를 바꾸면 안내가 7~8초 끊긴다(에뮬레이터 실측). 다음 안내 지점이 이보다 가까우면 교체를 미룬다. 끊긴 동안 달리는 거리에 안내를 들을 여유를 더했다. */
+    val legSwapClearMeters: Double = 500.0,
+    /** 안내 지점이 가까워도 목적지까지 이만큼 남으면 올린다. 끊긴 동안 목적지에 닿지 않을 거리다. */
+    val legSwapLatestMeters: Double = 400.0,
     /** 벗어났을 때 묻고 답을 기다리는 위치 횟수. 위치는 달리는 동안 1초에 한 번쯤 온다. */
     val askWaitFixes: Int = 15,
     /** 복귀 지점은 차 옆 자리에서 이만큼 앞이다. 바로 뒤를 가리켜 유턴시키지 않고, 멀리 건너뛰지도 않는다. */

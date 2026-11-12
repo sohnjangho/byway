@@ -2217,7 +2217,7 @@ window.COURSES = [
    "데이트"
   ],
   "photo": "images/scenery/seomjin-river.jpg",
-  "credit": "사진: Marco Schmidt [1] (CC BY-SA 3.0, Wikimedia Commons)",
+  "credit": "사진: Marco Schmidt (CC BY-SA 3.0, Wikimedia Commons)",
   "coverNight": "images/covers/seomjin-river-night.jpg",
   "coverDay": "images/covers/seomjin-river.jpg",
   "scene": {

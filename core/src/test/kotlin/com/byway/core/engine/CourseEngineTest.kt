@@ -284,6 +284,47 @@ class CourseEngineTest {
         assertTrue("다음 구간으로 이어갑니다." in commands.says())
     }
 
+    /** 교체하면 안내가 몇 초 끊긴다. 45번 지점에서 받은 안내 지점은 약 46.1번과 49.5번 자리다. */
+    @Test
+    fun aTurnJustAheadHoldsTheSwapUntilItIsBehind() {
+        val engine = started()
+        engine.drive(1..45)
+        engine.onEvent(DriveEvent.RouteTurns(listOf(100.0, 300.0)))
+        assertTrue(engine.drive(46..49).routes().isEmpty())
+        assertEquals(listOf(60, 80, 100), engine.at(50).routes().single().indexes())
+    }
+
+    @Test
+    fun aFarTurnDoesNotHoldTheSwap() {
+        val engine = started()
+        engine.drive(1..45)
+        engine.onEvent(DriveEvent.RouteTurns(listOf(1_200.0)))
+        assertTrue(engine.drive(46..48).routes().isEmpty())
+        assertEquals(listOf(60, 80, 100), engine.at(49).routes().single().indexes())
+    }
+
+    /** 회전이 이어져도 목적지 400m 안에서는 올린다. 내비가 "목적지 도착"으로 안내를 끝내면 안 된다. */
+    @Test
+    fun turnsCannotHoldTheSwapPastTheLastMoment() {
+        val engine = started()
+        engine.drive(1..45)
+        engine.onEvent(DriveEvent.RouteTurns(List(40) { 100.0 }))
+        assertTrue(engine.drive(46..55).routes().isEmpty())
+        assertEquals(listOf(60, 80, 100), engine.at(56).routes().single().indexes())
+    }
+
+    /** 교체 뒤에는 앞 경로의 안내 지점이 남아 있으면 안 된다. 약 70번 자리의 지점은 앞 경로의 것이다. */
+    @Test
+    fun aNewRouteForgetsTheTurnsOfTheOldOne() {
+        val engine = engine(listOf(16, 32, 48, 64, 80, 100).map { Stop("지점$it", path[it], it) })
+        engine.onEvent(DriveEvent.CourseStarted(course))
+        engine.drive(1..30)
+        engine.onEvent(DriveEvent.RouteTurns(listOf(3_550.0)))
+        assertEquals(listOf(48, 64, 80), engine.drive(31..37).routes().single().indexes())
+        assertTrue(engine.drive(38..68).routes().isEmpty())
+        assertEquals(listOf(80, 100), engine.at(69).routes().single().indexes())
+    }
+
     @Test
     fun theLastLegIsNotSwapped() {
         assertEquals(1, started().drive(1..99).routes().size)

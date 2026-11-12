@@ -21,10 +21,27 @@ OUT = ROOT / "app/src/main/assets/scenery"
 COURSES = ROOT / "app/src/main/assets/courses"
 DEFINITIONS = ROOT / "tools/courses"
 SIZE = (1280, 960)
+LICENCE_LINKS = {
+    "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "CC BY 2.0": "https://creativecommons.org/licenses/by/2.0/",
+    "CC BY-SA 3.0": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "Public domain": "",
+}
 
 
 def credit_of(entry):
     return f"사진: {entry['artist']} ({entry['license']}, Wikimedia Commons)"
+
+
+def detail_of(entry):
+    """앱 정보에 적는 전문. 저작자, 제목, 라이선스와 그 주소, 원본 주소, 변형 사실을 모두 담는다."""
+    licence = f"{entry['license']} {LICENCE_LINKS[entry['license']]}".rstrip()
+    share = " 변형본도 같은 라이선스를 따릅니다." if "-SA" in entry["license"] else ""
+    return (
+        f"사진: {entry['artist']}, 「{Path(entry['file']).stem}」, {licence}, 원본 {urllib.parse.unquote(entry['page'])}. "
+        f"화면에 맞춰 자르고 주행 화면 배경은 흐리게 변형했습니다.{share}"
+    )
 
 
 def source_url(entry):
@@ -49,9 +66,27 @@ def fitted(image):
     return ImageOps.fit(image.convert("RGB"), SIZE, Image.LANCZOS)
 
 
+def with_field(text, name, value):
+    text = re.sub(rf'"{name}":"[^"]*",', "", text, count=1)
+    return text.replace('"summary":', f'"{name}":{json.dumps(value, ensure_ascii=False)},"summary":', 1)
+
+
 def with_credit(text, credit):
-    text = re.sub(r'"sceneryCredit":"[^"]*",', "", text, count=1)
-    return text.replace('"summary":', f'"sceneryCredit":{json.dumps(credit, ensure_ascii=False)},"summary":', 1)
+    return with_field(text, "sceneryCredit", credit)
+
+
+def with_detail(text, detail):
+    return with_field(text, "sceneryDetail", detail)
+
+
+def write_credits(course_id, entry):
+    file = COURSES / f"{course_id}.json"
+    file.write_text(with_detail(with_credit(file.read_text(encoding="utf-8"), credit_of(entry)), detail_of(entry)), encoding="utf-8")
+    source = DEFINITIONS / f"{course_id}.json"
+    definition = json.loads(source.read_text(encoding="utf-8"))
+    definition["sceneryCredit"] = credit_of(entry)
+    definition["sceneryDetail"] = detail_of(entry)
+    source.write_text(json.dumps(definition, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def main():
@@ -60,12 +95,7 @@ def main():
     for course_id in sys.argv[1:] or plan:
         entry = plan[course_id]
         fitted(Image.open(io.BytesIO(fetch(source_url(entry))))).save(OUT / f"{course_id}.jpg", quality=80)
-        file = COURSES / f"{course_id}.json"
-        file.write_text(with_credit(file.read_text(encoding="utf-8"), credit_of(entry)), encoding="utf-8")
-        source = DEFINITIONS / f"{course_id}.json"
-        definition = json.loads(source.read_text(encoding="utf-8"))
-        definition["sceneryCredit"] = credit_of(entry)
-        source.write_text(json.dumps(definition, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        write_credits(course_id, entry)
         print(course_id, (OUT / f"{course_id}.jpg").stat().st_size, flush=True)
         time.sleep(12)
 

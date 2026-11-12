@@ -35,6 +35,10 @@ class SceneryCreditTest(unittest.TestCase):
         course = mc.build_course(definition(sceneryCredit="사진: 가 (CC0)"), LINE)
         self.assertEqual("사진: 가 (CC0)", course["sceneryCredit"])
 
+    def test_a_course_keeps_the_full_credit_of_its_photo(self):
+        course = mc.build_course(definition(sceneryCredit="사진: 가 (CC0)", sceneryDetail="전문"), LINE)
+        self.assertEqual("전문", course["sceneryDetail"])
+
     def test_a_course_without_a_photo_has_no_credit_field(self):
         self.assertNotIn("sceneryCredit", mc.build_course(definition(), LINE))
 

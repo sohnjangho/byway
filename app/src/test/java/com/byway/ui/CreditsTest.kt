@@ -20,6 +20,15 @@ class CreditsTest {
         assertTrue(lines.contains("사진: 가"))
     }
 
+    /** 앱 정보에는 칩의 짧은 출처 대신 제목과 주소까지 있는 전문을 적는다. */
+    @Test
+    fun thePhotoListShowsTheFullCreditInsteadOfTheShortOne() {
+        val full = course("c", "코스 출처", "사진: 가").copy(sceneryDetail = "사진: 가, 원본 주소")
+        val listed = creditLines(listOf(full))
+        assertTrue(listed.contains("사진: 가, 원본 주소"))
+        assertTrue(!listed.contains("사진: 가"))
+    }
+
     @Test
     fun blankCreditsAreLeftOut() {
         assertTrue(lines.none { it.isBlank() })
@@ -93,5 +102,24 @@ class CreditsTest {
     @Test
     fun theMapSourceIsListedWithALinkBack() {
         assertTrue(lines.any { it.contains("Terrain Light") && it.contains("maps.eox.at") })
+    }
+
+    @Test
+    fun theDriveMapCreditKeepsEveryRightsHolderInFewerWords() {
+        val map = driveMapCredit(MapStyle.MAP)
+        assertTrue(map.contains("EOX") && map.contains("OpenStreetMap"))
+        val satellite = driveMapCredit(MapStyle.SATELLITE)
+        assertTrue(satellite.contains("Sentinel-2") && satellite.contains("EOX") && satellite.contains("OpenStreetMap"))
+    }
+
+    @Test
+    fun aBackdropPhotoAddsItsCreditAndSaysItWasChanged() {
+        val text = driveCredit("지도", "사진: 누구 (CC BY-SA 3.0, Wikimedia Commons)")
+        assertEquals("지도 · 배경 사진: 누구 (CC BY-SA 3.0, Wikimedia Commons), 흐리게 변형", text)
+    }
+
+    @Test
+    fun withoutABackdropPhotoOnlyTheMapIsCredited() {
+        assertEquals("지도", driveCredit("지도", null))
     }
 }

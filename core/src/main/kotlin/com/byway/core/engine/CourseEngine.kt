@@ -49,6 +49,10 @@ class CourseEngine(
         DriveEvent.RouteTakenOver, DriveEvent.RouteCancelled -> run?.pause(Messages.PAUSED).orEmpty()
         DriveEvent.RouteFailed -> run?.pause(Messages.ROUTE_FAILED).orEmpty()
         DriveEvent.DestinationArrived -> run?.onArrived().orEmpty()
+        is DriveEvent.RouteTurns -> {
+            run?.onTurns(event.gaps)
+            emptyList()
+        }
         is DriveEvent.Answered -> run?.onAnswer(event.yes).orEmpty()
         DriveEvent.CourseStopped -> {
             run = null
@@ -93,6 +97,9 @@ class CourseEngine(
         /** 지난 교체 때 앞 경로와 이어 붙인 지점. 이 지점을 지나야 다시 교체한다. */
         private var shared: Stop? = null
         private var routedAt = -1
+
+        /** 지금 경로의 안내 지점이 코스 처음부터 몇 m 자리인지. 내비가 알려 주기 전에는 비어 있다. */
+        private var turns = emptyList<Double>()
         private var approachRouted = false
         private var strayFixes = 0
         private var waitedFixes = 0
@@ -130,6 +137,7 @@ class CourseEngine(
             destination = picked.last()
             shared = join
             routedAt = progress
+            turns = emptyList()
             return FollowRoute(Leg(picked.dropLast(1), destination), if (ability.acceptsWholePath) path.drop(progress) else null)
         }
 
@@ -247,12 +255,28 @@ class CourseEngine(
             add(report())
         }
 
-        /** 목적지에 닿기 전에 다음 경로를 올린다. 앞 경로의 목적지가 새 경로의 첫 경유지라 길이 끊기지 않는다. */
+        /** 안내 지점은 앞 지점부터의 거리로 온다. 코스 위 자리로 바꿔 둔다. 받은 때의 차 자리를 기준으로 하는 어림값이다. */
+        fun onTurns(gaps: List<Double>) {
+            val here = travelled[progress]
+            turns = gaps.runningReduce(Double::plus).map { here + it }
+        }
+
+        private fun turnIsClose(): Boolean {
+            val here = travelled[progress]
+            return turns.any { it >= here && it - here < tuning.legSwapClearMeters }
+        }
+
+        /**
+         * 목적지에 닿기 전에 다음 경로를 올린다. 앞 경로의 목적지가 새 경로의 첫 경유지라 길이 끊기지 않는다.
+         * 올리는 동안 안내가 끊기므로 앞에 안내 지점이 가까우면 지나간 뒤로 미루되, 목적지가 가까우면 더 미루지 않는다.
+         */
         private fun swapIfClose(): List<DriveCommand> {
             if (progress == routedAt) return emptyList()
-            if (travelled[destination.pathIndex] - travelled[progress] > tuning.legSwapAheadMeters) return emptyList()
+            val left = travelled[destination.pathIndex] - travelled[progress]
+            if (left > tuning.legSwapAheadMeters) return emptyList()
             if (shared?.let { progress < it.pathIndex } == true) return emptyList()
             if (pick().last() == destination) return emptyList()
+            if (left > tuning.legSwapLatestMeters && turnIsClose()) return emptyList()
             checkpoint = progress
             return listOf(routeAhead(join = destination), Say(Messages.NEXT_LEG, alert = true))
         }

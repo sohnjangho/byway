@@ -152,7 +152,7 @@ class MainActivity : AppCompatActivity() {
                 content != null -> RailFrame(this, markedTab(nav), kit.window, ::openTab, { go(nav.copy(settings = true, about = false)) }, content, over)
                 screen is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
                 screen == Screen.Drive -> DriveScreen(
-                    this, book, requireNotNull(state.course), kit.wide,
+                    this, book, requireNotNull(state.course), kit.window,
                     onAnswer = { DriveService.answer(this, yes = true) },
                     onEnd = { DriveService.stop(this) },
                 )

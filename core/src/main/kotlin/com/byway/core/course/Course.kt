@@ -40,6 +40,8 @@ data class Course(
     val elevation: List<Double> = emptyList(),
     /** 풍경 사진의 출처. 비어 있으면 사진을 쓰지 않는다. */
     val sceneryCredit: String = "",
+    /** 앱 정보에 적는 풍경 사진의 출처 전문. 제목과 라이선스, 원본 주소, 변형 사실까지 담는다. */
+    val sceneryDetail: String = "",
 )
 
 /** 내비에 올리는 코스 위의 한 지점. */

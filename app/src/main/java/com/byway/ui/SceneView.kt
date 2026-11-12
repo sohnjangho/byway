@@ -27,6 +27,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.CourseScene
 import com.byway.core.course.Px
 import com.byway.core.course.ScenePlace
+import com.byway.core.geo.GeoPoint
 import com.byway.service.SceneCatalog
 import kotlin.math.abs
 import kotlin.math.sign
@@ -182,6 +183,9 @@ internal class SceneView(
     /** 훑어보기에서 고른 지점. 장면 그림 안의 좌표다. */
     fun setMarker(at: Px?) = canvasView.setMarker(at)
 
+    /** 지도 그림이 없어 코스 그림으로 대신할 때의 위치 점. */
+    fun moveFallbackTo(point: GeoPoint?) = fallback.moveTo(point)
+
     /** 화면에 함께 보이는 자료가 바뀌면 출처도 바꾼다. */
     fun setCredit(text: String) {
         credit.text = text
@@ -284,7 +288,7 @@ private class ScenePhoto(context: Context, private val window: WindowClass) : Vi
         val w = width.toFloat()
         val h = height.toFloat()
         val layer = canvas.saveLayer(0f, 0f, w, h, null)
-        canvas.drawBitmap(bitmap, centerCrop(bitmap), Rect(0, 0, width, height), paint)
+        canvas.drawBitmap(bitmap, centerCrop(bitmap, width, height), Rect(0, 0, width, height), paint)
         val band = photoFade(window, h / density)
         val from = band.from * density
         val to = band.to * density
@@ -297,15 +301,16 @@ private class ScenePhoto(context: Context, private val window: WindowClass) : Vi
         canvas.drawRect(0f, 0f, w, h, mask)
         canvas.restoreToCount(layer)
     }
+}
 
-    private fun centerCrop(bitmap: Bitmap): Rect {
-        val scale = maxOf(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
-        val w = (width / scale).toInt()
-        val h = (height / scale).toInt()
-        val left = (bitmap.width - w) / 2
-        val top = (bitmap.height - h) / 2
-        return Rect(left, top, left + w, top + h)
-    }
+/** [width]x[height] 칸을 빈틈없이 채우도록 그림 가운데를 잘라 낼 범위. */
+internal fun centerCrop(bitmap: Bitmap, width: Int, height: Int): Rect {
+    val scale = maxOf(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
+    val w = (width / scale).toInt()
+    val h = (height / scale).toInt()
+    val left = (bitmap.width - w) / 2
+    val top = (bitmap.height - h) / 2
+    return Rect(left, top, left + w, top + h)
 }
 
 /** 그림은 그대로 두고 경로는 그 위에 그린다. 지도 라이브러리와 네트워크가 필요 없다. */
@@ -356,6 +361,7 @@ private class SceneCanvas(
     }
 
     fun setMarker(at: Px?) {
+        if (marker == at) return
         marker = at
         invalidate()
     }
