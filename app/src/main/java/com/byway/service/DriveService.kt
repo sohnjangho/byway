@@ -22,6 +22,9 @@ import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.core.geo.GeoPoint
 import com.byway.core.record.RecordRules
+import com.byway.core.share.leaderEndsRun
+import com.byway.core.share.PartyView
+import com.byway.core.share.PendingClear
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.feature.music.MusicFeature
 import com.byway.platform.ConnectedMusic
@@ -74,6 +77,12 @@ class DriveService : Service() {
 
     /** 파티를 마지막으로 받은 때(elapsedRealtime). 잠깐 닿지 못할 때 마지막 파티를 얼마나 둘지 정한다. */
     private var partySeenAt: Long? = null
+
+    /** 마지막으로 받은 함께 달리기. 오래 끊겨 화면에서 지워져도 코스 비우기를 판단하려고 둔다(검토 I-2). */
+    private var partySeen: PartyView? = null
+
+    /** 달리는 코스의 기기 id. 함께 달리기 코스를 달린 것인지 볼 때 쓴다. */
+    private var runCourseId: String? = null
     private val partyLoop = object : Runnable {
         override fun run() {
             pollParty()
@@ -146,6 +155,8 @@ class DriveService : Service() {
     }
 
     private fun startCourse(courseId: String, resumeFrom: Int) {
+        runCourseId = courseId
+        partySeen = null
         // 방금 끝낸 코스의 예약된 종료가 새 코스를 멈추지 않게 한다.
         main.removeCallbacks(stopLater)
         main.removeCallbacks(partyLoop)
@@ -218,6 +229,7 @@ class DriveService : Service() {
                     is PartyTick.Seen -> {
                         partySharing = tick.view.members.firstOrNull { it.me }?.sharing == true
                         partySeenAt = SystemClock.elapsedRealtime()
+                        partySeen = tick.view
                         DriveBoard.update { it.copy(party = tick.view) }
                     }
                     PartyTick.Ended -> {
@@ -232,14 +244,27 @@ class DriveService : Service() {
         }
     }
 
-    /** 코스를 끝내면 위치 보내기를 멈추고 서버의 내 위치를 지운다(동의 철회와 같다). */
+    /**
+     * 코스를 끝내면 위치 보내기를 멈추고 서버의 내 위치를 지운다(동의 철회와 같다).
+     * 리더면 코스도 비워 다음에는 다시 고른다(PM 11-11).
+     */
     private fun stopParty() {
         main.removeCallbacks(partyLoop)
         val code = MyParty.code(this)
-        if (code != null && partySharing) {
+        val seen = DriveBoard.state.party ?: partySeen
+        val runIds = setOfNotNull(runCourseId, runCourseId?.let { CourseStore.uploadOf(this, it) })
+        val clear = code != null && seen?.code == code && leaderEndsRun(seen, runIds)
+        // 보내지 못하면 정차 중 PartyWatch 가 다시 보낸다. 그사이 새로 고른 코스는 지우지 않게 제안 번호를 둔다.
+        if (clear && seen != null) MyParty.setPendingClear(this, PendingClear(seen.code, seen.proposal))
+        if (code != null && (partySharing || clear)) {
             val client = Share.client(this)
-            Share.io.execute { client.sharing(code, false) }
+            val sharing = partySharing
+            Share.io.execute {
+                if (sharing) client.sharing(code, false)
+                if (clear && client.clearCourse(code).isSuccess) main.post { MyParty.setPendingClear(this, null) }
+            }
         }
+        runCourseId = null
         partySharing = false
         DriveBoard.update { it.copy(party = null) }
     }

@@ -44,8 +44,8 @@ internal fun partyAskScreen(context: Context, kit: BrowseKit, view: PartyView, c
         val line = course?.let { "${it.name} · ${kmText(it.path.zipWithNext { a, b -> a.distanceTo(b) }.sum())}" } ?: "코스를 받는 중입니다"
         addSpaced(label(line, Dimens.BODY), Dimens.SPACE_3)
         addSpaced(label("위치 공유", Dimens.SMALL, bold = true), Dimens.SPACE_6)
-        LOCATION_CONSENT.forEach { addSpaced(label("· $it", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
-        addSpaced(label("거부하면 이 파티에서 나갑니다.", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
+        LOCATION_CONSENT.forEach { addSpaced(label(bullet(it), Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2) }
+        addSpaced(label("거부하면 이 함께 달리기에서 나갑니다.", Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_4)
     }
 
     fun answer(accept: Boolean) {

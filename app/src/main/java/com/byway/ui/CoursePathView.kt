@@ -282,7 +282,7 @@ class CoursePathView(context: Context) : View(context) {
         pins.filter { it.name.isNotEmpty() }.forEach {
             write(it.name, map.x(it.point), map.y(it.point) + size * 1.3f, colors.ink, Paint.Align.CENTER)
         }
-        if (far > 0) write("멀리 있는 멤버 ${far}명", left, fit.top + edge + size, colors.ink, Paint.Align.LEFT)
+        if (far > 0) write("멀리 있는 친구 ${far}명", left, fit.top + edge + size, colors.ink, Paint.Align.LEFT)
         val meters = scaleBarMeters(map.metersPerPx * fit.width)
         val length = (meters / map.metersPerPx).toFloat()
         val y = fit.top + fit.height - edge

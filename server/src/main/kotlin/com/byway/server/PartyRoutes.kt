@@ -19,12 +19,14 @@ import com.byway.core.share.Propose
 import com.byway.core.share.Reopen
 import com.byway.core.share.Toggle
 import com.byway.core.share.Visibility
+import com.byway.core.share.togetherName
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -42,7 +44,7 @@ fun Route.partyRoutes(server: Server) {
         val request = call.receive<NewParty>()
         val problem = profileProblem(request.profile) ?: request.courseId?.let { courseProblem(server, me, null, it) }
         if (problem != null) return@post call.respond(HttpStatusCode.BadRequest, Problem(problem))
-        val name = request.name.trim().ifEmpty { "${request.profile.nickname.trim()}의 파티" }
+        val name = request.name.trim().ifEmpty { togetherName(request.profile.nickname) }
         nameProblem(name)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
         val code = server.freeCode()
         store.addParty(PartyRow(code, name, null, me, open = true), server.clock())
@@ -70,7 +72,7 @@ fun Route.partyRoutes(server: Server) {
         if (!party.open) return@post call.notFound()
         profileProblem(profile)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
         val before = store.members(party.code).firstOrNull { it.device == me }
-        if (before?.blocked == true) return@post call.respond(HttpStatusCode.Forbidden, Problem("이 파티에 들어갈 수 없습니다"))
+        if (before?.blocked == true) return@post call.respond(HttpStatusCode.Forbidden, Problem("이 함께 달리기에 들어갈 수 없습니다"))
         store.putMember(
             MemberRow(
                 party.code, me, profile.nickname.trim(), profile.avatar,
@@ -123,7 +125,7 @@ fun Route.partyRoutes(server: Server) {
     post("/v1/parties/{code}/end") {
         val me = call.device(store) ?: return@post
         val member = present(server, me) ?: return@post call.notFound()
-        if (store.party(member.partyCode)?.owner != me) return@post call.respond(HttpStatusCode.Forbidden, Problem("리더만 파티를 끝낼 수 있습니다"))
+        if (store.party(member.partyCode)?.owner != me) return@post call.respond(HttpStatusCode.Forbidden, Problem("리더만 함께 달리기를 끝낼 수 있습니다"))
         server.endParty(member.partyCode)
         call.respond(HttpStatusCode.NoContent)
     }
@@ -144,6 +146,16 @@ fun Route.partyRoutes(server: Server) {
         if (party.owner != me) return@post call.respond(HttpStatusCode.Forbidden, Problem("리더만 코스를 고를 수 있습니다"))
         courseProblem(server, me, party.code, courseId)?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
         store.putMember(member.copy(accepted = store.propose(party.code, courseId, server.clock())))
+        call.respond(server.view(party.code, me))
+    }
+
+    /** 리더의 코스가 끝나면 코스를 비운다. 다음 코스는 리더가 다시 고르고, 비운 동안은 묻지 않는다(PM 11-11). */
+    delete("/v1/parties/{code}/course") {
+        val me = call.device(store) ?: return@delete
+        val member = present(server, me) ?: return@delete call.notFound()
+        val party = store.party(member.partyCode)?.takeIf { it.open } ?: return@delete call.notFound()
+        if (party.owner != me) return@delete call.respond(HttpStatusCode.Forbidden, Problem("리더만 코스를 비울 수 있습니다"))
+        store.clearCourse(party.code)
         call.respond(server.view(party.code, me))
     }
 
@@ -184,7 +196,7 @@ fun Route.partyRoutes(server: Server) {
         val courseId = call.receive<Reopen>().courseId
         val member = member(server, me)?.takeIf { !it.blocked } ?: return@post call.notFound()
         if (!member.starred || store.party(member.partyCode)?.open != false) {
-            return@post call.respond(HttpStatusCode.Conflict, Problem("즐겨찾는 끝난 파티만 다시 열 수 있습니다"))
+            return@post call.respond(HttpStatusCode.Conflict, Problem("즐겨찾는 끝난 함께 달리기만 다시 열 수 있습니다"))
         }
         val code = member.partyCode
         courseId?.let { courseProblem(server, me, code, it) }?.let { return@post call.respond(HttpStatusCode.BadRequest, Problem(it)) }
@@ -271,7 +283,7 @@ private fun courseProblem(server: Server, me: String, partyCode: String?, id: St
     val row = server.store.course(id) ?: return "코스를 찾을 수 없습니다"
     if (row.hidden) return "코스를 찾을 수 없습니다"
     if (row.visibility == Visibility.PARTY && row.owner != me && (partyCode == null || row.partyCode != partyCode)) {
-        return "다른 파티에서 받은 코스는 쓸 수 없습니다"
+        return "다른 함께 달리기에서 받은 코스는 쓸 수 없습니다"
     }
     return null
 }
@@ -305,6 +317,6 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.leaderTarget(server: 
     val party = server.store.party(member.partyCode)?.takeIf { it.open } ?: return null.also { call.notFound() }
     if (party.owner != me) return null.also { call.respond(HttpStatusCode.Forbidden, Problem("리더만 할 수 있습니다")) }
     val target = server.store.members(party.code).firstOrNull { it.device != me && it.present && !it.blocked && memberId(it.device) == ref.memberId }
-        ?: return null.also { call.respond(HttpStatusCode.BadRequest, Problem("이 멤버에게는 할 수 없습니다")) }
+        ?: return null.also { call.respond(HttpStatusCode.BadRequest, Problem("이 친구에게는 할 수 없습니다")) }
     return party to target
 }

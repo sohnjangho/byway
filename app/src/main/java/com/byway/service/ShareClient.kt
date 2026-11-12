@@ -78,6 +78,8 @@ class ShareClient(
     fun leave(code: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/leave", "", null)
     fun reopen(code: String, courseId: String?): Result<PartyView> = call("POST", "/v1/parties/$code/reopen", encode(Reopen.serializer(), Reopen(courseId)), PartyView.serializer())
     fun propose(code: String, courseId: String): Result<PartyView> = call("POST", "/v1/parties/$code/course", encode(Propose.serializer(), Propose(courseId)), PartyView.serializer())
+    /** 리더의 코스가 끝나면 코스를 비운다(PM 11-11). */
+    fun clearCourse(code: String): Result<Unit> = call<Unit>("DELETE", "/v1/parties/$code/course", null, null)
     fun answer(code: String, proposal: Int, accept: Boolean): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/answer", encode(Answer.serializer(), Answer(proposal, accept)), null)
     fun passLeader(code: String, memberId: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/leader", encode(MemberRef.serializer(), MemberRef(memberId)), null)
     fun kick(code: String, memberId: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/kick", encode(MemberRef.serializer(), MemberRef(memberId)), null)

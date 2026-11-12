@@ -1,18 +1,23 @@
 package com.byway.ui
 
-import com.byway.ui.party.LOCATION_CONSENT
-import com.byway.ui.party.STAR_NOTE
-import com.byway.ui.party.memberTags
-import com.byway.ui.party.PARTY_JOIN_CONSENT
 import com.byway.ui.party.ACCEPT_BUTTON
+import com.byway.ui.party.CourseChoice
+import com.byway.ui.party.DECLINE_BUTTON
+import com.byway.ui.party.END_BUTTON
 import com.byway.ui.party.INVITE_BUTTON
-import com.byway.ui.party.RESTART_BUTTON
+import com.byway.ui.party.INVITE_NOTE
+import com.byway.ui.party.JOIN_BUTTON
+import com.byway.ui.party.LEFT_NOTE
+import com.byway.ui.party.LOCATION_CONSENT
+import com.byway.ui.party.NO_COURSE_YET
+import com.byway.ui.party.PARTY_INTRO
+import com.byway.ui.party.PARTY_JOIN_CONSENT
 import com.byway.ui.party.START_BUTTON
+import com.byway.ui.party.STAR_NOTE
 import com.byway.ui.party.askTitle
 import com.byway.ui.party.findPartyCourse
+import com.byway.ui.party.memberTags
 import com.byway.ui.party.partyActions
-import com.byway.ui.party.JOIN_BUTTON
-import com.byway.ui.party.CourseChoice
 import com.byway.ui.party.partyCourseGroups
 import com.byway.core.share.PartyMember
 import com.byway.core.share.SharedCourse
@@ -35,8 +40,8 @@ class PartyCopyTest {
     @Test
     fun joiningAsksBeforeNicknameAndAvatarLeave() {
         val text = PARTY_JOIN_CONSENT.joinToString(" ")
-        listOf("닉네임", "아바타", "멤버", "지웁니다").forEach { assertTrue(it, it in text) }
-        assertTrue(INVITE_BUTTON == "동의하고 파티원 초대" && JOIN_BUTTON.startsWith("동의하고"))
+        listOf("닉네임", "아바타", "함께 달릴 친구", "지웁니다").forEach { assertTrue(it, it in text) }
+        assertTrue(INVITE_BUTTON == "동의하고 함께 달릴 친구 초대" && JOIN_BUTTON.startsWith("동의하고"))
     }
 
     /**
@@ -85,7 +90,7 @@ class PartyCopyTest {
     fun demoMembersAreLabelled() {
         val demo = PartyMember("demo-1", "시연용 1", "avatar-09", demo = true, me = false, sharing = true, starred = false)
         val me = PartyMember("m-1", "하나", "avatar-01", demo = false, me = true, sharing = true, starred = false)
-        assertEquals("시연용 가상 멤버", memberTags(demo, proposal = 0))
+        assertEquals("시연용 가상 친구", memberTags(demo, proposal = 0))
         assertEquals("나 · 위치 공유 중", memberTags(me, proposal = 0))
         assertEquals("", memberTags(me.copy(me = false, sharing = false), proposal = 0))
     }
@@ -97,7 +102,7 @@ class PartyCopyTest {
         val demo = PartyMember("demo-1", "시연용 1", "avatar-09", demo = true, me = false, sharing = true, starred = false, accepted = true)
         val other = PartyMember("m-2", "둘", "avatar-02", demo = false, me = false, sharing = false, starred = false)
         assertEquals("리더 · 나 · 함께 달림", memberTags(me, proposal = 1))
-        assertEquals("시연용 가상 멤버 · 함께 달림", memberTags(demo, proposal = 1))
+        assertEquals("시연용 가상 친구 · 함께 달림", memberTags(demo, proposal = 1))
         assertEquals("응답 기다림", memberTags(other, proposal = 1))
         assertEquals("", memberTags(other, proposal = 0))
     }
@@ -105,7 +110,7 @@ class PartyCopyTest {
     /** 위치가 나가기 시작하는 버튼은 동의 버튼이다(함께달리기 설계 6-7). */
     @Test
     fun buttonsThatShareLocationSayAgree() {
-        listOf(START_BUTTON, RESTART_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
+        listOf(START_BUTTON, ACCEPT_BUTTON).forEach { assertTrue(it, it.startsWith("동의하고")) }
     }
 
     /** 제안한 사람이 나간 뒤 내가 리더가 되었으면 내 이름을 적지 않는다(함께달리기 설계 6-10.4). */
@@ -127,12 +132,25 @@ class PartyCopyTest {
         assertEquals(null, findPartyCourse("s-404", listed, mine, emptyMap()))
     }
 
-    /** 리더도 나갈 수 있다(설계 6-3). 다시 출발이 있으면 맨 앞이다(검토 I-4). */
+    /** 리더도 나갈 수 있다(설계 6-3). 승낙했고 코스가 살아 있으면 맨 앞에 출발이 있다(검토 I-1, 코스가 끝나면 비워져 사라진다). */
     @Test
     fun everyoneCanLeaveAndTheLeaderCanAlsoEnd() {
-        assertEquals(listOf("코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = false))
-        assertEquals(listOf("동의하고 다시 출발", "코스 고르기", "나가기", "파티 끝내기"), partyActions(owner = true, restart = true))
-        assertEquals(listOf("동의하고 다시 출발", "나가기"), partyActions(owner = false, restart = true))
-        assertEquals(listOf("나가기"), partyActions(owner = false, restart = false))
+        assertEquals(listOf("코스 고르기", "나가기", "함께 달리기 끝내기"), partyActions(owner = true, start = false))
+        assertEquals(listOf("동의하고 출발", "코스 고르기", "나가기", "함께 달리기 끝내기"), partyActions(owner = true, start = true))
+        assertEquals(listOf("동의하고 출발", "나가기"), partyActions(owner = false, start = true))
+        assertEquals(listOf("나가기"), partyActions(owner = false, start = false))
+    }
+
+    /** PM 11-11: 화면 말은 "파티" 대신 "함께 달리기", "파티원·멤버" 대신 "함께 달릴 친구"다. */
+    @Test
+    fun copySaysTogetherNotParty() {
+        val demo = PartyMember("demo-1", "시연용 1", "avatar-09", demo = true, me = false, sharing = true, starred = false)
+        val all = LOCATION_CONSENT + PARTY_JOIN_CONSENT + listOf(
+            STAR_NOTE, DECLINE_BUTTON, LEFT_NOTE, END_BUTTON, INVITE_BUTTON, INVITE_NOTE, PARTY_INTRO, NO_COURSE_YET,
+            com.byway.ui.share.PARTY_NEEDED, com.byway.ui.share.scopeHint("party"), memberTags(demo, proposal = 0),
+        ) + com.byway.ui.share.SHARE_SCOPES.map { it.second }
+        all.forEach { assertTrue(it, "파티" !in it && "멤버" !in it) }
+        assertEquals("함께 달리기 끝내기", END_BUTTON)
+        assertEquals("거부하고 함께 달리기에서 나가기", DECLINE_BUTTON)
     }
 }

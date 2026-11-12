@@ -59,6 +59,7 @@ internal suspend fun HttpClient.send(path: String, token: String, body: String, 
     }
     return when (method) {
         "PUT" -> put(path, build)
+        "DELETE" -> delete(path, build)
         else -> post(path, build)
     }
 }
