@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """make-covers.py 시험. 사용: python3 tools/test_make_covers.py"""
 import importlib.util
-import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -108,69 +107,59 @@ class NightTest(unittest.TestCase):
         self.assertEqual(mc.section_colours()["river"], (0x4F, 0xD1, 0xE8))
 
 
-class SoftTest(unittest.TestCase):
-    course = {"path": TALL}
+class LayerTest(unittest.TestCase):
+    def test_each_layer_has_its_own_tiles_and_cache(self):
+        self.assertIn("s2cloudless", mc.tile_url("satellite", 9, 1, 2))
+        self.assertIn("terrain-light", mc.tile_url("map", 9, 1, 2))
+        self.assertNotEqual(mc.cache_file("satellite", 9, 1, 2).parent, mc.cache_file("map", 9, 1, 2).parent)
 
-    def half_black(self):
-        image = Image.new("RGB", (640, 640), (0, 0, 0))
-        image.paste((255, 255, 255), (320, 0, 640, 640))
-        return image
+    def test_a_tile_url_puts_the_row_before_the_column(self):
+        self.assertTrue(mc.tile_url("map", 9, 1, 2).endswith("/9/2/1.jpg"))
 
-    def test_a_soft_background_has_no_hard_edge(self):
-        image = mc.soft(self.course, self.half_black())
-        row = [image.getpixel((x, image.height // 2))[0] for x in range(image.width)]
-        self.assertLess(max(abs(a - b) for a, b in zip(row, row[1:])), 30)
+    def test_map_files_carry_the_layer_name(self):
+        self.assertEqual(mc.file_name("c", "satellite"), "c.jpg")
+        self.assertEqual(mc.file_name("c", "satellite", night=True), "c-night.jpg")
+        self.assertEqual(mc.file_name("c", "map"), "c-map.jpg")
+        self.assertEqual(mc.file_name("c", "map", night=True), "c-map-night.jpg")
 
-    def test_a_soft_background_stays_small(self):
-        self.assertLessEqual(mc.soft(self.course, self.half_black()).width, 320)
-
-    def test_without_a_photo_it_blurs_the_satellite_ground(self):
-        green = Image.new("RGB", (256, 256), (60, 110, 70))
-        with mock.patch.object(mc, "tile", return_value=green):
-            red, grn, blue = mc.soft(self.course).getpixel((10, 10))
-        self.assertGreater(grn, red)
-        self.assertGreater(grn, blue)
-
-    def test_bright_and_dark_ends_are_held_so_text_stays_readable(self):
-        image = mc.soft(self.course, self.half_black())
-        values = [value for pixel in image.getdata() for value in pixel]
-        self.assertGreaterEqual(min(values), mc.SOFT_DARKEST)
-        self.assertLessEqual(max(values), mc.SOFT_BRIGHTEST)
+    def test_white_land_on_the_map_is_not_treated_as_cloud(self):
+        paper = Image.new("RGB", (256, 256), (240, 240, 240))
+        paper.paste((40, 70, 50), (0, 0, 256, 60))
+        with mock.patch.object(mc, "tile", lambda *_: paper):
+            image = mc.ground(TALL, "map")[0]
+        self.assertIn((240, 240, 240), set(image.getdata()))
 
 
-class SoftPhotoChoiceTest(unittest.TestCase):
-    """흐린 배경은 사진을 변형한 결과물이라 이용 조건이 없는 사진만 쓴다."""
+class NightMapTest(unittest.TestCase):
+    WATER, LAND, ROAD = (146, 164, 176), (232, 232, 232), (200, 200, 200)
+    course = {"path": TALL, "sections": [{"startIndex": 0, "endIndex": 90, "mood": "river"}]}
 
-    def written(self, credit):
-        course = {"id": "sample", "path": TALL, "sceneryCredit": credit}
-        with tempfile.TemporaryDirectory() as folder:
-            Image.new("RGB", (640, 480), (200, 40, 40)).save(Path(folder) / "sample.jpg")
-            target = Path(folder) / "sample-soft.jpg"
-            satellite = Image.new("RGB", (256, 256), (60, 110, 70))
-            with mock.patch.object(mc, "SCENERY", Path(folder)), mock.patch.object(mc, "tile", return_value=satellite):
-                mc.write_soft(course, target)
-            return Image.open(target).convert("RGB").getpixel((10, 10))
+    def night(self):
+        picture = Image.new("RGB", (90, 30), self.LAND)
+        picture.paste(self.WATER, (0, 0, 30, 30))
+        picture.paste(self.ROAD, (60, 0, 90, 30))
+        return mc.night_map(picture)
 
-    def assert_photo(self, credit):
-        red, green, _ = self.written(credit)
-        self.assertGreater(red, green, credit)
+    def test_the_background_comes_from_the_design_tokens(self):
+        self.assertEqual(mc.night_background(), (0x13, 0x14, 0x17))
 
-    def assert_satellite(self, credit):
-        red, green, _ = self.written(credit)
-        self.assertGreater(green, red, credit)
+    def test_water_becomes_the_app_background(self):
+        self.assertEqual(self.night().getpixel((15, 15)), mc.night_background())
 
-    def test_a_cc0_photo_becomes_the_soft_background(self):
-        self.assert_photo("사진: 작가 (CC0, Wikimedia Commons)")
+    def test_land_is_a_little_brighter_than_the_background(self):
+        land = self.night().getpixel((45, 15))
+        self.assertGreater(sum(land), sum(mc.night_background()) + 30)
+        self.assertLess(max(land), 90)
 
-    def test_a_public_domain_photo_becomes_the_soft_background(self):
-        self.assert_photo("사진: 작가 (Public domain, Wikimedia Commons)")
+    def test_roads_are_brighter_than_land(self):
+        night = self.night()
+        self.assertGreater(sum(night.getpixel((75, 15))), sum(night.getpixel((45, 15))))
 
-    def test_a_photo_with_terms_is_replaced_by_the_satellite_ground(self):
-        for licence in ("CC BY 2.0", "CC BY-SA 3.0", "CC BY-SA 4.0"):
-            self.assert_satellite(f"사진: 작가 ({licence}, Wikimedia Commons)")
-
-    def test_a_photo_without_a_credit_is_replaced_by_the_satellite_ground(self):
-        self.assert_satellite("")
+    def test_a_map_cover_at_night_uses_the_map_tones(self):
+        water = Image.new("RGB", (256, 256), self.WATER)
+        with mock.patch.object(mc, "tile", lambda *_: water):
+            cover = mc.cover(self.course, night=True, layer="map")
+        self.assertEqual(cover.getpixel((5, 5)), mc.night_background())
 
 
 if __name__ == "__main__":

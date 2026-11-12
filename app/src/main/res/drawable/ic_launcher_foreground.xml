@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 굽은 길과 출발점. 색은 design/tokens.json 의 accent, ink 야간값이다. 가운데 66dp 안에 그린다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M42,79 C42,67 67,70 67,59 C67,48 42,51 42,41 C42,32 58,34 63,27"
+        android:strokeColor="#F0A45A"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="8" />
+    <path
+        android:fillColor="#F7F8FA"
+        android:pathData="M37,79 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+</vector>

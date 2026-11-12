@@ -43,7 +43,20 @@ data class Nav(
     val picked: String? = null,
     /** 홈 코스 띠를 넘겨 둔 자리(px). */
     val stripX: Int? = null,
+    val settings: Boolean = false,
 ) : Serializable
+
+/** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
+fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null)
+
+/** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false)
+
+/** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
+fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }
+
+/** 메뉴 안의 위에서부터 자리. 설정이 맨 아래다. 내용이 들어오는 방향을 정할 때 쓴다. */
+fun railPosition(nav: Nav): Int = markedTab(nav)?.ordinal ?: Tab.entries.size
 
 /** 한 Activity 안에서 바뀌는 화면들. */
 sealed interface Screen {
@@ -52,6 +65,7 @@ sealed interface Screen {
     data class Summary(val course: Course) : Screen
     data object Waiting : Screen
     data object About : Screen
+    data object Settings : Screen
 }
 
 /**
@@ -63,6 +77,7 @@ fun screenFor(state: DriveState, nav: Nav): Screen {
     if (!state.parked) return Screen.Waiting
     state.finished?.let { return Screen.Summary(it) }
     if (nav.about) return Screen.About
+    if (nav.settings) return Screen.Settings
     return Screen.Browse(nav.tab)
 }
 

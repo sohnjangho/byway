@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""시안의 한국 전체 지도를 만든다. 위성 바탕 한 장과, 그 위에 그릴 코스 선, 지역 이름 자리를 함께 낸다.
+"""시안의 한국 전체 지도를 만든다. 바탕 그림(위성과 일반 지도)과, 그 위에 그릴 코스 선, 지역 이름 자리를 함께 낸다.
 둘러보기와 내 코스는 이 지도를 코스나 지역으로 확대해 보이고, 랭킹은 작게 줄여 코스 위치를 짚는다.
-위성 출처는 장면과 같다: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+출처는 장면과 같다. 위성: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+일반 지도: Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX
 사용: python3 tools/make-atlas.py"""
 import importlib.util
 import json
@@ -93,7 +94,7 @@ def labels():
     return made("region", REGIONS) + made("city", CITIES)
 
 
-def ground():
+def ground(layer="satellite"):
     left, top = origin()
     width, height = size()
     first_x, last_x = int(left // 256), int((left + width) // 256)
@@ -101,9 +102,9 @@ def ground():
     sheet = Image.new("RGB", ((last_x - first_x + 1) * 256, (last_y - first_y + 1) * 256))
     for x in range(first_x, last_x + 1):
         for y in range(first_y, last_y + 1):
-            sheet.paste(covers.tile(ZOOM, x, y), ((x - first_x) * 256, (y - first_y) * 256))
+            sheet.paste(covers.tile(ZOOM, x, y, layer), ((x - first_x) * 256, (y - first_y) * 256))
     crop = sheet.crop((int(left - first_x * 256), int(top - first_y * 256), int(left - first_x * 256 + width), int(top - first_y * 256 + height)))
-    return covers.without_clouds(crop)
+    return covers.without_clouds(crop) if layer == "satellite" else crop
 
 
 def main():
@@ -118,11 +119,12 @@ def main():
             "x": number(middle[0]), "y": number(middle[1]), "box": box(course["path"]),
             "frame": frame(scenes[course["id"]]["view"]), "lines": lines(course),
         }
-    day, night = OUT / "korea.jpg", OUT / "korea-night.jpg"
-    if not day.exists():
-        image = ground().resize((int(width * SAVE_RATIO), int(height * SAVE_RATIO)), Image.LANCZOS)
-        image.save(day, quality=72)
-        covers.darkened(image).save(night, quality=72)
+    for layer in covers.LAYERS:
+        day, night = OUT / covers.file_name("korea", layer), OUT / covers.file_name("korea", layer, night=True)
+        if not day.exists():
+            image = ground(layer).resize((int(width * SAVE_RATIO), int(height * SAVE_RATIO)), Image.LANCZOS)
+            image.save(day, quality=72)
+            covers.night_of(image, layer).save(night, quality=72)
     (OUT / "atlas.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     print(OUT.relative_to(ROOT), data["size"], len(data["courses"]))
 

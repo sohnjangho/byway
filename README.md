@@ -18,6 +18,7 @@
 
 시연 코스 도로 좌표: © OpenStreetMap contributors (ODbL)
 위성 그림: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)
+일반 지도: Terrain Light · Data © OpenStreetMap contributors and others · Rendering © EOX (https://maps.eox.at)
 고도: Open-Meteo, Copernicus DEM
 풍경 사진과 오픈소스 목록은 앱 정보 화면과 `docs/권리점검.md`에 있습니다.
 
@@ -72,6 +73,7 @@ docs/       제작 가이드
 - [x] **프로젝트 빌드 성공** (`app-debug.apk` 11MB)
 - [x] Pleos Emulator 구성
 - [x] 새 화면 구조 이전(위성 장면, 한국 지도, 레일 메뉴)
+- [x] 일반 지도·위성 선택, 설정 화면, 코스 훑어보기, 예상 소요 시간
 - [x] 시연 영상
 
 ## 실행 방법

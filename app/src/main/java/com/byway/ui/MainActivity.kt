@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
-    private var builtTab = nav.tab
+    private var builtPosition = railPosition(nav)
     private var builtCourse: String? = null
     private val render: (DriveState) -> Unit = ::render
 
@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openTab(tab: Tab) {
         leaveSummary()
-        go(nav.copy(tab = tab, about = false, picked = null, atlas = null))
+        go(nav.toTab(tab))
     }
 
     private fun leaveSummary() {
@@ -100,18 +100,18 @@ class MainActivity : AppCompatActivity() {
         if (root.width > 0) (root.width / resources.displayMetrics.density).toInt() else resources.configuration.screenWidthDp
 
     private fun render(state: DriveState) {
-        if (state.running) nav = nav.copy(about = false)
+        if (state.running) nav = nav.whileDriving()
         val next = screenFor(state, nav)
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette || stale) {
             val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
-            val sign = enterSign(builtTab, nav.tab)
+            val sign = railPosition(nav).compareTo(builtPosition)
             val reveal = motion != ScreenMotion.NONE && next == Screen.Browse(Tab.HOME) && nav.courseId != builtCourse
             stale = false
             current = next
             builtWidth = width
             builtPalette = palette
-            builtTab = nav.tab
+            builtPosition = railPosition(nav)
             builtCourse = nav.courseId
             window.setBackgroundDrawable(ColorDrawable(palette.bg))
             root.setBackgroundColor(palette.bg)
@@ -128,17 +128,18 @@ class MainActivity : AppCompatActivity() {
         val content = when (screen) {
             is Screen.Browse -> browse(screen.tab, kit, reveal)
             Screen.About -> aboutScreen(this, kit) { go(nav.copy(about = false)) }
+            Screen.Settings -> settingsScreen(this, kit, onAbout = { go(nav.copy(about = true)) }, onChanged = { go(nav) })
             else -> null
         }
         val frame = root.getChildAt(0) as? RailFrame
         if (content != null && motion != ScreenMotion.NONE && frame != null) {
-            frame.swap(content, nav.tab, over, sign)
+            frame.swap(content, markedTab(nav), over, sign)
             return
         }
         root.removeAllViews()
         root.addView(
             when {
-                content != null -> RailFrame(this, nav.tab, kit.window, ::openTab, content, over)
+                content != null -> RailFrame(this, markedTab(nav), kit.window, ::openTab, { go(nav.copy(settings = true, about = false)) }, content, over)
                 screen is Screen.Summary -> summaryScreen(this, kit, screen.course) { openTab(Tab.HOME) }
                 screen == Screen.Drive -> DriveScreen(this, book, requireNotNull(state.course), kit.wide) { DriveService.stop(this) }
                 else -> waitingScreen(this)
@@ -156,7 +157,6 @@ class MainActivity : AppCompatActivity() {
             reveal = reveal,
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
-            onBrowse = { openTab(Tab.BROWSE) },
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
@@ -167,7 +167,6 @@ class MainActivity : AppCompatActivity() {
             { nav = it },
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
-            onAbout = { go(nav.copy(about = true)) },
         )
     }
 

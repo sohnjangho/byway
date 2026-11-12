@@ -32,6 +32,19 @@ class HomeCopyTest {
         assertEquals((1..6).toList(), shown.map { it.no })
     }
 
+    /** 훑어보기 자료는 도구가 매긴 번호로 장소를 가리킨다. 목록은 번호를 다시 매기므로 그 대응을 따로 준다. */
+    @Test
+    fun shownNumbersMapTheOriginalNumbersToTheListNumbers() {
+        val places = listOf("view", "view", "view", "food").mapIndexed { i, kind -> place(kind).copy(no = i + 1) }
+        assertEquals(mapOf(1 to 1, 2 to 2, 4 to 3), shownNumbers(places))
+    }
+
+    @Test
+    fun aPlaceLeftOutOfTheListHasNoNumber() {
+        val places = listOf("view", "view", "view").mapIndexed { i, kind -> place(kind).copy(no = i + 1) }
+        assertEquals(null, shownNumbers(places)[3])
+    }
+
     @Test
     fun photoSpotsCountAsViews() {
         assertEquals(2, shownPlaces(listOf(place("view"), place("photo"), place("view"))).size)
@@ -71,5 +84,30 @@ class HomeCopyTest {
     @Test
     fun stripStartsAtTheChosenCard() {
         assertEquals(592, stripScrollFor(previous = null, index = 2, step = 296, cardWidth = 284, viewWidth = 1500))
+    }
+
+    /** 넓은 창의 홈은 운전석 쪽 버튼 줄에 풍경 버튼을 두고, 그 밖에는 지도 위 단추를 쓴다. */
+    @Test
+    fun theSceneryControlSitsOnTheDriversSide() {
+        assertEquals(SceneryControl.BUTTON, sceneryControl(WindowClass.TWO, home = true))
+        assertEquals(SceneryControl.BUTTON, sceneryControl(WindowClass.FULL, home = true))
+        assertEquals(SceneryControl.CHIP, sceneryControl(WindowClass.THIRD, home = true))
+        assertEquals(SceneryControl.CHIP, sceneryControl(WindowClass.TWO, home = false))
+    }
+
+    @Test
+    fun paceIsWrittenInHoursAndMinutes() {
+        assertEquals("35분", paceText(35))
+        assertEquals("1시간 10분", paceText(70))
+        assertEquals("1시간", paceText(60))
+        assertEquals("3시간 15분", paceText(195))
+    }
+
+    @Test
+    fun paceCellsNameTheThreeWaysToDrive() {
+        val cells = paceCells(com.byway.core.course.Pace(70, 90, 195))
+        assertEquals(listOf("가볍게", "쉬어 가며", "머물며"), cells.map { it.name })
+        assertEquals(listOf("1시간 10분", "1시간 30분", "3시간 15분"), cells.map { it.time })
+        assertEquals(listOf("쉬지 않고", "경치 좋은 곳 두 번", "명소와 식사까지"), cells.map { it.note })
     }
 }

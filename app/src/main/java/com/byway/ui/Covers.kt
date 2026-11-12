@@ -8,20 +8,23 @@ import android.os.Looper
 import android.util.LruCache
 import com.byway.core.course.Course
 import java.util.concurrent.Executors
+import java.util.Locale
 
-/** 야간에는 사진만 어둡게 만든 커버를 쓴다. 코스 선이 함께 어두워지므로 앱에서 필터를 걸지 않는다. 없으면 주간 커버를 쓴다. */
-fun coverFile(courseId: String, night: Boolean, files: Set<String>): String? {
-    val dayFile = "$courseId.jpg"
-    val nightFile = "$courseId-night.jpg"
-    return when {
-        night && nightFile in files -> nightFile
-        dayFile in files -> dayFile
-        else -> null
+/**
+ * 지도 그림 파일을 고른다. 커버, 장면, 한국 지도가 같은 규칙을 쓴다.
+ * 야간에는 도구가 미리 어둡게 만든 그림을 쓰고, 없으면 주간 그림을 쓴다.
+ * 고른 지도 종류의 그림이 없으면 위성 그림으로 대신한다. 새 코스는 일반 지도 그림이 늦게 생길 수 있다.
+ */
+fun coverFile(name: String, night: Boolean, files: Set<String>, style: MapStyle = MapStyle.SATELLITE): String? =
+    listOf(style, MapStyle.SATELLITE).distinct().firstNotNullOfOrNull { kind ->
+        val dayFile = "$name${kind.suffix}.jpg"
+        val nightFile = "$name${kind.suffix}-night.jpg"
+        when {
+            night && nightFile in files -> nightFile
+            dayFile in files -> dayFile
+            else -> null
+        }
     }
-}
-
-/** 설명 뒤에 까는 흐린 배경 파일. tools/make-covers.py 가 만든다. */
-fun softFile(courseId: String, files: Set<String>): String? = "$courseId-soft.jpg".takeIf { it in files }
 
 /** 풍경 사진 파일. 출처를 밝힐 수 없는 사진은 쓰지 않는다. */
 fun sceneryFile(courseId: String, credit: String, files: Set<String>): String? =
@@ -33,6 +36,9 @@ internal object Covers {
     private const val SCENERY_FOLDER = "scenery"
     private const val SCENE_FOLDER = "scene"
     private const val ATLAS_FOLDER = "atlas"
+    private const val ATLAS_NAME = "korea"
+    private const val FRAMES_FOLDER = "frames"
+    private const val FRAME_SIZE = 320
     private const val FULL_SIZE = 1024
     private const val CACHE_BYTES = 48 * 1024 * 1024
 
@@ -47,13 +53,8 @@ internal object Covers {
 
     /** 커버가 있으면 [onLoaded]를 메인 스레드에서 부른다. 없으면 부르지 않는다. 화면은 코스 그림을 그대로 둔다. */
     fun load(context: Context, courseId: String, sizePx: Int, onLoaded: (Bitmap) -> Unit) {
-        val file = coverFile(courseId, context.night, files(context, FOLDER)) ?: return
+        val file = coverFile(courseId, context.night, files(context, FOLDER), currentMapStyle()) ?: return
         read(context, FOLDER, file, sizePx, onLoaded)
-    }
-
-    fun loadSoft(context: Context, courseId: String, onLoaded: (Bitmap) -> Unit) {
-        val file = softFile(courseId, files(context, FOLDER)) ?: return
-        read(context, FOLDER, file, FULL_SIZE, onLoaded)
     }
 
     fun hasScenery(context: Context, course: Course): Boolean =
@@ -64,14 +65,15 @@ internal object Covers {
         read(context, SCENERY_FOLDER, file, FULL_SIZE, onLoaded)
     }
 
-    fun hasScene(context: Context, courseId: String, night: Boolean): Boolean =
-        sceneFile(courseId, night) in files(context, SCENE_FOLDER)
+    fun hasScene(context: Context, courseId: String, night: Boolean): Boolean = sceneFile(context, courseId, night) != null
 
     fun loadScene(context: Context, courseId: String, night: Boolean, onLoaded: (Bitmap) -> Unit) {
-        if (hasScene(context, courseId, night)) read(context, SCENE_FOLDER, sceneFile(courseId, night), FULL_SIZE, onLoaded)
+        val file = sceneFile(context, courseId, night) ?: return
+        read(context, SCENE_FOLDER, file, FULL_SIZE, onLoaded)
     }
 
-    private fun sceneFile(courseId: String, night: Boolean) = if (night) "$courseId-night.jpg" else "$courseId.jpg"
+    private fun sceneFile(context: Context, courseId: String, night: Boolean) =
+        coverFile(courseId, night, files(context, SCENE_FOLDER), currentMapStyle())
 
     /** 지금 읽는 그림이 다 끝나면, 늦어도 [limitMs] 뒤에는 [action]을 부른다. 메인 스레드에서만 쓴다. */
     fun afterReads(limitMs: Long, action: () -> Unit) {
@@ -94,9 +96,16 @@ internal object Covers {
         }
     }
 
+    /** 훑어보기 사진. tools/make-frames.py 가 코스마다 00.jpg 부터 차례로 만든다. */
+    fun loadFrame(context: Context, courseId: String, index: Int, onLoaded: (Bitmap) -> Unit) {
+        val folder = "$FRAMES_FOLDER/$courseId"
+        val file = String.format(Locale.ROOT, "%02d.jpg", index)
+        if (file in files(context, folder)) read(context, folder, file, FRAME_SIZE, onLoaded)
+    }
+
     fun loadAtlas(context: Context, night: Boolean, onLoaded: (Bitmap) -> Unit) {
-        val file = if (night) "korea-night.jpg" else "korea.jpg"
-        if (file in files(context, ATLAS_FOLDER)) read(context, ATLAS_FOLDER, file, FULL_SIZE, onLoaded)
+        val file = coverFile(ATLAS_NAME, night, files(context, ATLAS_FOLDER), currentMapStyle()) ?: return
+        read(context, ATLAS_FOLDER, file, FULL_SIZE, onLoaded)
     }
 
     private fun read(context: Context, folder: String, file: String, sizePx: Int, onLoaded: (Bitmap) -> Unit) {

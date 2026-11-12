@@ -30,7 +30,6 @@ window.COURSES = [
   "credit": "사진: Jeong seolah (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/aewol-sunset-night.jpg",
   "coverDay": "images/covers/aewol-sunset.jpg",
-  "soft": "images/covers/aewol-sunset-soft.jpg",
   "scene": {
    "night": "images/scene/aewol-sunset-night.jpg",
    "day": "images/scene/aewol-sunset.jpg",
@@ -214,7 +213,6 @@ window.COURSES = [
   "credit": "사진: Aspere (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/baegun-lake-night.jpg",
   "coverDay": "images/covers/baegun-lake.jpg",
-  "soft": "images/covers/baegun-lake-soft.jpg",
   "scene": {
    "night": "images/scene/baegun-lake-night.jpg",
    "day": "images/scene/baegun-lake.jpg",
@@ -396,7 +394,6 @@ window.COURSES = [
   "credit": "사진: Byungjoon Kim (CC BY 2.0, Wikimedia Commons)",
   "coverNight": "images/covers/byeonsan-sunset-night.jpg",
   "coverDay": "images/covers/byeonsan-sunset.jpg",
-  "soft": "images/covers/byeonsan-sunset-soft.jpg",
   "scene": {
    "night": "images/scene/byeonsan-sunset-night.jpg",
    "day": "images/scene/byeonsan-sunset.jpg",
@@ -561,7 +558,6 @@ window.COURSES = [
   "credit": "사진: Ashy Minivet (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/cheongpung-lake-night.jpg",
   "coverDay": "images/covers/cheongpung-lake.jpg",
-  "soft": "images/covers/cheongpung-lake-soft.jpg",
   "scene": {
    "night": "images/scene/cheongpung-lake-night.jpg",
    "day": "images/scene/cheongpung-lake.jpg",
@@ -724,7 +720,6 @@ window.COURSES = [
   "credit": "사진: H. Y. Shin 000 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/dalmaji-coast-night.jpg",
   "coverDay": "images/covers/dalmaji-coast.jpg",
-  "soft": "images/covers/dalmaji-coast-soft.jpg",
   "scene": {
    "night": "images/scene/dalmaji-coast-night.jpg",
    "day": "images/scene/dalmaji-coast.jpg",
@@ -888,7 +883,6 @@ window.COURSES = [
   "credit": "사진: Ronnie Dayo (CC BY-SA 4.0, Wikimedia Commons)",
   "coverNight": "images/covers/gampo-coast-night.jpg",
   "coverDay": "images/covers/gampo-coast.jpg",
-  "soft": "images/covers/gampo-coast-soft.jpg",
   "scene": {
    "night": "images/scene/gampo-coast-night.jpg",
    "day": "images/scene/gampo-coast.jpg",
@@ -1049,7 +1043,6 @@ window.COURSES = [
   "credit": "",
   "coverNight": "images/covers/gonjiam-forest-night.jpg",
   "coverDay": "images/covers/gonjiam-forest.jpg",
-  "soft": "images/covers/gonjiam-forest-soft.jpg",
   "scene": {
    "night": "images/scene/gonjiam-forest-night.jpg",
    "day": "images/scene/gonjiam-forest.jpg",
@@ -1192,7 +1185,6 @@ window.COURSES = [
   "credit": "사진: Jpbarrass (Public domain, Wikimedia Commons)",
   "coverNight": "images/covers/gwanggyo-mountain-night.jpg",
   "coverDay": "images/covers/gwanggyo-mountain.jpg",
-  "soft": "images/covers/gwanggyo-mountain-soft.jpg",
   "scene": {
    "night": "images/scene/gwanggyo-mountain-night.jpg",
    "day": "images/scene/gwanggyo-mountain.jpg",
@@ -1343,7 +1335,6 @@ window.COURSES = [
   "credit": "",
   "coverNight": "images/covers/halla-forest-night.jpg",
   "coverDay": "images/covers/halla-forest.jpg",
-  "soft": "images/covers/halla-forest-soft.jpg",
   "scene": {
    "night": "images/scene/halla-forest-night.jpg",
    "day": "images/scene/halla-forest.jpg",
@@ -1526,7 +1517,6 @@ window.COURSES = [
   "credit": "사진: 최광모 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/heonhwa-coast-night.jpg",
   "coverDay": "images/covers/heonhwa-coast.jpg",
-  "soft": "images/covers/heonhwa-coast-soft.jpg",
   "scene": {
    "night": "images/scene/heonhwa-coast-night.jpg",
    "day": "images/scene/heonhwa-coast.jpg",
@@ -1686,7 +1676,6 @@ window.COURSES = [
   "credit": "",
   "coverNight": "images/covers/manhang-mountain-night.jpg",
   "coverDay": "images/covers/manhang-mountain.jpg",
-  "soft": "images/covers/manhang-mountain-soft.jpg",
   "scene": {
    "night": "images/scene/manhang-mountain-night.jpg",
    "day": "images/scene/manhang-mountain.jpg",
@@ -1868,7 +1857,6 @@ window.COURSES = [
   "credit": "사진: Choi2451 (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/mulmi-coast-night.jpg",
   "coverDay": "images/covers/mulmi-coast.jpg",
-  "soft": "images/covers/mulmi-coast-soft.jpg",
   "scene": {
    "night": "images/scene/mulmi-coast-night.jpg",
    "day": "images/scene/mulmi-coast.jpg",
@@ -2060,7 +2048,6 @@ window.COURSES = [
   "credit": "사진: Katsujiro Maekawa (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/paldang-sunset-night.jpg",
   "coverDay": "images/covers/paldang-sunset.jpg",
-  "soft": "images/covers/paldang-sunset-soft.jpg",
   "scene": {
    "night": "images/scene/paldang-sunset-night.jpg",
    "day": "images/scene/paldang-sunset.jpg",
@@ -2233,7 +2220,6 @@ window.COURSES = [
   "credit": "사진: Marco Schmidt [1] (CC BY-SA 3.0, Wikimedia Commons)",
   "coverNight": "images/covers/seomjin-river-night.jpg",
   "coverDay": "images/covers/seomjin-river.jpg",
-  "soft": "images/covers/seomjin-river-soft.jpg",
   "scene": {
    "night": "images/scene/seomjin-river-night.jpg",
    "day": "images/scene/seomjin-river.jpg",
@@ -2385,7 +2371,6 @@ window.COURSES = [
   "credit": "사진: Mereytan (CC0, Wikimedia Commons)",
   "coverNight": "images/covers/yangpyeong-river-night.jpg",
   "coverDay": "images/covers/yangpyeong-river.jpg",
-  "soft": "images/covers/yangpyeong-river-soft.jpg",
   "scene": {
    "night": "images/scene/yangpyeong-river-night.jpg",
    "day": "images/scene/yangpyeong-river.jpg",

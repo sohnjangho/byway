@@ -59,12 +59,13 @@ internal object Dimens {
     const val SIDE_BOTTOM = 152
     const val SIDE_NAME = 68f
     const val SIDE_NAME_THIRD = 52f
-    const val SOFT_WIDTH = 760
-    const val SOFT_WIDTH_FULL = 1240
-    const val SOFT_HEIGHT = 640
     const val THIRD_SCENE_HEIGHT = 732
     const val SCENE_CREDIT_BOTTOM = 176
+    const val LIST_HINT_BOTTOM = 96
     const val SCENE_CREDIT_WIDTH = 760
+
+    /** 1/3 창에서 장면을 줄였을 때 경로 왼쪽에 남는 자리의 폭. */
+    const val THIRD_CREDIT_WIDTH = 340
     const val EFFECT_WIDTH = 920
     const val THIRD_LIST_SCENE_HEIGHT = 620
     const val THIRD_MINE_ATLAS_HEIGHT = 620
@@ -81,16 +82,15 @@ internal object Dimens {
     const val THIRD_ATLAS_HEIGHT = 620
     const val MAP_CARD_TEXT = 96
     const val ATLAS_TOOLS_BOTTOM = 56
-    const val ATLAS_TOOL_ROOM = 136
     const val ATLAS_CREDIT_WIDTH = 660
     const val EFFECT_WIDTH_FULL = 1340
     const val THIRD_EFFECT_HEIGHT = 480
-    const val THIRD_SOFT_HEIGHT = 520
     const val STRIP_CARD_WIDTH = 284
     const val STRIP_CARD_HEIGHT = 112
     const val STRIP_THUMB = 96
+    const val DRAWER_BUTTON_WIDTH = 100
+    const val DRAWER_SHEET_TOP = 300
     const val PLACE_NUMBER = 36
-    const val AVATAR_SMALL = 60
     const val AVATAR_LARGE = 104
 
     const val TEXT_PANE_WIDTH = 640

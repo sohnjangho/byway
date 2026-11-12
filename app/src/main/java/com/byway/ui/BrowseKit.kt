@@ -12,9 +12,9 @@ internal class BrowseKit(val book: CourseBook, val widthDp: Int, val onCourse: (
     val edge = if (wide) Dimens.SPACE_10 else Dimens.SPACE_6
 }
 
-/** 코스를 저장하거나 저장을 푸는 버튼. 글자만 바뀐다. */
-internal fun Context.saveToggle(course: Course, make: Context.(String, () -> Unit) -> Button): Button {
-    fun title() = if (course.id in MyDrives.saved(this)) "저장됨" else "이 코스 저장"
+/** 코스를 저장하거나 저장을 푸는 버튼. 글자만 바뀐다. [save]는 저장하기 전의 문구다. */
+internal fun Context.saveToggle(course: Course, make: Context.(String, () -> Unit) -> Button, save: String = "이 코스 저장"): Button {
+    fun title() = if (course.id in MyDrives.saved(this)) "저장됨" else save
     lateinit var button: Button
     button = make(title()) {
         MyDrives.toggleSaved(this, course.id)

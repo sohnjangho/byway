@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- design/tokens.json 의 bg-elevated 야간값. 검은 하단 바에서 아이콘 테두리가 묻히지 않게 바탕보다 한 단계 밝다. -->
+    <color name="ic_launcher_background">#26282D</color>
+</resources>

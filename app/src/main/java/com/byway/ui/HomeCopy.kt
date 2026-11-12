@@ -1,6 +1,7 @@
 package com.byway.ui
 
 import com.byway.core.course.SceneMood
+import com.byway.core.course.Pace
 import com.byway.core.course.ScenePlace
 
 /** 홈 첫 줄. 시안 Main 의 문구와 같다. */
@@ -22,14 +23,22 @@ fun kickFor(mood: SceneMood): String = when (mood) {
 private const val PER_KIND = 2
 
 /** 코스 주변 목록. 경치, 명소, 음식을 종류마다 둘까지 두고 번호를 다시 매긴다. */
-fun shownPlaces(places: List<ScenePlace>): List<ScenePlace> {
+fun shownPlaces(places: List<ScenePlace>): List<ScenePlace> = kept(places).mapIndexed { i, place -> place.copy(no = i + 1) }
+
+/**
+ * 도구가 매긴 장소 번호에서 목록에 보이는 번호로 가는 대응. 목록에서 빠진 장소는 없다.
+ * 훑어보기 자료는 도구의 번호로 장소를 가리키므로, 번호 표시와 "근처" 글은 이 대응을 거친다.
+ */
+fun shownNumbers(places: List<ScenePlace>): Map<Int, Int> = kept(places).mapIndexed { i, place -> place.no to i + 1 }.toMap()
+
+private fun kept(places: List<ScenePlace>): List<ScenePlace> {
     val used = mutableMapOf<String, Int>()
     return places.filter { place ->
         val kind = if (place.kind == "photo") "view" else place.kind
         val count = used.getOrDefault(kind, 0)
         used[kind] = count + 1
         count < PER_KIND
-    }.mapIndexed { i, place -> place.copy(no = i + 1) }
+    }
 }
 
 fun placeLine(place: ScenePlace): String {
@@ -46,3 +55,25 @@ fun stripScrollFor(previous: Int?, index: Int, step: Int, cardWidth: Int, viewWi
 
 /** 출처가 없는 사진은 보이지 않는다. */
 fun canSwipeToScenery(credit: String, hasFile: Boolean): Boolean = credit.isNotBlank() && hasFile
+
+/** 풍경 사진으로 넘기는 조작을 어디에 두는지. */
+enum class SceneryControl { BUTTON, CHIP }
+
+/** 넓은 창의 홈은 운전석 쪽 버튼 줄에 둔다. 버튼 줄이 좁은 1/3 창과 다른 화면은 지도 위 단추를 쓴다. */
+fun sceneryControl(window: WindowClass, home: Boolean): SceneryControl =
+    if (home && window != WindowClass.THIRD) SceneryControl.BUTTON else SceneryControl.CHIP
+
+fun paceText(minutes: Int): String = when {
+    minutes < 60 -> "${minutes}분"
+    minutes % 60 == 0 -> "${minutes / 60}시간"
+    else -> "${minutes / 60}시간 ${minutes % 60}분"
+}
+
+/** 예상 소요 시간 한 칸. */
+data class PaceCell(val time: String, val name: String, val note: String)
+
+fun paceCells(pace: Pace): List<PaceCell> = listOf(
+    PaceCell(paceText(pace.light), "가볍게", "쉬지 않고"),
+    PaceCell(paceText(pace.rest), "쉬어 가며", "경치 좋은 곳 두 번"),
+    PaceCell(paceText(pace.stay), "머물며", "명소와 식사까지"),
+)

@@ -1,7 +1,6 @@
 package com.byway.ui
 
 import android.content.Context
-import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
@@ -15,7 +14,7 @@ private const val ALL = "전체"
 private val REGIONS = listOf("수도권", "강원", "충청", "경상", "전라", "남해안", "제주")
 private val THEMES = listOf("coast" to "바다", "mountain" to "고개", "river" to "강", "lake" to "호수", "forest" to "숲")
 
-/** 둘러보기. 왼쪽 한국 지도, 오른쪽 코스 카드다. 카드를 누르면 지도가 그 코스로 확대된다. */
+/** 둘러보기. 고르는 칩과 코스 카드는 운전석 쪽인 왼쪽, 한국 지도는 오른쪽이다. 카드를 누르면 지도가 그 코스로 확대된다. */
 internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (Nav) -> Unit, go: (Nav) -> Unit): View = with(context) {
     val third = kit.window == WindowClass.THIRD
     val panel = when (kit.window) {
@@ -34,7 +33,8 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
     FrameLayout(this).apply {
         setBackgroundColor(palette.bg)
         val atlas = AtlasView(context)
-        val shade = if (third) null else AtlasShade(true, panel - 40f, panel + 140f)
+        val panelEnd = Dimens.RAIL_WIDTH + panel
+        val shade = if (third) null else AtlasShade(false, panelEnd - 40f, panelEnd + 140f)
         val picked = nav.picked?.takeIf { id -> shown.any { it.id == id } }
         atlas.show(Tab.BROWSE, kit.window, shown, picked, nav.atlas, night, shade)
         addView(atlas, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_ATLAS_HEIGHT) else MATCH))
@@ -58,7 +58,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
         }
         atlas.onPick = ::pick
         atlas.onCamera = { keep(current.copy(atlas = it)) }
-        atlas.addChrome(if (third) 0 else panel, nav.region ?: "전국") {
+        atlas.addChrome(if (third) 0 else panelEnd, nav.region ?: "전국") {
             val camera = atlas.overview()
             keep(current.copy(picked = null, atlas = camera))
             atlas.focusOn(camera, null)
@@ -70,7 +70,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) 0 else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
             if (!third) {
-                addView(label("코스 ${shown.size}개", Dimens.SMALL, palette.accent))
+                addView(label("코스 ${shown.size}개", Dimens.SMALL, palette.inkSecondary))
                 addView(label("어느 길을 달려 볼까요", Dimens.TITLE, bold = true).atMostLines(1))
             }
             addSpaced(regionChips(kit, nav, go), Dimens.SPACE_3)
@@ -86,7 +86,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
         val bodySize = if (third) {
             FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = dp(Dimens.THIRD_ATLAS_HEIGHT) }
         } else {
-            FrameLayout.LayoutParams(dp(panel), MATCH, Gravity.END)
+            FrameLayout.LayoutParams(dp(panel), MATCH).apply { leftMargin = dp(Dimens.RAIL_WIDTH) }
         }
         addView(body, bodySize)
         mark(picked)
@@ -129,7 +129,7 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
             val text = column().apply {
                 setPadding(dp(Dimens.SPACE_3), dp(Dimens.SPACE_2), dp(Dimens.SPACE_3), dp(Dimens.SPACE_3))
                 addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
-                val line = listOf(course.region, kmText(kit.book.facts(course).meters), pickLabels(course.tags).firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")
+                val line = courseLine(course.region, kit.book.facts(course).meters, pickLabels(course.tags).firstOrNull().orEmpty())
                 addView(label(line, Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text)

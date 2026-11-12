@@ -24,10 +24,38 @@ class NavTest {
             atlas = AtlasCamera(1f, 2f, 3f),
             picked = "c2",
             stripX = 7,
+            settings = true,
         )
         val bytes = ByteArrayOutputStream().also { out -> ObjectOutputStream(out).use { it.writeObject(nav) } }
         val restored = ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() }
         assertEquals(nav, restored)
+    }
+
+    @Test
+    fun pickingAMenuClosesSettingsAndAbout() {
+        val nav = Nav(settings = true, about = true, picked = "c1", atlas = AtlasCamera(1f, 2f, 3f)).toTab(Tab.RANKING)
+        assertEquals(Nav(tab = Tab.RANKING), nav)
+    }
+
+    @Test
+    fun drivingClosesSettingsAndAboutButKeepsTheRest() {
+        val nav = Nav(tab = Tab.BROWSE, courseId = "c1", settings = true, about = true).whileDriving()
+        assertEquals(Nav(tab = Tab.BROWSE, courseId = "c1"), nav)
+    }
+
+    /** 설정은 메뉴 맨 아래에 있다. 내용은 메뉴가 옮겨 간 쪽에서 들어온다. */
+    @Test
+    fun settingsSitsBelowEveryMenu() {
+        Tab.entries.forEach { assertTrue(railPosition(Nav(tab = it)) < railPosition(Nav(tab = it, settings = true))) }
+        assertEquals(railPosition(Nav(settings = true)), railPosition(Nav(settings = true, about = true)))
+        assertTrue(railPosition(Nav(tab = Tab.HOME)) < railPosition(Nav(tab = Tab.RANKING)))
+    }
+
+    @Test
+    fun noMenuIsMarkedWhileSettingsIsOpen() {
+        assertEquals(Tab.MINE, markedTab(Nav(tab = Tab.MINE)))
+        assertEquals(null, markedTab(Nav(tab = Tab.MINE, settings = true)))
+        assertEquals(null, markedTab(Nav(tab = Tab.MINE, about = true)))
     }
 
     @Test

@@ -12,7 +12,7 @@ internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onH
         val facts = kit.book.facts(course)
         val meters = kit.book.sectionMeters(course)
         val details = column().apply {
-            addView(label("끝까지 달렸습니다", Dimens.SMALL, palette.accent))
+            addView(label("끝까지 달렸습니다", Dimens.SMALL, palette.inkSecondary))
             addView(label(course.name, Dimens.TITLE, bold = true))
             val numbers = listOf(
                 Fact(kmText(facts.meters), "코스 거리"),

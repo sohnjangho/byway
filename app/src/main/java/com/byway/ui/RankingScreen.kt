@@ -39,13 +39,6 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
         setBackgroundColor(palette.bg)
         val sceneView = SceneView(context, kit.window, list = true)
         addView(sceneView, FrameLayout.LayoutParams(MATCH, if (third) dp(Dimens.THIRD_LIST_SCENE_HEIGHT) else MATCH))
-        val soft = SoftPatch(context, third)
-        val softSize = if (third) {
-            FrameLayout.LayoutParams(MATCH, dp(Dimens.THIRD_SOFT_HEIGHT), Gravity.BOTTOM)
-        } else {
-            FrameLayout.LayoutParams(dp(if (full) Dimens.SOFT_WIDTH_FULL else Dimens.SOFT_WIDTH), dp(Dimens.SOFT_HEIGHT)).apply { leftMargin = dp(Dimens.RAIL_WIDTH) }
-        }
-        addView(soft, softSize)
 
         val locator = Locator(context)
         val where = label("", Dimens.SMALL, bold = true)
@@ -57,7 +50,6 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
             val course = item.course
             val scene = SceneCatalog.of(context, course.id)
             sceneView.show(course, scene, emptyList(), night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)), reveal)
-            Covers.loadSoft(context, course.id) { soft.setPicture(it) }
             scene?.let { locator.place(Px(it.atlas.x / SceneCatalog.index(context).koreaSize.x, it.atlas.y / SceneCatalog.index(context).koreaSize.y)) }
             where.text = course.region
             whereLine.text = "${kmText(item.facts.meters)} · 굽이 ${item.facts.curves}개"
@@ -76,7 +68,7 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else dp(Dimens.SPACE_4))
             if (!third) {
-                addView(label("랭킹 · 코스 선에서 잰 값", Dimens.SMALL, palette.accent))
+                addView(label("랭킹 · 코스 선에서 잰 값", Dimens.SMALL, palette.inkSecondary))
                 addView(label(rankHead(nav.rankBy), Dimens.TITLE, bold = true).atMostLines(1))
             }
             val tabs = RankBy.entries.map { Choice(it.name, rankTitle(it)) }
@@ -123,7 +115,7 @@ private fun Context.rankRows(kit: BrowseKit, ranked: List<Ranked>, by: RankBy, r
             pressMotion()
             setOnClickListener { onPick(item) }
             addView(
-                label("${i + 1}", Dimens.HEADING, if (i == 0) palette.accent else palette.ink, bold = true).tabular().apply { gravity = Gravity.CENTER },
+                label("${i + 1}", Dimens.HEADING, bold = true).tabular().apply { gravity = Gravity.CENTER },
                 LinearLayout.LayoutParams(dp(Dimens.RANK_NUMBER), WRAP).apply { marginEnd = dp(Dimens.SPACE_3) },
             )
             if (!third) {
