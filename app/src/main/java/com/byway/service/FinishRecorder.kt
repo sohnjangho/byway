@@ -21,5 +21,11 @@ internal class FinishRecorder(private val context: Context) : DriveFeature {
     private fun record(course: Course) {
         val facts = factsOf(course)
         MyDrives.recordFinished(context, course.id, facts.meters, facts.curves)
+        // 공유 코스의 완주 횟수. 기기 정보는 보내지 않고, 실패하면 버린다.
+        if (course.id.startsWith(SHARED_PREFIX)) Share.io.execute { Share.client(context).finished(course.id) }
+    }
+
+    private companion object {
+        const val SHARED_PREFIX = "s-"
     }
 }

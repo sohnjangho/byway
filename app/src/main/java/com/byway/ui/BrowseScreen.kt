@@ -9,6 +9,12 @@ import android.widget.ScrollView
 import com.byway.core.course.Course
 import com.byway.core.course.inRegion
 import com.byway.core.course.withTheme
+import com.byway.service.ShareSync
+import com.byway.ui.share.OFFLINE_NOTE
+import com.byway.ui.share.codeEntry
+import com.byway.ui.share.finishesText
+import com.byway.ui.share.isShared
+import com.byway.ui.share.sharedInfo
 
 private const val ALL = "전체"
 private val REGIONS = listOf("수도권", "강원", "충청", "경상", "전라", "남해안", "제주")
@@ -73,6 +79,9 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
                 addView(label("코스 ${shown.size}개", Dimens.SMALL, palette.inkSecondary))
                 addView(label("어느 길을 달려 볼까요", Dimens.TITLE, bold = true).atMostLines(1))
             }
+            // 공유 서버(공유 설계 6-4). 받으면 그 코스를 홈에 올린다.
+            addSpaced(codeEntry(kit.onCourse), Dimens.SPACE_3)
+            if (ShareSync.offline) addSpaced(label(OFFLINE_NOTE, Dimens.LABEL, palette.inkSecondary).atMostLines(2), Dimens.SPACE_2)
             addSpaced(regionChips(kit, nav, go), Dimens.SPACE_3)
             addSpaced(themeChips(kit, nav, go), Dimens.SPACE_2)
             val grid = cardGrid(kit, shown, panel, cards, ::pick)
@@ -119,6 +128,7 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
     val inner = (if (kit.window == WindowClass.THIRD) kit.widthDp else panel) - 2 * Dimens.SPACE_8
     val width = (inner - Dimens.SPACE_3 * (columns - 1)) / columns
     val picture = width * 10 / 16
+    val shared = sharedInfo()
     val cells = courses.map { course ->
         column().apply {
             clipToOutline = true
@@ -129,7 +139,12 @@ private fun Context.cardGrid(kit: BrowseKit, courses: List<Course>, panel: Int, 
             val text = column().apply {
                 setPadding(dp(Dimens.SPACE_3), dp(Dimens.SPACE_2), dp(Dimens.SPACE_3), dp(Dimens.SPACE_3))
                 addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
-                val line = courseLine(course.region, kit.book.facts(course).meters, pickLabels(course.tags).firstOrNull().orEmpty())
+                val meters = kit.book.facts(course).meters
+                val line = if (isShared(course.id)) {
+                    listOf("공유", kmText(meters), finishesText(shared[course.id]?.finishes ?: 0)).joinToString(" · ")
+                } else {
+                    courseLine(course.region, meters, pickLabels(course.tags).firstOrNull().orEmpty())
+                }
                 addView(label(line, Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text)

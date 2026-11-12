@@ -14,6 +14,26 @@ gradle.taskGraph.whenReady {
     }
 }
 
+// 공유 서버 주소는 시연 빌드에만 -Pbyway.serverUrl=http://<주소>:8787 로 넣는다. 저장소와 제출 APK 에는 주소가 없다(공유 설계 6-1).
+val serverUrl = (findProperty("byway.serverUrl") as String?).orEmpty().trim().trimEnd('/')
+val serverHost = serverUrl.substringAfter("://", "").substringBefore('/').substringBefore(':')
+
+// 서버 주소가 있으면 그 호스트 하나만 평문을 허용한다. 없으면 평문을 모두 막는다.
+val networkConfig = tasks.register("writeNetworkConfig") {
+    val out = layout.buildDirectory.file("generated/netconfig/res/xml/network_security_config.xml")
+    inputs.property("host", serverHost)
+    outputs.file(out)
+    doLast {
+        val domain = if (serverHost.isEmpty()) "" else
+            "    <domain-config cleartextTrafficPermitted=\"true\">\n        <domain includeSubdomains=\"false\">$serverHost</domain>\n    </domain-config>\n"
+        out.get().asFile.apply { parentFile.mkdirs() }.writeText(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<network-security-config>\n" +
+                "    <base-config cleartextTrafficPermitted=\"false\" />\n$domain</network-security-config>\n",
+        )
+    }
+}
+tasks.named("preBuild") { dependsOn(networkConfig) }
+
 android {
     namespace = "com.byway"
     compileSdk = 34
@@ -26,7 +46,10 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
     }
+
+    sourceSets.getByName("main").res.srcDir(layout.buildDirectory.dir("generated/netconfig/res"))
 
     signingConfigs {
         if (releaseKeyFile.exists()) {
@@ -69,6 +92,7 @@ dependencies {
     implementation("ai.pleos.playground:FusedLocation:1.1.3")
     implementation("ai.pleos.playground:TextToSpeech:3.3.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     implementation(project(":core"))
     rootProject.subprojects.filter { it.path.startsWith(":feature:") }.forEach { implementation(it) }

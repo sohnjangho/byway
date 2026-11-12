@@ -1,5 +1,8 @@
 package com.byway.ui
 
+import com.byway.ui.share.isShared
+import com.byway.ui.share.sharedCourseRow
+import com.byway.ui.share.sharedInfo
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.Gravity
@@ -39,6 +42,7 @@ internal fun homeScreen(
     reveal: Boolean,
     onPick: (Course, Int) -> Unit,
     onStart: (String) -> Unit,
+    onChanged: () -> Unit = {},
 ): View = with(context) {
     val now = Calendar.getInstance()
     val hour = now.get(Calendar.HOUR_OF_DAY)
@@ -77,7 +81,7 @@ internal fun homeScreen(
                 now.timeZone.getOffset(now.timeInMillis) / MILLIS_PER_MINUTE, energy,
             )
         }
-        val info = infoColumn(kit, course, kickFor(mood), pace, choice)
+        val info = infoColumn(kit, course, kickFor(mood), pace, choice, onChanged)
         val badges = mutableMapOf<Int, TextView>()
         val drawer = CourseDrawer(context, kit, course) { onPick(it, stripX ?: 0) }
         val near = nearColumn(kit, course, places, badges, sceneryButton, onStart, drawer::open)
@@ -163,13 +167,25 @@ internal fun Context.paintBadge(badge: TextView, near: Boolean) {
 private fun linesOf(info: View, near: View): List<View> =
     (info as ViewGroup).children.toList() + (near as ViewGroup).children.toList().dropLast(1).filterNot { it is Space }
 
-private fun Context.infoColumn(kit: BrowseKit, course: Course, kick: String, pace: Pace, choice: (EnergyRate?) -> List<Fact>): View = column().apply {
+private fun Context.infoColumn(
+    kit: BrowseKit,
+    course: Course,
+    kick: String,
+    pace: Pace,
+    choice: (EnergyRate?) -> List<Fact>,
+    onChanged: () -> Unit,
+): View = column().apply {
     val third = kit.window == WindowClass.THIRD
     val facts = kit.book.facts(course)
     if (!third) addView(label(kick, Dimens.SMALL, palette.inkSecondary).atMostLines(1))
     addView(label(course.name, Dimens.SIDE_NAME, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
-    if (!third) addSpaced(label(course.summary, Dimens.BODY).atMostLines(3), Dimens.SPACE_3)
+    // 공유 코스는 요약 대신 완주 횟수와 신고를 보인다(공유 설계 6-4).
+    if (isShared(course.id)) {
+        addSpaced(sharedCourseRow(sharedInfo()[course.id], onChanged), Dimens.SPACE_3)
+    } else if (!third) {
+        addSpaced(label(course.summary, Dimens.BODY).atMostLines(3), Dimens.SPACE_3)
+    }
     addSpaced(ChoiceRow(context, choice), Dimens.SPACE_3)
     addSpaced(label(sceneryLine(facts.moodShare, course.tags.themes, viewCount(course)), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
     addSpaced(label("적합도·즐거움·소요 시간은 예상 · 교통 상황 제외", Dimens.LABEL, palette.inkSecondary).atMostLines(1), Dimens.SPACE_3)

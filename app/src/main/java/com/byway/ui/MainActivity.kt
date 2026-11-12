@@ -14,6 +14,12 @@ import com.byway.service.CourseCatalog
 import com.byway.service.DriveBoard
 import com.byway.service.DriveService
 import com.byway.service.DriveState
+import com.byway.service.ShareSync
+import com.byway.ui.share.shareScreen
+import com.byway.ui.party.partyScreen
+import com.byway.ui.record.RecordingView
+import com.byway.ui.record.recordConsentScreen
+import com.byway.ui.record.saveRecordScreen
 import com.byway.service.MyDrives
 import com.byway.service.SavedRun
 
@@ -31,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     /** 이어가지 않기로 한 뒤에는 저장이 지워지는 동안에도 다시 묻지 않는다. */
     private var declined = false
     private var stale = false
+    private var pendingRecord = false
     private var current: Screen? = null
     private var builtWidth = 0
     private var builtPalette: Palette? = null
@@ -42,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
         (savedInstanceState?.getSerializable(NAV) as? Nav)?.let { nav = it }
-        book = sharedBook ?: CourseBook(CourseCatalog.all(this)).also { sharedBook = it }
+        book = currentBook()
         root = FrameLayout(this)
         root.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
             if (widthDp() != builtWidth) view.post { render(DriveBoard.state) }
@@ -85,6 +92,16 @@ class MainActivity : AppCompatActivity() {
         if (DriveBoard.state.finished != null) DriveBoard.update { it.copy(finished = null) }
     }
 
+    /** 기록 동의 버튼을 누른 뒤에만 부른다. 위치 권한이 없으면 먼저 묻는다. */
+    private fun record() {
+        if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            DriveService.recordStart(this)
+        } else {
+            pendingRecord = true
+            requestPermissions(arrayOf(LOCATION), LOCATION_REQUEST)
+        }
+    }
+
     private fun start(courseId: String, resumeFrom: Int = 0) {
         if (checkSelfPermission(LOCATION) == PackageManager.PERMISSION_GRANTED) {
             DriveService.start(this, courseId, resumeFrom)
@@ -102,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, results)
         if (requestCode == LOCATION_REQUEST && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
             pendingStart?.let { (courseId, resumeFrom) -> DriveService.start(this, courseId, resumeFrom) }
+            if (pendingRecord) DriveService.recordStart(this)
         }
     }
 
@@ -110,8 +128,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(state: DriveState) {
         if (state.running) nav = nav.whileDriving()
+        // 내 코스를 저장했거나 서버 목록을 받으면 코스 책을 다시 만든다.
+        if (bookVersion != CourseCatalog.version) {
+            book = currentBook()
+            stale = true
+        }
         val saved = savedRun()
         val next = screenFor(state, nav, resumable = saved != null)
+        // 정차 화면을 열 때 공유 코스 목록을 새로 받는다. 바뀌었을 때만 화면을 다시 그린다.
+        if (next is Screen.Browse) ShareSync.refresh(this) { render(DriveBoard.state) }
         val width = widthDp()
         if (next != current || width != builtWidth || palette != builtPalette || stale) {
             val motion = screenMotion(current, next, builtCourse, nav.courseId, width == builtWidth && palette == builtPalette)
@@ -128,6 +153,7 @@ class MainActivity : AppCompatActivity() {
             place(next, state, BrowseKit(book, width) { open(it) }, motion, sign, reveal, saved)
         }
         (root.getChildAt(0) as? DriveScreen)?.show(state)
+        (root.getChildAt(0) as? RecordingView)?.show(state)
     }
 
     private fun open(course: Course) = go(nav.copy(tab = Tab.HOME, courseId = course.id))
@@ -166,6 +192,29 @@ class MainActivity : AppCompatActivity() {
                         render(DriveBoard.state)
                     },
                 )
+                screen == Screen.RecordConsent -> recordConsentScreen(
+                    this, kit,
+                    onAgree = {
+                        go(nav.copy(recordConsent = false))
+                        record()
+                    },
+                    onCancel = { go(nav.copy(recordConsent = false)) },
+                )
+                screen is Screen.Share && book.courses.any { it.id == screen.courseId } -> shareScreen(
+                    this, kit, book.find(screen.courseId),
+                    onDone = { go(nav.copy(share = null)) },
+                    onCancel = { go(nav.copy(share = null)) },
+                )
+                screen == Screen.Party -> partyScreen(this, kit, onStart = ::start, onClose = { go(nav.copy(party = false)) })
+                screen == Screen.Recording -> RecordingView(this, kit.window) { DriveService.recordStop(this) }.also { it.show(state) }
+                screen == Screen.SaveRecord -> saveRecordScreen(
+                    this, kit, state.recorded.orEmpty(),
+                    onSaved = {
+                        DriveBoard.update { it.copy(recorded = null) }
+                        go(nav.toTab(Tab.MINE))
+                    },
+                    onDiscard = { DriveBoard.update { it.copy(recorded = null) } },
+                )
                 else -> waitingScreen(this)
             },
         )
@@ -181,6 +230,7 @@ class MainActivity : AppCompatActivity() {
             reveal = reveal,
             onPick = { course, x -> go(nav.copy(tab = Tab.HOME, courseId = course.id, stripX = x)) },
             onStart = ::start,
+            onChanged = { go(nav) },
         )
         Tab.BROWSE -> browseScreen(this, kit, nav, { nav = it }, ::go)
         Tab.RANKING -> rankingScreen(this, kit, nav, { nav = it }, ::go)
@@ -191,6 +241,10 @@ class MainActivity : AppCompatActivity() {
             { nav = it },
             onStart = ::start,
             onBrowse = { openTab(Tab.BROWSE) },
+            onRecord = { go(nav.copy(recordConsent = true)) },
+            onShare = { id -> go(nav.copy(share = id)) },
+            onChanged = { go(nav) },
+            onParty = { go(nav.copy(party = true)) },
         )
     }
 
@@ -208,5 +262,12 @@ class MainActivity : AppCompatActivity() {
 
         /** 창 크기가 바뀌어 Activity 가 다시 만들어져도 코스 수치를 다시 계산하지 않는다. */
         var sharedBook: CourseBook? = null
+        var bookVersion = -1
     }
+
+    private fun currentBook(): CourseBook = sharedBook?.takeIf { bookVersion == CourseCatalog.version }
+        ?: CourseBook(CourseCatalog.all(this)).also {
+            sharedBook = it
+            bookVersion = CourseCatalog.version
+        }
 }

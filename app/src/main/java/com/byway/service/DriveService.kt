@@ -21,6 +21,7 @@ import com.byway.core.drive.DriveHost
 import com.byway.core.drive.RouteFollower
 import com.byway.core.engine.CourseEngine
 import com.byway.core.geo.GeoPoint
+import com.byway.core.record.RecordRules
 import com.byway.feature.ambience.AmbienceFeature
 import com.byway.feature.music.MusicFeature
 import com.byway.platform.ConnectedMusic
@@ -67,6 +68,20 @@ class DriveService : Service() {
     private var waitingFix: DriveEvent.CourseStarted? = null
     private val startWithoutFix = Runnable { begin(null) }
 
+    /** 함께 달리는 파티(공유 설계 6-5). 코스를 달리는 동안 2초마다 내 위치를 보내고 멤버 위치를 받는다. */
+    private var partySharing = false
+    private var partyBusy = false
+    private val partyLoop = object : Runnable {
+        override fun run() {
+            pollParty()
+            main.postDelayed(this, PARTY_MS)
+        }
+    }
+
+    /** 기록 중인 길. 기록하지 않을 때는 null 이다. */
+    private var track: MutableList<GeoPoint>? = null
+    private var trackMeters = 0.0
+
     private val boardListener: (DriveState) -> Unit = { if (it.parked != parked) sendParked(it.parked) }
     private val stopLater = Runnable { stopSelf() }
     private val watch = object : Runnable {
@@ -81,6 +96,7 @@ class DriveService : Service() {
         override fun onEvent(event: DriveEvent): List<DriveCommand> {
             if (event is DriveEvent.CourseFinished) {
                 DriveBoard.update { it.copy(finished = it.course, prompt = null, stale = false) }
+                stopParty()
                 forget()
                 navi.clearOurRoute()
                 main.postDelayed(stopLater, FINISH_DELAY_MS)
@@ -102,7 +118,11 @@ class DriveService : Service() {
         }.also { it.start() }
         location = PleosLocation(this) { point ->
             DriveBoard.update { it.copy(position = point) }
-            if (waitingFix != null) begin(point) else dispatch(DriveEvent.LocationUpdated(point))
+            when {
+                track != null -> record(point)
+                waitingFix != null -> begin(point)
+                else -> dispatch(DriveEvent.LocationUpdated(point))
+            }
         }
         navi.connect { Log.w(TAG, "navi connect failed", it) }
         location.start()
@@ -116,6 +136,8 @@ class DriveService : Service() {
             ACTION_STOP -> endCourse()
             ACTION_ANSWER -> if (host != null) dispatch(DriveEvent.Answered(intent.getBooleanExtra(EXTRA_YES, false))) else stopSelf()
             ACTION_DISCARD -> discard()
+            ACTION_RECORD_START -> startRecording()
+            ACTION_RECORD_STOP -> stopRecording()
         }
         return START_NOT_STICKY
     }
@@ -123,6 +145,8 @@ class DriveService : Service() {
     private fun startCourse(courseId: String, resumeFrom: Int) {
         // 방금 끝낸 코스의 예약된 종료가 새 코스를 멈추지 않게 한다.
         main.removeCallbacks(stopLater)
+        main.removeCallbacks(partyLoop)
+        if (MyParty.code(this) != null && Share.available) main.post(partyLoop)
         ending = false
         val course = CourseCatalog.find(this, courseId)
         val started = CourseEngine(ability = route.ability)
@@ -167,11 +191,76 @@ class DriveService : Service() {
         main.removeCallbacks(startWithoutFix)
         waitingFix = null
         dispatch(DriveEvent.CourseStopped)
+        stopParty()
         navi.clearOurRoute()
         host = null
         engine = null
         forget()
         DriveBoard.update { it.copy(running = false, prompt = null, stale = false) }
+        main.postDelayed(stopLater, STOP_DELAY_MS)
+    }
+
+    private fun pollParty() {
+        val code = MyParty.code(this) ?: return
+        if (partyBusy) return
+        partyBusy = true
+        val me = DriveBoard.state.position
+        val sharing = partySharing
+        val client = Share.client(this)
+        Share.io.execute {
+            val tick = partyTick(me, sharing, send = { client.position(code, it) }, fetch = { client.party(code) })
+            main.post {
+                partyBusy = false
+                when (tick) {
+                    is PartyTick.Seen -> {
+                        partySharing = tick.view.members.firstOrNull { it.me }?.sharing == true
+                        DriveBoard.update { it.copy(party = tick.view) }
+                    }
+                    PartyTick.Ended -> {
+                        MyParty.set(this, null)
+                        partySharing = false
+                        DriveBoard.update { it.copy(party = null) }
+                    }
+                    // 주행 중 실패는 알리지 않고 핀만 지운다.
+                    PartyTick.Unreachable -> DriveBoard.update { it.copy(party = null) }
+                }
+            }
+        }
+    }
+
+    /** 코스를 끝내면 위치 보내기를 멈추고 서버의 내 위치를 지운다(동의 철회와 같다). */
+    private fun stopParty() {
+        main.removeCallbacks(partyLoop)
+        val code = MyParty.code(this)
+        if (code != null && partySharing) {
+            val client = Share.client(this)
+            Share.io.execute { client.sharing(code, false) }
+        }
+        partySharing = false
+        DriveBoard.update { it.copy(party = null) }
+    }
+
+    /** 달린 길 기록(공유 설계 6-3). 코스를 달리는 중이면 시작하지 않는다. 위치는 끝낼 때까지 이 서비스 메모리에만 있다. */
+    private fun startRecording() {
+        if (host != null) return
+        main.removeCallbacks(stopLater)
+        track = mutableListOf()
+        trackMeters = 0.0
+        DriveBoard.update { it.copy(recording = Recording(0.0, 0), recorded = null) }
+    }
+
+    private fun record(point: GeoPoint) {
+        val fixes = track ?: return
+        fixes.lastOrNull()?.distanceTo(point)?.takeIf { it <= RecordRules().jumpMeters }?.let { trackMeters += it }
+        fixes += point
+        DriveBoard.update { it.copy(recording = Recording(trackMeters, fixes.size)) }
+    }
+
+    /** 기록을 끝내면 위치를 저장 화면으로 넘기고 서비스를 내린다. */
+    private fun stopRecording() {
+        val fixes = track ?: return stopSelf()
+        track = null
+        DriveBoard.update { it.copy(recording = null, recorded = fixes.toList()) }
         main.postDelayed(stopLater, STOP_DELAY_MS)
     }
 
@@ -270,7 +359,11 @@ class DriveService : Service() {
         "창문 ${scene.windowPosition ?: "-"} · 풍량 ${scene.fanSpeed ?: "-"} · 조명 ${scene.ambientBrightness ?: "-"}"
 
     override fun onDestroy() {
+        stopParty()
         main.removeCallbacksAndMessages(null)
+        // 기록 중에 서비스가 내려가도 그때까지의 길은 저장 화면으로 넘긴다.
+        track?.let { fixes -> DriveBoard.update { it.copy(recording = null, recorded = fixes.toList()) } }
+        track = null
         host = null
         engine = null
         DriveBoard.stopListening(boardListener)
@@ -302,6 +395,7 @@ class DriveService : Service() {
         /** 연출을 되돌리는 호출(읽고, 견주고, 쓰기)이 나갈 시간. */
         private const val STOP_DELAY_MS = 2_000L
         private const val WATCH_MS = 2_000L
+        private const val PARTY_MS = 2_000L
         private const val FIRST_FIX_WAIT_MS = 3_000L
 
         /** 차량 연결이 조회를 받을 수 있게 되는 시간(VehicleControlSpikeTest 와 같은 값). */
@@ -310,6 +404,8 @@ class DriveService : Service() {
         private const val ACTION_STOP = "com.byway.STOP"
         private const val ACTION_ANSWER = "com.byway.ANSWER"
         private const val ACTION_DISCARD = "com.byway.DISCARD"
+        private const val ACTION_RECORD_START = "com.byway.RECORD_START"
+        private const val ACTION_RECORD_STOP = "com.byway.RECORD_STOP"
         private const val EXTRA_COURSE_ID = "courseId"
         private const val EXTRA_RESUME_FROM = "resumeFrom"
         private const val EXTRA_YES = "yes"
@@ -324,6 +420,15 @@ class DriveService : Service() {
 
         fun stop(context: Context) {
             context.startService(Intent(context, DriveService::class.java).setAction(ACTION_STOP))
+        }
+
+        /** 달린 길 기록을 시작한다. 기록 동의 화면의 버튼에서만 부른다. */
+        fun recordStart(context: Context) {
+            context.startForegroundService(Intent(context, DriveService::class.java).setAction(ACTION_RECORD_START))
+        }
+
+        fun recordStop(context: Context) {
+            context.startService(Intent(context, DriveService::class.java).setAction(ACTION_RECORD_STOP))
         }
 
         /** 주행 화면의 답 버튼. */

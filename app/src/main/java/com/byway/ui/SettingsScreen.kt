@@ -5,7 +5,13 @@ import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import com.byway.service.CourseCatalog
+import com.byway.service.CourseStore
 import com.byway.service.MyDrives
+import com.byway.service.MyParty
+import com.byway.service.MyProfile
+import com.byway.service.Share
+import com.byway.service.ShareSync
 
 /**
  * 설정. 지도 보기, 달릴 때 켜고 끄는 것, 앱 정보, 내 기록 지우기를 한 화면에 둔다. 대화상자는 쓰지 않는다.
@@ -33,6 +39,7 @@ internal fun settingsScreen(context: Context, kit: BrowseKit, onAbout: () -> Uni
             addSpaced(label("일반 지도는 길과 물이 또렷하고, 위성은 실제 땅 모습이 보입니다", Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
             addSpaced(group("코스를 달릴 때", driveToggles(full)), Dimens.SPACE_8)
             addSpaced(group("정보와 기록", recordButtons(onAbout)), Dimens.SPACE_8)
+            addSpaced(label("내 기록 지우기는 달린 기록, 만든 코스, 받은 코스, 프로필을 이 차와 공유 서버에서 지웁니다", Dimens.LABEL, palette.inkSecondary), Dimens.SPACE_2)
         }
         val sideSize = if (third) {
             FrameLayout.LayoutParams(MATCH, MATCH).apply { topMargin = dp(Dimens.RAIL_TOP_HEIGHT) }
@@ -68,10 +75,21 @@ private fun Context.recordButtons(onAbout: () -> Unit): View = LinearLayout(this
     var step = 0
     lateinit var clear: Button
     clear = quietButton(clearLabel(step)) {
-        if (clearsOnPress(step)) MyDrives.clearRecords(context)
+        if (clearsOnPress(step)) clearMyData(context)
         step = nextClearStep(step)
         clear.text = clearLabel(step)
     }
     addView(quietButton("앱 정보", onAbout), LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = dp(Dimens.SPACE_3) })
     addView(clear, LinearLayout.LayoutParams(0, WRAP, 1f))
+}
+
+/** 이 차의 내 데이터를 지운다(공유 설계 6-2). 서버에는 내 코스·파티 멤버 정보·위치 삭제를 요청한다. */
+private fun clearMyData(context: Context) {
+    MyDrives.clearRecords(context)
+    CourseStore.clearAll(context)
+    MyProfile.set(context, null)
+    MyParty.set(context, null)
+    CourseCatalog.invalidate()
+    // 서버 자료는 서버에 닿을 때 지운다. 실패하면 다음에 공유 서버에 닿을 때 다시 지운다(ShareSync).
+    if (Share.available) ShareSync.deleteMeLater(context)
 }

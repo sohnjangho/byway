@@ -13,12 +13,13 @@ case "$lane" in
   platform) allowed="^($app/(platform|service)/|app/src/main/AndroidManifest\.xml|app/src/androidTest/|app/build\.gradle\.kts)" ;;
   ui)       allowed="^($app/ui/|app/src/test/java/com/byway/ui/|app/src/main/res/)" ;;
   tools)    allowed="^(tools/|app/src/main/assets/courses/|app/src/main/assets/covers/)" ;;
+  server)   allowed="^(server/|settings\.gradle\.kts|docs/)" ;;
   feature-*) name="${lane#feature-}"; allowed="^(feature/$name/|$app/ui/$name/|$app/FeatureRegistry\.kt)" ;;
   *) echo "모르는 레인: $lane"; exit 2 ;;
 esac
 
 status=0
-outside=$(git diff --name-only "$base"...HEAD | grep -Ev "$allowed" || true)
+outside=$(git -c core.quotePath=false diff --name-only "$base"...HEAD | grep -Ev "$allowed" || true)
 if [ -n "$outside" ]; then
   echo "레인 밖 변경:"; echo "$outside"; status=1
 fi

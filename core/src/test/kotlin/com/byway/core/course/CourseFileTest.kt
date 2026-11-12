@@ -135,6 +135,12 @@ class CourseFileTest {
         }
     }
 
+    @Test
+    fun writtenCourseReadsBack() {
+        assertEquals(15, allCourses.size)
+        allCourses.forEach { course -> assertEquals(course.id, course, parseCourse(writeCourse(course))) }
+    }
+
     private val demoCourse by lazy {
         parseCourse(File("../app/src/main/assets/courses/paldang-sunset.json").readText())
     }

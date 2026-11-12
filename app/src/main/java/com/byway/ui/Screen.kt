@@ -44,13 +44,19 @@ data class Nav(
     /** 홈 코스 띠를 넘겨 둔 자리(px). */
     val stripX: Int? = null,
     val settings: Boolean = false,
+    /** 내 코스에서 "길 기록하기"를 눌러 기록 동의를 묻는 중. */
+    val recordConsent: Boolean = false,
+    /** 공유 범위를 고르는 내 코스 id. */
+    val share: String? = null,
+    /** 드라이빙 파티 화면(만들기·참여·멤버·위치 공유). */
+    val party: Boolean = false,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
-fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null)
+fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, party = false)
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
-fun Nav.whileDriving(): Nav = copy(about = false, settings = false)
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, party = false)
 
 /** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
 fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }
@@ -69,6 +75,17 @@ sealed interface Screen {
 
     /** 달리다 만 코스를 이어갈지 묻는다. */
     data object Resume : Screen
+
+    /** 달린 길 기록. 동의(정차), 기록 중(주행·정차), 저장(정차). */
+    data object RecordConsent : Screen
+    data object Recording : Screen
+    data object SaveRecord : Screen
+
+    /** 내가 만든 코스의 공유 범위 고르기와 동의. 정차 중에만. */
+    data class Share(val courseId: String) : Screen
+
+    /** 드라이빙 파티. 정차 중에만. */
+    data object Party : Screen
 }
 
 /**
@@ -78,9 +95,14 @@ sealed interface Screen {
  */
 fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
     if (state.running) return Screen.Drive
+    if (state.recording != null) return Screen.Recording
     if (!state.parked) return Screen.Waiting
+    if (state.recorded != null) return Screen.SaveRecord
     state.finished?.let { return Screen.Summary(it) }
     if (resumable) return Screen.Resume
+    if (nav.recordConsent) return Screen.RecordConsent
+    nav.share?.let { return Screen.Share(it) }
+    if (nav.party) return Screen.Party
     if (nav.about) return Screen.About
     if (nav.settings) return Screen.Settings
     return Screen.Browse(nav.tab)

@@ -4,6 +4,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.Section
 import com.byway.core.geo.GeoPoint
 import com.byway.service.DriveState
+import com.byway.service.Recording
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -164,5 +165,40 @@ class ScreenForTest {
                             add(screenFor(moving.copy(finished = finished), Nav(tab = tab, courseId = selected, about = about)))
         }
         assertEquals(setOf<Screen>(Screen.Waiting), shown)
+    }
+    private val track = listOf(GeoPoint(37.0, 127.0), GeoPoint(37.0, 127.01))
+
+    @Test
+    fun recordingShowsWhileDriving() {
+        assertEquals(Screen.Recording, screenFor(moving.copy(recording = Recording(120.0, 8)), Nav()))
+    }
+
+    @Test
+    fun recordingShowsWhileParked() {
+        assertEquals(Screen.Recording, screenFor(parked.copy(recording = Recording(120.0, 8)), Nav(settings = true)))
+    }
+
+    @Test
+    fun savingOnlyWhenParked() {
+        assertEquals(Screen.SaveRecord, screenFor(parked.copy(recorded = track), Nav()))
+        assertEquals(Screen.Waiting, screenFor(moving.copy(recorded = track), Nav()))
+    }
+
+    /** 기록 중 앱이 죽으면 새 상태에는 기록이 없다. 기록 화면에 갇히지 않는다. */
+    @Test
+    fun recordingNeedsLiveState() {
+        assertEquals(Screen.Waiting, screenFor(DriveState(), Nav()))
+        assertEquals(Screen.Browse(Tab.MINE), screenFor(parked, Nav(tab = Tab.MINE)))
+    }
+
+    @Test
+    fun courseRunBeatsRecording() {
+        assertEquals(Screen.Drive, screenFor(moving.copy(running = true, recording = Recording(0.0, 0)), Nav()))
+    }
+
+    @Test
+    fun recordConsentOnlyWhenParked() {
+        assertEquals(Screen.RecordConsent, screenFor(parked, Nav(tab = Tab.MINE, recordConsent = true)))
+        assertEquals(Screen.Waiting, screenFor(moving, Nav(tab = Tab.MINE, recordConsent = true)))
     }
 }

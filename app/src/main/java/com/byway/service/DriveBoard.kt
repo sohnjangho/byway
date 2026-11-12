@@ -6,6 +6,7 @@ import com.byway.core.course.Course
 import com.byway.core.course.EnergyRate
 import com.byway.core.drive.Prompt
 import com.byway.core.geo.GeoPoint
+import com.byway.core.share.PartyView
 
 /** 화면이 그리는 주행 상태. 화면은 이것만 안다. */
 data class DriveState(
@@ -31,7 +32,16 @@ data class DriveState(
     val stale: Boolean = false,
     /** 이 차의 평균 효율. 읽지 못하면 null 이고 연료량 칸을 숨긴다. */
     val energy: EnergyRate? = null,
+    /** 달린 길을 기록하는 중이다. 코스 주행과 함께 돌지 않는다. */
+    val recording: Recording? = null,
+    /** 기록을 끝내고 저장을 기다리는 위치들. 정차 화면에서 이름과 분위기를 정한다. */
+    val recorded: List<GeoPoint>? = null,
+    /** 함께 달리는 파티. 주행 화면이 다른 멤버의 핀을 그린다. 파티가 없거나 서버에 닿지 못하면 null 이다. */
+    val party: PartyView? = null,
 )
+
+/** 기록 중 화면의 한 줄. [meters]는 끊겼다 튄 사이를 뺀 달린 거리다. */
+data class Recording(val meters: Double, val fixes: Int)
 
 object DriveBoard {
     private val main = Handler(Looper.getMainLooper())

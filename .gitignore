@@ -16,3 +16,6 @@ __pycache__/
 *.pyc
 .env
 !apk/*.apk
+
+# 공유 서버의 SQLite 파일과 로그
+server/data/
