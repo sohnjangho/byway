@@ -5,6 +5,8 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.byway.core.course.Course
+import com.byway.core.course.funScore
+import com.byway.core.course.naturePercent
 
 /** 코스를 끝까지 달리고 멈췄을 때 보여 준다. 코스에서 계산한 값만 쓴다. 측정하지 않은 시간이나 속도는 쓰지 않는다. */
 internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onHome: () -> Unit): View =
@@ -16,9 +18,9 @@ internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onH
             addView(label(course.name, Dimens.TITLE, bold = true))
             val numbers = listOf(
                 Fact(kmText(facts.meters), "코스 거리"),
-                Fact("${facts.curves}", "지나온 굽이"),
-                Fact(ratioText(facts), "에움 배율"),
-                Fact(climbText(course, facts), "오르막"),
+                Fact("${facts.curves}", "지나온 커브"),
+                Fact("${funScore(facts, course.elevation.isNotEmpty())}점", "운전 즐거움"),
+                Fact("${naturePercent(facts.moodShare)}%", "도심 밖"),
             )
             addSpaced(factRow(numbers, Dimens.HEADING), Dimens.SPACE_6)
             course.sections.forEachIndexed { i, section ->

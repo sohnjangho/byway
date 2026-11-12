@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 앱은 음성 인식을 쓰지 않는다. VoiceLocationSpikeTest 만 쓴다. -->
+    <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
+</manifest>

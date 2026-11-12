@@ -57,8 +57,7 @@ internal object Dimens {
     const val SIDE_WIDTH_FULL = 1120
     const val SIDE_INFO_WIDTH = 540
     const val SIDE_BOTTOM = 152
-    const val SIDE_NAME = 68f
-    const val SIDE_NAME_THIRD = 52f
+    const val SIDE_NAME = 52f
     const val THIRD_SCENE_HEIGHT = 732
     const val SCENE_CREDIT_BOTTOM = 176
     const val LIST_HINT_BOTTOM = 96

@@ -1,6 +1,8 @@
 package com.byway.ui
 
 import com.byway.core.course.Course
+import com.byway.core.course.EnergyRate
+import com.byway.core.course.factsOf
 import com.byway.core.course.CourseTags
 import com.byway.core.course.SceneMood
 import com.byway.core.course.ScenePlace
@@ -43,6 +45,67 @@ class HomeCopyTest {
     fun aPlaceLeftOutOfTheListHasNoNumber() {
         val places = listOf("view", "view", "view").mapIndexed { i, kind -> place(kind).copy(no = i + 1) }
         assertEquals(null, shownNumbers(places)[3])
+    }
+
+    private val line = listOf(GeoPoint(37.0, 127.0), GeoPoint(37.0, 127.6))
+    private fun tagged(seasons: List<String> = listOf("autumn"), times: List<String> = listOf("day")) =
+        Course("c", "코스", line, listOf(Section("구간", 0, 1, "forest")), tags = CourseTags(seasons = seasons, times = times))
+    private fun cells(course: Course = tagged(), energy: EnergyRate? = null) =
+        choiceFacts(course, factsOf(course), lightMinutes = 60, dayOfYear = 298, minuteOfDay = 12 * 60, utcOffsetMinutes = 540, energy = energy)
+
+    @Test
+    fun theChoiceFactsAreTheOnesThatHelpPickACourse() {
+        assertEquals(listOf("거리", "계절 적합", "시간 적합", "운전 즐거움", "연료량"), cells(energy = EnergyRate(false, 10.0)).map { it.name })
+    }
+
+    @Test
+    fun fitsAreShownAsPercentAndTheScoreInPoints() {
+        val facts = cells()
+        assertEquals("100%", facts[1].value)
+        assertEquals("100%", facts[2].value)
+        assertTrue(facts[3].value, facts[3].value.endsWith("점"))
+    }
+
+    /** 기기가 UTC 로 맞춰져 있어도 한낮은 한낮이다. 일출·일몰을 기기 시간대로 계산한다. */
+    @Test
+    fun theTimeFitFollowsTheDeviceTimeZone() {
+        val course = tagged()
+        val noonInUtc = 3 * 60
+        val fact = choiceFacts(course, factsOf(course), 60, 298, noonInUtc, utcOffsetMinutes = 0, energy = null)
+        assertEquals("100%", fact.first { it.name == "시간 적합" }.value)
+    }
+
+    @Test
+    fun aCarWhoseEfficiencyCannotBeReadShowsNoFuelCell() {
+        assertEquals(listOf("거리", "계절 적합", "시간 적합", "운전 즐거움"), cells().map { it.name })
+    }
+
+    @Test
+    fun fuelIsInLitresAndElectricityInKilowattHours() {
+        assertEquals("5.3L", energyText(53_000.0, EnergyRate(electric = false, kmPerUnit = 10.0)))
+        assertEquals("10.0kWh", energyText(50_000.0, EnergyRate(electric = true, kmPerUnit = 5.0)))
+    }
+
+    @Test
+    fun aCourseWithoutTagsLeavesThoseCellsOut() {
+        assertEquals(listOf("거리", "운전 즐거움"), cells(tagged(emptyList(), emptyList())).map { it.name })
+    }
+
+    @Test
+    fun theSceneryLineLeadsWithTheLargestShareAndCountsViews() {
+        assertEquals("바다 61% · 도심 39% · 전망 명소 3곳", sceneryLine(mapOf("city" to 39, "river" to 61), listOf("coast", "city"), 3))
+    }
+
+    @Test
+    fun waterIsNamedAfterTheCourseTheme() {
+        assertEquals("호수 100%", sceneryLine(mapOf("river" to 100), listOf("lake", "forest"), 0))
+        assertEquals("강 100%", sceneryLine(mapOf("river" to 100), listOf("river"), 0))
+        assertEquals("물가 100%", sceneryLine(mapOf("river" to 100), emptyList(), 0))
+    }
+
+    @Test
+    fun anEmptyShareIsLeftOut() {
+        assertEquals("숲 100%", sceneryLine(mapOf("forest" to 100, "city" to 0), emptyList(), 0))
     }
 
     @Test

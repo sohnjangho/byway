@@ -5,6 +5,8 @@ import com.byway.core.course.CourseFacts
 import com.byway.core.course.RankBy
 import com.byway.core.course.Ranked
 import com.byway.core.course.Stop
+import com.byway.core.course.funScore
+import com.byway.core.course.naturePercent
 import com.byway.core.engine.DriveTuning
 import com.byway.core.engine.routeUploads
 import com.byway.core.engine.planStops
@@ -17,12 +19,6 @@ fun kmText(meters: Double): String = String.format(Locale.ROOT, "%.1fkm", meters
 /** 코스 카드의 둘째 줄. 지역, 거리, 대표 추천을 잇고 없는 것은 뺀다. */
 fun courseLine(region: String, meters: Double, pick: String): String =
     listOf(region, kmText(meters), pick).filter { it.isNotBlank() }.joinToString(" · ")
-
-fun ratioText(facts: CourseFacts): String = String.format(Locale.ROOT, "%.1f배", facts.eumRatio)
-
-/** 고도 자료가 없는 코스는 0m 로 쓰지 않는다. 평지처럼 보이면 거짓 수치가 된다. */
-fun climbText(course: Course, facts: CourseFacts): String =
-    if (course.elevation.isEmpty()) NO_VALUE else "${facts.climbMeters}m"
 
 fun topText(course: Course, facts: CourseFacts): String =
     if (course.elevation.isEmpty()) NO_VALUE else "${facts.topMeters}m"
@@ -42,22 +38,22 @@ fun moodWord(mood: String): String = when (mood) {
 
 fun rankValue(by: RankBy, ranked: Ranked): String = when (by) {
     RankBy.CURVES -> "${ranked.facts.curves}개"
-    RankBy.EUM -> ratioText(ranked.facts)
-    RankBy.CLIMB -> climbText(ranked.course, ranked.facts)
+    RankBy.FUN -> "${funScore(ranked.facts, ranked.course.elevation.isNotEmpty())}점"
+    RankBy.SCENERY -> "${naturePercent(ranked.facts.moodShare)}%"
     RankBy.LENGTH -> kmText(ranked.facts.meters)
 }
 
 fun rankTitle(by: RankBy): String = when (by) {
-    RankBy.CURVES -> "굽이"
-    RankBy.EUM -> "에움 배율"
-    RankBy.CLIMB -> "오르막"
+    RankBy.CURVES -> "커브"
+    RankBy.FUN -> "운전 즐거움"
+    RankBy.SCENERY -> "경치"
     RankBy.LENGTH -> "거리"
 }
 
 fun rankNote(by: RankBy): String = when (by) {
-    RankBy.CURVES -> "인기 순위가 아니라 코스 선에서 계산한 굽이 수입니다"
-    RankBy.EUM -> "인기 순위가 아니라 출발과 도착의 직선거리보다 몇 배 돌아가는지 계산한 값입니다"
-    RankBy.CLIMB -> "인기 순위가 아니라 코스 전체의 누적 오르막을 계산한 값입니다"
+    RankBy.CURVES -> "인기 순위가 아니라 코스 선에서 계산한 커브 수입니다"
+    RankBy.FUN -> "인기 순위가 아니라 커브, 고도 변화, 돌아가는 정도, 도심 비율로 계산한 점수입니다"
+    RankBy.SCENERY -> "인기 순위가 아니라 도심 밖을 달리는 거리의 비율입니다"
     RankBy.LENGTH -> "인기 순위가 아니라 코스 전체 길이를 계산한 값입니다"
 }
 

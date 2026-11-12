@@ -21,9 +21,9 @@ private const val DOT_RADIUS = 8f
 private const val DOT_RING = 3f
 
 fun rankHead(by: RankBy): String = when (by) {
-    RankBy.CURVES -> "굽이가 가장 많은 길"
-    RankBy.EUM -> "가장 크게 돌아가는 길"
-    RankBy.CLIMB -> "가장 많이 오르는 길"
+    RankBy.CURVES -> "커브가 가장 많은 길"
+    RankBy.FUN -> "운전이 가장 즐거운 길"
+    RankBy.SCENERY -> "자연을 가장 오래 달리는 길"
     RankBy.LENGTH -> "가장 긴 길"
 }
 
@@ -52,7 +52,7 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
             sceneView.show(course, scene, emptyList(), night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)), reveal)
             scene?.let { locator.place(Px(it.atlas.x / SceneCatalog.index(context).koreaSize.x, it.atlas.y / SceneCatalog.index(context).koreaSize.y)) }
             where.text = course.region
-            whereLine.text = "${kmText(item.facts.meters)} · 굽이 ${item.facts.curves}개"
+            whereLine.text = "${kmText(item.facts.meters)} · 커브 ${item.facts.curves}개"
             detail.text = "${course.name} 자세히 보기"
             rows.forEach { (id, row) -> row.background = if (id == course.id) rounded(palette.accentSoft) else null }
         }

@@ -3,6 +3,7 @@ package com.byway.service
 import android.os.Handler
 import android.os.Looper
 import com.byway.core.course.Course
+import com.byway.core.course.EnergyRate
 import com.byway.core.drive.Prompt
 import com.byway.core.geo.GeoPoint
 
@@ -28,6 +29,8 @@ data class DriveState(
     val prompt: Prompt? = null,
     /** 달리는 중인데 위치의 시각이 오래 멈췄다. */
     val stale: Boolean = false,
+    /** 이 차의 평균 효율. 읽지 못하면 null 이고 연료량 칸을 숨긴다. */
+    val energy: EnergyRate? = null,
 )
 
 object DriveBoard {

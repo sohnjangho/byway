@@ -33,7 +33,8 @@ class CourseBook(val courses: List<Course>) {
      * 그 규칙은 수치마다 혼자 앞서는지만 보니 수치별 1·2위만 넘겨도 답이 같다. 1위가 동점이면 혼자 앞서는 것이 아니므로 2위까지 둔다.
      */
     internal val rivals: List<Course> by lazy {
-        RankBy.entries.flatMap { by -> ranked(by).take(2).map { it.course } }.distinctBy { it.id }
+        listOf<(CourseFacts) -> Double>({ it.curves.toDouble() }, { it.eumRatio }, { it.meters }, { it.climbMeters.toDouble() })
+            .flatMap { measure -> courses.sortedByDescending { measure(facts(it)) }.take(2) }.distinctBy { it.id }
     }
 
     fun find(id: String): Course = byId.getValue(id)

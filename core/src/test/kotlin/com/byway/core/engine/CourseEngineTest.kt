@@ -188,6 +188,43 @@ class CourseEngineTest {
         assertEquals(listOf(40, 60, 80), commands.routes().single().indexes())
     }
 
+    // 코스에 닿기 전에는 연출을 켜지 않는다
+
+    private fun List<DriveCommand>.sections() = filterIsInstance<Publish>().map { it.event }.filterIsInstance<DriveEvent.SectionEntered>().map { it.section }
+
+    /** 부산에서 출발하는 운전자의 고속도로에서 창문이 열리면 안 된다. */
+    @Test
+    fun theCabinSceneWaitsWhileApproachingTheCourse() {
+        assertTrue(engine().onEvent(DriveEvent.CourseStarted(course, at = farAway)).sections().isEmpty())
+    }
+
+    @Test
+    fun reachingTheStartAnnouncesTheFirstSectionOnce() {
+        val engine = engine().also { it.onEvent(DriveEvent.CourseStarted(course, at = farAway)) }
+        assertEquals(listOf(sections[0]), (engine.at(0) + engine.at(1) + engine.at(2)).sections())
+    }
+
+    @Test
+    fun startingOnTheCourseAnnouncesAtOnce() {
+        assertEquals(listOf(sections[0]), engine().onEvent(DriveEvent.CourseStarted(course, at = path[2])).sections())
+    }
+
+    @Test
+    fun joiningFarAlongTheCourseAnnouncesThatSectionOnce() {
+        val engine = engine().also { it.onEvent(DriveEvent.CourseStarted(course, at = farAway)) }
+        assertEquals(listOf(sections[1]), (engine.at(50) + engine.at(54) + engine.at(55)).sections())
+    }
+
+    /** 멈췄다 코스 밖에서 이어가면 코스로 돌아올 때까지 연출을 다시 켜지 않는다. */
+    @Test
+    fun resumingAwayFromTheCourseWaitsUntilBackOnIt() {
+        val engine = started().also { it.drive(1..10) }
+        engine.onEvent(DriveEvent.RouteTakenOver)
+        engine.offBy(12, degrees = 0.05)
+        assertTrue(engine.answer(true).sections().isEmpty())
+        assertEquals(listOf(sections[0]), (engine.at(14) + engine.at(15) + engine.at(16)).sections())
+    }
+
     // 접근 중 합류
 
     /** 출발점 안내를 무시하고 코스 먼 곳으로 들어와 코스를 따라 달리면 거기서 시작한 것이다. */

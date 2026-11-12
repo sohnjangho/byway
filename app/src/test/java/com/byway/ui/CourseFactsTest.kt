@@ -1,5 +1,7 @@
 package com.byway.ui
 
+import com.byway.core.course.funScore
+import com.byway.core.course.naturePercent
 import com.byway.core.course.Course
 import com.byway.core.course.CourseFacts
 import com.byway.core.course.RankBy
@@ -51,22 +53,6 @@ class CourseFactsTest {
     }
 
     @Test
-    fun detourRatioKeepsOneDecimal() {
-        assertEquals("2.1배", ratioText(facts))
-    }
-
-    @Test
-    fun climbIsInMeters() {
-        assertEquals("713m", climbText(climbing, facts))
-    }
-
-    /** 고도 자료가 없는 코스의 0m 는 평지라는 뜻이 아니다. 없는 값을 지어내지 않는다. */
-    @Test
-    fun climbIsBlankWithoutElevation() {
-        assertEquals("-", climbText(course(straight), facts))
-    }
-
-    @Test
     fun topIsBlankWithoutElevation() {
         assertEquals("-", topText(course(straight), facts))
     }
@@ -75,8 +61,8 @@ class CourseFactsTest {
     fun rankValueUsesTheChosenMeasure() {
         val ranked = Ranked(climbing, facts)
         assertEquals("48개", rankValue(RankBy.CURVES, ranked))
-        assertEquals("2.1배", rankValue(RankBy.EUM, ranked))
-        assertEquals("713m", rankValue(RankBy.CLIMB, ranked))
+        assertEquals("${funScore(facts, hasElevation = true)}점", rankValue(RankBy.FUN, ranked))
+        assertEquals("${naturePercent(facts.moodShare)}%", rankValue(RankBy.SCENERY, ranked))
         assertEquals("50.3km", rankValue(RankBy.LENGTH, ranked))
     }
 
@@ -100,7 +86,7 @@ class CourseFactsTest {
 
     @Test
     fun rankMeasuresReadAsTheirNames() {
-        assertEquals(listOf("굽이", "에움 배율", "오르막", "거리"), RankBy.entries.map(::rankTitle))
+        assertEquals(listOf("커브", "운전 즐거움", "경치", "거리"), RankBy.entries.map(::rankTitle))
     }
 
     @Test
