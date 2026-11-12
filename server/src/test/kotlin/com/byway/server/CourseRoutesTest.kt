@@ -7,6 +7,9 @@ import com.byway.core.geo.GeoPoint
 import com.byway.core.record.Recorded
 import com.byway.core.record.makeCourse
 import com.byway.core.share.DeviceToken
+import com.byway.core.share.NewParty
+import com.byway.core.share.PartyView
+import com.byway.core.share.Profile
 import com.byway.core.share.SharedCourse
 import com.byway.core.share.UploadCourse
 import com.byway.core.share.Uploaded
@@ -189,5 +192,16 @@ class CourseRoutesTest {
         val other = client.token()
         assertTrue(client.courses(other).isEmpty())
         assertEquals(HttpStatusCode.Unauthorized, client.authed("/v1/courses", me).status)
+    }
+
+    /** 파티 범위 코스는 어느 파티에 묶였는지 함께 온다. 앱이 이 파티의 코스만 고를 수 있게 한다(함께달리기 설계 6-10.3). */
+    @Test
+    fun partyCourseCarriesItsParty() = testApplication {
+        start()
+        val me = client.token()
+        val party = Json.decodeFromString<PartyView>(client.send("/v1/parties", me, Json.encodeToString(NewParty(null, "", Profile("하나", "avatar-01")))).bodyAsText())
+        client.upload(me, "party", partyCode = party.code)
+        client.upload(me, "public")
+        assertEquals(listOf(party.code, null), client.courses(me).map { it.partyCode })
     }
 }

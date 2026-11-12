@@ -11,6 +11,7 @@ enum class Tab(val title: String) {
     BROWSE("둘러보기"),
     RANKING("랭킹"),
     MINE("내 코스"),
+    TOGETHER("함께달리기"),
 }
 
 /** 앱 창 크기. 전체 2560, 2/3 1700, 1/3 841 폭이다. */
@@ -51,17 +52,17 @@ data class Nav(
     val recordConsent: Boolean = false,
     /** 공유 범위를 고르는 내 코스 id. */
     val share: String? = null,
-    /** 드라이빙 파티 화면(만들기·참여·멤버·위치 공유). */
-    val party: Boolean = false,
+    /** 함께달리기에서 리더가 코스를 고르는 중. */
+    val picking: Boolean = false,
     /** 3분할 설정에서 화면을 나누라고 안내하는 중인 출발. 나뉘면 이 출발을 시작한다. */
     val splitGuide: StartRequest? = null,
 ) : Serializable
 
 /** 메뉴를 누르면 설정과 앱 정보가 닫히고 지도에서 고른 것이 풀린다. */
-fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, party = false, splitGuide = null)
+fun Nav.toTab(tab: Tab): Nav = copy(tab = tab, about = false, settings = false, picked = null, atlas = null, recordConsent = false, share = null, picking = false, splitGuide = null)
 
 /** 주행이 시작되면 정차 전용 화면을 닫아 둔다. 다시 정차했을 때 메뉴 화면으로 돌아온다. */
-fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, party = false, splitGuide = null)
+fun Nav.whileDriving(): Nav = copy(about = false, settings = false, recordConsent = false, share = null, picking = false, splitGuide = null)
 
 /** 메뉴에서 표시할 항목. 설정과 앱 정보가 열려 있으면 메뉴 대신 설정에 표시한다. */
 fun markedTab(nav: Nav): Tab? = nav.tab.takeUnless { nav.settings || nav.about }
@@ -89,8 +90,8 @@ sealed interface Screen {
     /** 내가 만든 코스의 공유 범위 고르기와 동의. 정차 중에만. */
     data class Share(val courseId: String) : Screen
 
-    /** 드라이빙 파티. 정차 중에만. */
-    data object Party : Screen
+    /** 리더가 고른 코스를 승낙할지 묻는다(함께달리기 설계 6-6). 정차 중에만. */
+    data object PartyAsk : Screen
 
     /** 3분할로 출발하려면 화면을 나누라는 안내. 정차 중에만. */
     data object SplitGuide : Screen
@@ -101,7 +102,7 @@ sealed interface Screen {
  * P 단이 아니면 주행 화면과 대기 화면만 나온다. 탭과 정차 화면은 그 아래에서만 고른다.
  * [resumable]은 달리다 만 코스가 저장되어 있다는 뜻이다. 정차 화면보다 먼저 이어갈지 묻는다.
  */
-fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
+fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false, asking: Boolean = false): Screen {
     if (state.running) return Screen.Drive
     if (state.recording != null) return Screen.Recording
     if (!state.parked) return Screen.Waiting
@@ -109,13 +110,17 @@ fun screenFor(state: DriveState, nav: Nav, resumable: Boolean = false): Screen {
     state.finished?.let { return Screen.Summary(it) }
     if (nav.splitGuide != null) return Screen.SplitGuide
     if (resumable) return Screen.Resume
+    if (asking) return Screen.PartyAsk
     if (nav.recordConsent) return Screen.RecordConsent
     nav.share?.let { return Screen.Share(it) }
-    if (nav.party) return Screen.Party
     if (nav.about) return Screen.About
     if (nav.settings) return Screen.Settings
     return Screen.Browse(nav.tab)
 }
+
+/** 메뉴가 차지하는 자리(dp, 왼쪽 to 위). 메뉴는 탭 내용 위에 떠 있어서, 글이 칸 끝까지 가는 탭은 이만큼 비운다. */
+fun railInset(window: WindowClass): Pair<Int, Int> =
+    if (window == WindowClass.THIRD) 0 to Dimens.RAIL_TOP_HEIGHT else Dimens.RAIL_WIDTH to 0
 
 private const val WIDE_MIN_DP = 1200
 

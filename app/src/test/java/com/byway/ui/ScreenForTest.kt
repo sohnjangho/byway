@@ -35,9 +35,20 @@ class ScreenForTest {
         assertEquals(Screen.Browse(Tab.HOME), screenFor(parked, Nav(tab = Tab.HOME, courseId = "c1")))
     }
 
+    /** 함께달리기는 내 코스 다음이다(함께달리기 설계 6-1). */
     @Test
-    fun menuHasFourEntries() {
-        assertEquals(listOf(Tab.HOME, Tab.BROWSE, Tab.RANKING, Tab.MINE), Tab.entries)
+    fun menuHasFiveEntries() {
+        assertEquals(listOf("홈", "둘러보기", "랭킹", "내 코스", "함께달리기"), Tab.entries.map { it.title })
+    }
+
+    /** 리더가 고른 코스는 정차했을 때만 묻는다. 달리던 코스 이어가기가 먼저이고, 코스가 달리는 동안에는 묻지 않는다. */
+    @Test
+    fun aPartyQuestionComesAfterTheResumeOfferWhenParked() {
+        assertEquals(Screen.PartyAsk, screenFor(parked, Nav(tab = Tab.TOGETHER), asking = true))
+        assertEquals(Screen.PartyAsk, screenFor(parked, Nav(settings = true), asking = true))
+        assertEquals(Screen.Resume, screenFor(parked, Nav(), resumable = true, asking = true))
+        assertEquals(Screen.Waiting, screenFor(moving, Nav(), asking = true))
+        assertEquals(Screen.Drive, screenFor(parked.copy(running = true, course = course), Nav(), asking = true))
     }
 
     /** 달리다 만 코스가 있으면 정차 화면보다 먼저 이어갈지 묻는다. 달리는 중에는 묻지 않는다. */

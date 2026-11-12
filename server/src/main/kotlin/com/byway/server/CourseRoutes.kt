@@ -99,7 +99,7 @@ private fun uploadProblem(server: Server, me: String, upload: UploadCourse): Str
     if (runCatching { planStops(course, DriveTuning().simplifyToleranceMeters) }.getOrNull().isNullOrEmpty()) return "내비에 올릴 수 없는 코스입니다"
     if (upload.visibility == Visibility.PARTY) {
         val code = upload.partyCode ?: return "파티를 골라 주세요"
-        if (server.store.party(code) == null || server.store.members(code).none { it.device == me }) return "그 파티의 멤버가 아닙니다"
+        if (server.store.party(code) == null || server.store.members(code).none { it.device == me && !it.blocked }) return "그 파티의 멤버가 아닙니다"
     }
     return null
 }
@@ -114,6 +114,7 @@ internal fun CourseRow.toShared(me: String) = SharedCourse(
     finishes = finishes,
     mine = owner == me,
     body = body,
+    partyCode = partyCode,
 )
 
 internal fun Server.freeCode(): String = generateSequence { newCode(Random.Default) }.first { !store.codeTaken(it) }

@@ -22,7 +22,6 @@ internal fun mineScreen(
     onRecord: () -> Unit,
     onShare: (String) -> Unit,
     onChanged: () -> Unit,
-    onParty: () -> Unit,
 ): View = with(context) {
     val recent = MyDrives.recent(this)
     val made = CourseStore.files(this).mine().map { it.id }.toSet()
@@ -78,7 +77,7 @@ internal fun mineScreen(
             isClickable = true
             val edge = dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
             setPadding(edge, if (third) dp(Dimens.SPACE_2) else edge, edge, if (third) dp(Dimens.SPACE_6) else edge)
-            addView(identity(onRecord, onParty))
+            addView(identity(onRecord))
             addSpaced(totals(kit), Dimens.SPACE_4)
             addView(slot, fill().apply { topMargin = dp(Dimens.SPACE_4) })
         }
@@ -91,7 +90,7 @@ internal fun mineScreen(
     }
 }
 
-private fun Context.identity(onRecord: () -> Unit, onParty: () -> Unit): View = row().apply {
+private fun Context.identity(onRecord: () -> Unit): View = row().apply {
     val mark = label("나", Dimens.HEADING, bold = true).apply {
         gravity = Gravity.CENTER
         background = rounded(palette.bgPressed, Dimens.AVATAR_MEDIUM / 2)
@@ -102,7 +101,6 @@ private fun Context.identity(onRecord: () -> Unit, onParty: () -> Unit): View = 
         addView(label("기록은 이 차에만 저장됩니다", Dimens.LABEL, palette.inkSecondary).atMostLines(1))
     }
     addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
-    addView(smallButton("파티", onParty), LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = dp(Dimens.SPACE_2) })
     addView(smallButton("길 기록하기", onRecord))
 }
 

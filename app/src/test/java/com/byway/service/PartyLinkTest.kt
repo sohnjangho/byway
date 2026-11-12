@@ -62,4 +62,11 @@ class PartyLinkTest {
         assertNull(keptParty(view, seenAt = null, now = 5_000L))
         assertNull(keptParty(null, seenAt = 1_000L, now = 2_000L))
     }
+
+    /** 다시 모이기로 열린 파티에 아직 들어가지 않았으면 끝난 것으로 보고 파티를 비운다. 들어가기는 파티 밖 화면에서 한다(검토 I-2). */
+    @Test
+    fun notJoinedCountsAsEnded() {
+        val tick = partyTick(null, sharing = false, send = { Result.success(Unit) }, fetch = { Result.success(view().copy(joined = false)) })
+        assertEquals(PartyTick.Ended, tick)
+    }
 }

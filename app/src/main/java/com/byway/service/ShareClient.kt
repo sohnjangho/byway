@@ -2,12 +2,15 @@ package com.byway.service
 
 import android.content.Context
 import com.byway.BuildConfig
+import com.byway.core.share.Answer
 import com.byway.core.share.DeviceToken
+import com.byway.core.share.MemberRef
 import com.byway.core.share.NewParty
 import com.byway.core.share.PartyView
 import com.byway.core.share.Position
 import com.byway.core.share.Problem
 import com.byway.core.share.Profile
+import com.byway.core.share.Propose
 import com.byway.core.share.Reopen
 import com.byway.core.share.SharedCourse
 import com.byway.core.share.Toggle
@@ -73,7 +76,11 @@ class ShareClient(
     fun star(code: String, on: Boolean): Result<Unit> = call<Unit>("PUT", "/v1/parties/$code/star", encode(Toggle.serializer(), Toggle(on)), null)
     fun end(code: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/end", "", null)
     fun leave(code: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/leave", "", null)
-    fun reopen(code: String, courseId: String): Result<PartyView> = call("POST", "/v1/parties/$code/reopen", encode(Reopen.serializer(), Reopen(courseId)), PartyView.serializer())
+    fun reopen(code: String, courseId: String?): Result<PartyView> = call("POST", "/v1/parties/$code/reopen", encode(Reopen.serializer(), Reopen(courseId)), PartyView.serializer())
+    fun propose(code: String, courseId: String): Result<PartyView> = call("POST", "/v1/parties/$code/course", encode(Propose.serializer(), Propose(courseId)), PartyView.serializer())
+    fun answer(code: String, proposal: Int, accept: Boolean): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/answer", encode(Answer.serializer(), Answer(proposal, accept)), null)
+    fun passLeader(code: String, memberId: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/leader", encode(MemberRef.serializer(), MemberRef(memberId)), null)
+    fun kick(code: String, memberId: String): Result<Unit> = call<Unit>("POST", "/v1/parties/$code/kick", encode(MemberRef.serializer(), MemberRef(memberId)), null)
 
     private fun <T> encode(serializer: KSerializer<T>, value: T) = json.encodeToString(serializer, value)
 

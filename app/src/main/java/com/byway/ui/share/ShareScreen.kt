@@ -57,7 +57,7 @@ internal fun shareScreen(context: Context, kit: BrowseKit, course: Course, onDon
                 val list = found.getOrNull()
                 when {
                     list == null -> parties.addView(label(OFFLINE_NOTE, Dimens.SMALL, palette.inkSecondary))
-                    list.isEmpty() -> parties.addView(label("먼저 내 코스의 파티에서 파티를 만들거나 참여해 주세요", Dimens.SMALL, palette.inkSecondary))
+                    list.isEmpty() -> parties.addView(label(PARTY_NEEDED, Dimens.SMALL, palette.inkSecondary))
                     else -> parties.addView(chipRow(list.map { Choice(it.code, it.name) }, null, Dimens.SMALL) { party = it })
                 }
             }
