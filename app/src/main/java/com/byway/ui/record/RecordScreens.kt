@@ -30,7 +30,7 @@ import com.byway.ui.dp
 import com.byway.ui.fill
 import com.byway.ui.kmText
 import com.byway.ui.label
-import com.byway.ui.outlineButton
+import com.byway.ui.driveButton
 import com.byway.ui.palette
 import com.byway.ui.panes
 import com.byway.ui.primaryButton
@@ -80,7 +80,7 @@ internal class RecordingView(context: Context, window: WindowClass, onStop: () -
             setPadding(edge, edge, edge, edge)
             addView(context.label("길을 기록하는 중", Dimens.DRIVE_SECTION, bold = true).apply { gravity = Gravity.CENTER })
             addSpaced(distance.apply { gravity = Gravity.CENTER }, Dimens.SPACE_4)
-            addSpaced(context.outlineButton("기록 끝내기", onStop), Dimens.SPACE_8)
+            addSpaced(context.driveButton("기록 끝내기", onStop), Dimens.SPACE_8)
         }
         addView(body, FrameLayout.LayoutParams(MATCH, MATCH))
     }

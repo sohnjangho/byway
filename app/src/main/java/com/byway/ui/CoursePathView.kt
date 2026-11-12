@@ -4,17 +4,27 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.util.TypedValue
 import android.view.View
 import com.byway.core.course.Course
+import com.byway.core.course.ScenePlace
 import com.byway.core.course.Stop
 import com.byway.core.geo.GeoFrame
 import com.byway.core.geo.GeoPoint
+import com.byway.core.geo.MapProjection
+import com.byway.core.geo.Viewport
+import com.byway.core.geo.pointAt
+import com.byway.core.geo.tileZoom
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
 
 /**
  * 코스 모양과 내비에 올라가는 지점, 현재 위치를 그린다. 지도가 아니라 코스 그림이다.
- * [zoom]으로 범위를 주면 그 범위를 칸에 꽉 채워 그리고(파티 확대 지도), 닉네임·축척·출처·먼 멤버 수를 함께 적는다.
+ * [zoom]으로 범위를 주면 파티 확대 지도가 된다. 홈 지도 장면과 같은 지도 조각, 세 겹 선, 번호, 위치 점으로 그리고
+ * 닉네임·축척·먼 멤버 수를 함께 적는다(주행 화면 홈 맞춤 설계 2절). 출처는 화면의 지도 칩이 적는다.
  */
 /** 파티 핀 아바타 반지름(dp). */
 internal const val PIN_RADIUS_DP = 22f
@@ -43,8 +53,38 @@ class CoursePathView(context: Context) : View(context) {
     private var zoomed: GeoFrame? = null
     private var far = 0
 
-    /** 확대 지도 오른쪽 아래에 적는 출처 줄(코스 선, 배경 사진). */
-    var zoomCredits: List<String> = emptyList()
+    /** 확대 범위를 맞출 칸(px). 없으면 뷰 전체다. 2/3 칸은 글 칸 오른쪽의 지도 자리이고, 지도는 글 칸 아래까지 이어진다. */
+    var zoomFit: Viewport? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            prepare()
+            invalidate()
+        }
+
+    /** 지도를 까는 창. 주면 확대 중에 홈 장면과 같은 지도 조각과 글 칸 쪽 띠를 깐다. */
+    var mapWindow: WindowClass? = null
+
+    /** 확대 지도에 번호로 찍는 코스 주변 장소. 자리는 코스 시작에서 잰 거리로 찾는다. */
+    private var places: List<ScenePlace> = emptyList()
+    private var projection: MapProjection? = null
+    private var zoomLines: List<Pair<String?, Path>> = emptyList()
+    private var placeSpots: List<Triple<Float, Float, Int>> = emptyList()
+    private val tileRect = RectF()
+    private val tilePaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val layerPaint = Paint()
+    private val fadePaint = Paint()
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val pinFill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pinText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT_BOLD
+    }
+
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -58,6 +98,12 @@ class CoursePathView(context: Context) : View(context) {
         this.course = course
         this.stops = stops
         this.thin = thin
+        prepare()
+        invalidate()
+    }
+
+    fun showPlaces(next: List<ScenePlace>) {
+        places = next
         prepare()
         invalidate()
     }
@@ -88,12 +134,16 @@ class CoursePathView(context: Context) : View(context) {
     private fun prepare() {
         val course = course ?: return
         if (width == 0 || height == 0 || course.path.size < 2) return
-        val frame = (zoomed?.let { Frame.of(it, width.toFloat(), height.toFloat()) } ?: Frame.of(course.path, width.toFloat(), height.toFloat()))
-            .also { frame = it }
+        val zoom = zoomed
+        if (zoom != null) {
+            prepareZoom(course, zoom)
+            return
+        }
+        projection = null
+        val frame = Frame.of(course.path, width.toFloat(), height.toFloat()).also { frame = it }
         lines = course.sections.map { section ->
-            val end = minOf(section.endIndex + 1, course.path.lastIndex)
-            val points = course.path.subList(section.startIndex, end + 1)
             val drawn = Path().apply {
+                val points = sectionPoints(course, section)
                 moveTo(frame.x(points.first()), frame.y(points.first()))
                 points.drop(1).forEach { lineTo(frame.x(it), frame.y(it)) }
             }
@@ -101,7 +151,29 @@ class CoursePathView(context: Context) : View(context) {
         }
     }
 
+    private fun sectionPoints(course: Course, section: com.byway.core.course.Section): List<GeoPoint> {
+        val end = minOf(section.endIndex + 1, course.path.lastIndex)
+        return course.path.subList(section.startIndex, end + 1)
+    }
+
+    private fun prepareZoom(course: Course, zoom: GeoFrame) {
+        val map = MapProjection(zoom, zoomFit ?: Viewport(0f, 0f, width.toFloat(), height.toFloat())).also { projection = it }
+        zoomLines = course.sections.map { section ->
+            val points = sectionPoints(course, section)
+            section.mood to Path().apply {
+                moveTo(map.x(points.first()), map.y(points.first()))
+                points.drop(1).forEach { lineTo(map.x(it), map.y(it)) }
+            }
+        }
+        placeSpots = places.mapNotNull { place -> pointAt(course.path, place.km)?.let { Triple(map.x(it), map.y(it), place.no) } }
+    }
+
     override fun onDraw(canvas: Canvas) {
+        val map = projection
+        if (zoomed != null) {
+            if (map != null) drawZoom(canvas, map)
+            return
+        }
         val frame = frame ?: return
         val density = resources.displayMetrics.density
         val width = density * if (thin) Dimens.COURSE_LINE_THUMB else Dimens.COURSE_LINE
@@ -117,13 +189,55 @@ class CoursePathView(context: Context) : View(context) {
         stops.forEach { canvas.drawCircle(frame.x(it.point), frame.y(it.point), density * Dimens.STOP_RADIUS, stop) }
         position?.let { canvas.drawCircle(frame.x(it), frame.y(it), density * Dimens.CAR_RADIUS, car) }
         pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, frame.x(it.point), frame.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
-        zoomed?.let { drawZoomNotes(canvas, frame, it, density) }
     }
 
-    /** 확대 지도의 글. 핀 아래 닉네임, 왼쪽 아래 축척, 오른쪽 아래 출처, 왼쪽 위 먼 멤버 수다. 글자는 바탕색 테두리로 선 위에서도 읽힌다. */
-    private fun drawZoomNotes(canvas: Canvas, frame: Frame, zoom: GeoFrame, density: Float) {
+    /**
+     * 홈 지도 장면과 같은 순서로 그린다: 지도, 코스 선, 번호, 위치 점, 멤버 핀, 글.
+     * 넓은 창은 지도가 글 칸 아래까지 이어지므로 선과 번호, 위치 점도 지도와 같은 띠로 옅게 한다. 멤버는 지도 자리 안에만 놓인다.
+     */
+    private fun drawZoom(canvas: Canvas, map: MapProjection) {
+        val density = resources.displayMetrics.density
+        val w = width.toFloat()
+        val h = height.toFloat()
+        mapWindow?.let { drawTiles(canvas, map, it, density) }
+        val band = mapWindow?.let { zoomMarksFade(it, w / density, h / density) }
+        val layer = band?.let { canvas.saveLayer(0f, 0f, w, h, null) }
+        MapMarks.route(canvas, context, zoomLines, stroke, colors)
+        val dark = darkPinsOn(currentMapStyle(), context.night)
+        placeSpots.forEach { (x, y, no) -> MapMarks.place(canvas, context, x, y, no, 1f, dark, pinFill, pinText, colors) }
+        position?.let { MapMarks.marker(canvas, context, map.x(it), map.y(it), pinFill, colors) }
+        if (band != null && layer != null) {
+            MapMarks.fade(canvas, fadePaint, band, 0f, density, w, h)
+            canvas.restoreToCount(layer)
+        }
+        pins.forEach { com.byway.ui.party.PartyPins.draw(canvas, context, map.x(it.point), map.y(it.point), it.avatar, density * PIN_RADIUS_DP, colors.onPhoto, colors.photoScrim) }
+        drawZoomNotes(canvas, map, density)
+    }
+
+    /** 받은 조각만 그린다. 아직 없거나 받지 못한 자리는 뒤의 분위기 색이 보인다. 조각이 오면 다시 그린다. */
+    private fun drawTiles(canvas: Canvas, map: MapProjection, window: WindowClass, density: Float) {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val night = context.night
+        val style = currentMapStyle()
+        layerPaint.alpha = MapMarks.mapAlpha(night)
+        val layer = canvas.saveLayer(0f, 0f, w, h, layerPaint)
+        map.tilesFor(w, h, tileZoom(map.pxPerWorld)).forEach { spot ->
+            val tile = MapTileCache.get(context, style, night, spot.z, spot.x, spot.y) { invalidate() } ?: return@forEach
+            // 조각 사이에 실선이 비치지 않게 바깥쪽 화소로 맞춘다.
+            tileRect.set(floor(spot.left), floor(spot.top), ceil(spot.left + spot.size), ceil(spot.top + spot.size))
+            canvas.drawBitmap(tile, null, tileRect, tilePaint)
+        }
+        MapMarks.fade(canvas, fadePaint, sceneFadeOnScreen(window, w / density, h / density), 0f, density, w, h)
+        canvas.restoreToCount(layer)
+    }
+
+    /** 확대 지도의 글. 핀 아래 닉네임, 지도 자리 왼쪽 아래 축척, 왼쪽 위 먼 멤버 수다. 글자는 바탕색 테두리로 선 위에서도 읽힌다. */
+    private fun drawZoomNotes(canvas: Canvas, map: MapProjection, density: Float) {
+        val fit = zoomFit ?: Viewport(0f, 0f, width.toFloat(), height.toFloat())
         val size = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, Dimens.LABEL, resources.displayMetrics)
         val edge = density * Dimens.SPACE_4
+        val left = fit.left + edge
         text.textSize = size
         halo.textSize = size
         halo.strokeWidth = size * 0.3f
@@ -136,20 +250,19 @@ class CoursePathView(context: Context) : View(context) {
             canvas.drawText(value, x, y, text)
         }
         pins.filter { it.name.isNotEmpty() }.forEach {
-            write(it.name, frame.x(it.point), frame.y(it.point) + size * 1.3f, colors.ink, Paint.Align.CENTER)
+            write(it.name, map.x(it.point), map.y(it.point) + size * 1.3f, colors.ink, Paint.Align.CENTER)
         }
-        if (far > 0) write("멀리 있는 멤버 ${far}명", edge, edge + size, colors.ink, Paint.Align.LEFT)
-        val meters = scaleBarMeters(zoom.widthMeters)
-        val length = (meters / zoom.widthMeters * width).toFloat()
-        val y = height - edge
+        if (far > 0) write("멀리 있는 멤버 ${far}명", left, fit.top + edge + size, colors.ink, Paint.Align.LEFT)
+        val meters = scaleBarMeters(map.metersPerPx * fit.width)
+        val length = (meters / map.metersPerPx).toFloat()
+        val y = fit.top + fit.height - edge
         scale.color = colors.ink
         scale.strokeWidth = density * 3
-        canvas.drawLine(edge, y, edge + length, y, scale)
-        write(scaleLabel(meters), edge, y - size * 0.6f, colors.ink, Paint.Align.LEFT)
-        zoomCredits.reversed().forEachIndexed { i, line -> write(line, width - edge, y - i * size * 1.3f, colors.inkSecondary, Paint.Align.RIGHT) }
+        canvas.drawLine(left, y, left + length, y, scale)
+        write(scaleLabel(meters), left, y - size * 0.6f, colors.ink, Paint.Align.LEFT)
     }
 
-    /** 위경도 범위를 칸 안에 맞추는 좌표 변환. 코스 전체는 여백 10%로, 확대 범위는 여백 없이 맞춘다. */
+    /** 위경도 범위를 칸 안에 맞추는 좌표 변환. 코스 전체를 여백 10%로 맞춘다. */
     private class Frame(
         private val minLon: Double,
         private val minLat: Double,
@@ -174,9 +287,6 @@ class CoursePathView(context: Context) : View(context) {
         companion object {
             fun of(path: List<GeoPoint>, width: Float, height: Float) =
                 Frame(path.minOf { it.lon }, path.minOf { it.lat }, path.maxOf { it.lon }, path.maxOf { it.lat }, width, height, 0.1f)
-
-            fun of(zoom: GeoFrame, width: Float, height: Float) =
-                Frame(zoom.west, zoom.south, zoom.east, zoom.north, width, height, 0f)
         }
     }
 }

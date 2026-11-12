@@ -35,14 +35,6 @@ import com.byway.service.SceneCatalog
 import kotlin.math.abs
 import kotlin.math.sign
 
-private const val NIGHT_OPACITY = 0.66f
-private const val DAY_OPACITY = 0.86f
-private const val PIN_RADIUS = 20f
-private const val GLOW_ALPHA = 0.22f
-private const val MARKER_HALO = 30
-private const val MARKER_HALO_ALPHA = 80
-private const val MARKER_DOT = 12
-private const val MARKER_RING = 4
 private const val SWIPE_DISTANCE_DP = 420
 private const val FLING_FACTOR = 6f
 private const val PICTURE_MIX_SPEED = 1.6f
@@ -158,9 +150,8 @@ internal class SceneView(
         fallback.show(course, emptyList())
         val token = latest.next()
         canvasView.showScene(scene, places, night, SceneCatalog.index(context).sceneSize.x, reveal)
-        val hasPicture = scene != null && Covers.hasScene(context, course.id, night)
-        canvasView.visibility = if (hasPicture) VISIBLE else GONE
-        fallback.visibility = if (hasPicture) GONE else VISIBLE
+        hasPicture = scene != null && Covers.hasScene(context, course.id, night)
+        applyMap()
         if (hasPicture) {
             Covers.loadScene(context, course.id, night) { bitmap ->
                 if (latest.isCurrent(token)) canvasView.setPicture(bitmap)
@@ -193,6 +184,21 @@ internal class SceneView(
         photo.visibility = if (progress > 0f) VISIBLE else GONE
         photo.alpha = progress
         photo.translationX = side * (1f - progress) * swipeDistance
+    }
+
+    private var hasPicture = false
+    private var mapShown = true
+
+    /** 지도만 숨기고 출처 칩은 남긴다. 주행 화면이 같은 자리에 파티 확대 지도를 그릴 때 쓴다. */
+    fun setMapShown(shown: Boolean) {
+        if (mapShown == shown) return
+        mapShown = shown
+        applyMap()
+    }
+
+    private fun applyMap() {
+        canvasView.visibility = if (mapShown && hasPicture) VISIBLE else GONE
+        fallback.visibility = if (mapShown && !hasPicture) VISIBLE else GONE
     }
 
     /** 훑어보기에서 고른 지점. 장면 그림 안의 좌표다. */
@@ -438,7 +444,7 @@ private class SceneCanvas(
     }
 
     private fun drawPicture(canvas: Canvas, out: RectF, density: Float) {
-        layerPaint.alpha = ((if (night) NIGHT_OPACITY else DAY_OPACITY) * 255).toInt()
+        layerPaint.alpha = MapMarks.mapAlpha(night)
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), layerPaint)
         if (mix < 1f) {
             outgoing?.let {
@@ -451,59 +457,24 @@ private class SceneCanvas(
             canvas.drawBitmap(it, Rect(0, 0, it.width, it.height), out, paint)
         }
         val band = sceneFade(window, list, strip)
-        val from = band.from * density
-        val to = band.to * density
-        val startColor = android.graphics.Color.argb((band.alphaFrom * 255).toInt(), 0, 0, 0)
-        fade.shader = if (band.vertical) {
-            LinearGradient(0f, out.top + from, 0f, out.top + to, startColor, android.graphics.Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        } else {
-            LinearGradient(out.left + from, 0f, out.left + to, 0f, startColor, android.graphics.Color.BLACK, Shader.TileMode.CLAMP)
-        }
-        fade.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), fade)
+        MapMarks.fade(canvas, fade, band, if (band.vertical) out.top else out.left, density, width.toFloat(), height.toFloat())
         canvas.restoreToCount(layer)
     }
 
     private fun drawRoute(canvas: Canvas, scene: CourseScene, out: RectF) {
         if (sceneWidth <= 0f) return
         val scale = out.width() / sceneWidth
-        val line = context.dp(Dimens.COURSE_LINE.toInt()).toFloat()
         val whole = scene.lines.map { pathOf(it.points.map { p -> Pair(p.x, p.y) }, out, scale) }
         val shown = if (reveal < 1f) trimmed(whole) else whole
-        val paths = scene.lines.zip(shown) { sceneLine, path -> sceneLine.mood to path }
-        paths.forEach { (mood, path) ->
-            stroke.color = NightPalette.moodColor(mood)
-            stroke.alpha = (GLOW_ALPHA * 255).toInt()
-            stroke.strokeWidth = line * 3
-            canvas.drawPath(path, stroke)
+        MapMarks.route(canvas, context, scene.lines.zip(shown) { sceneLine, path -> sceneLine.mood to path }, stroke, colors)
+        val dark = darkPinsOn(currentMapStyle(), night)
+        places.forEach { place ->
+            MapMarks.place(canvas, context, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal), dark, pinFill, pinText, colors)
         }
-        paths.forEach { (_, path) ->
-            stroke.color = colors.photoScrim
-            stroke.strokeWidth = line + context.dp(6)
-            canvas.drawPath(path, stroke)
-        }
-        paths.forEach { (mood, path) ->
-            stroke.color = NightPalette.moodColor(mood)
-            stroke.alpha = 255
-            stroke.strokeWidth = line
-            canvas.drawPath(path, stroke)
-        }
-        places.forEach { place -> drawPin(canvas, out.left + place.x * scale, out.top + place.y * scale, place.no, pinAlpha(reveal)) }
-        marker?.let { drawMarker(canvas, out.left + it.x * scale, out.top + it.y * scale) }
+        marker?.let { MapMarks.marker(canvas, context, out.left + it.x * scale, out.top + it.y * scale, pinFill, colors) }
         pins.forEach { (at, avatar) ->
             PartyPins.draw(canvas, context, out.left + at.x * scale, out.top + at.y * scale, avatar, context.dp(PIN_RADIUS_DP.toInt()).toFloat(), colors.onPhoto, colors.photoScrim)
         }
-    }
-
-    /** 훑어보기에서 고른 지점. 번호 표시와 헷갈리지 않게 주황 점으로 그린다. */
-    private fun drawMarker(canvas: Canvas, x: Float, y: Float) {
-        pinFill.color = NightPalette.accent
-        pinFill.alpha = MARKER_HALO_ALPHA
-        canvas.drawCircle(x, y, context.dp(MARKER_HALO).toFloat(), pinFill)
-        pinFill.color = colors.onPhoto
-        canvas.drawCircle(x, y, context.dp(MARKER_DOT + MARKER_RING).toFloat(), pinFill)
-        pinFill.color = NightPalette.accent
-        canvas.drawCircle(x, y, context.dp(MARKER_DOT).toFloat(), pinFill)
     }
 
     private fun trimmed(paths: List<Path>): List<Path> {
@@ -517,23 +488,5 @@ private class SceneCanvas(
         points.forEachIndexed { i, (x, y) ->
             if (i == 0) moveTo(out.left + x * scale, out.top + y * scale) else lineTo(out.left + x * scale, out.top + y * scale)
         }
-    }
-
-    private fun drawPin(canvas: Canvas, x: Float, y: Float, number: Int, opacity: Float) {
-        if (opacity <= 0f) return
-        val radius = context.dp(PIN_RADIUS.toInt()).toFloat()
-        val dark = darkPinsOn(currentMapStyle(), night)
-        val face = if (dark) colors.ink else colors.onPhoto
-        val edge = if (dark) colors.bg else colors.photoScrim
-        pinFill.color = edge
-        pinFill.alpha = (pinFill.alpha * opacity).toInt()
-        canvas.drawCircle(x, y, radius + context.dp(3), pinFill)
-        pinFill.color = face
-        pinFill.alpha = (pinFill.alpha * opacity).toInt()
-        canvas.drawCircle(x, y, radius, pinFill)
-        pinText.color = edge
-        pinText.alpha = (pinText.alpha * opacity).toInt()
-        pinText.textSize = context.dp(Dimens.LABEL.toInt()).toFloat()
-        canvas.drawText("$number", x, y + pinText.textSize * 0.36f, pinText)
     }
 }

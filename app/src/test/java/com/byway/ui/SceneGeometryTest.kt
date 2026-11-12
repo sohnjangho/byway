@@ -2,6 +2,7 @@ package com.byway.ui
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -157,5 +158,15 @@ class SceneGeometryTest {
         assertEquals(true, band.vertical)
         assertEquals(449f, band.from)
         assertEquals(737f, band.to)
+    }
+
+    /** 확대 지도의 선과 번호는 글 칸 아래에서 지도처럼 옅어진다. 1/3 칸은 글 칸과 겹치지 않아 그대로다(최종 검토 I2). */
+    @Test
+    fun zoomMarksFadeUnderTheTextOnlyInTheWideWindows() {
+        val two = zoomMarksFade(WindowClass.TWO, 1682f, 1210f)!!
+        assertEquals(sceneFadeOnScreen(WindowClass.TWO, 1682f, 1210f), two)
+        assertFalse(two.vertical)
+        assertTrue(two.alphaFrom <= MAP_UNDER_TEXT)
+        assertNull(zoomMarksFade(WindowClass.THIRD, 841f, 752f))
     }
 }

@@ -69,3 +69,7 @@ class LatestOnly {
 
     fun isCurrent(token: Int): Boolean = token == last
 }
+
+/** 파티 확대 지도의 선과 표시에 거는 띠. 넓은 창은 지도와 같이 글 칸 아래에서 옅어지고, 1/3 칸은 글 칸과 겹치지 않아 띠가 없다. */
+fun zoomMarksFade(window: WindowClass, viewW: Float, viewH: Float): FadeBand? =
+    sceneFadeOnScreen(window, viewW, viewH).takeUnless { it.vertical }
