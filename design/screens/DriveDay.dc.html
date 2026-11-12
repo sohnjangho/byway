@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 내비 옆 주행 칸</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day">
+<div class="split">
+  <div class="split-nav">
+    <img src="images/nav_pane.jpg" alt="차량 내장 내비가 코스 구간을 안내하는 에뮬레이터 화면">
+    <span class="nav-caption t-label">차량 내장 내비 (실제 캡처)</span>
+  </div>
+  <section class="drive air-city">
+    <div class="drive-head">
+      <span class="t-drive-line bold">팔당 노을</span>
+      <span class="t-label ink-2 num">구간 2/3</span>
+    </div>
+    <h1 class="t-drive-section sec-city">하남 팔당대교</h1>
+    <div class="drive-remain">
+      <span class="t-drive-number num">28.4</span>
+      <span class="t-drive-unit ink-2">km</span>
+      <span class="t-drive-line ink-2">남은 거리</span>
+    </div>
+    <div class="sec-bar sec-bar-lg">
+      <i class="sec-forest is-done" style="flex: 35"></i>
+      <i class="sec-city is-todo" style="flex: 43"><b style="width: 20%"></b></i>
+      <i class="sec-river is-todo" style="flex: 22"></i>
+    </div>
+    <div class="drive-line sec-city"><p class="t-drive-line">팔당대교를 건너면 다음 구간으로 이어갑니다</p></div>
+    <div class="drive-cover">
+      <div class="drive-cover-square">
+        <img src="images/covers/paldang-sunset.jpg" alt="코스 위 현재 위치">
+        <span class="here" style="left: 44.16%; top: 49.96%"></span>
+      </div>
+    </div>
+    <div class="drive-music">
+      <span class="t-label ink-2">도심 구간 음악</span>
+      <button type="button" class="btn-small t-small">음악 끄기</button>
+    </div>
+    <a href="SummaryDay.dc.html" class="btn-quiet t-drive-line">코스 끝내기</a>
+  </section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1706,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

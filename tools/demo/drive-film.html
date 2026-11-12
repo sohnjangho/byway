@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 주행 재현</title>
+<!-- 시안으로 만든 주행 재현 화면. render(t) 가 t초 순간을 그린다. tools/demo/record-film.mjs 가 프레임을 찍는다.
+     센터 화면 바탕은 Pleos 에뮬레이터 실제 화면(pleos/drive.png, park.png)이고 속도·기어·시각만 덮어 움직인다.
+     실내 배치는 Pleos 커넥트 첫 적용 차량(더 뉴 그랜저)의 공개 설명을 따른다: 운전석 슬림 디스플레이 + 16:9 센터 디스플레이.
+     앞 유리 밖은 road3d.js 가 코스 파일의 실제 경로·고도로 그린 3D 도로다. 문구는 앱의 Messages.kt, 차 안 연출 값은 AmbienceFeature 를 따른다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../design/screens/tokens.css">
+<link rel="stylesheet" href="../../design/screens/app.css">
+<script src="../../design/screens/courses.js"></script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #050506; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+  #view { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  #road { position: absolute; left: 0; top: 0; width: 1920px; height: 720px; }
+  .frame { position: absolute; inset: 0; pointer-events: none; }
+  /* 운전석 슬림 디스플레이 */
+  .slim { position: absolute; left: 250px; top: 618px; width: 600px; height: 96px; border-radius: 18px; background: #050607; box-shadow: 0 0 0 3px #1c1e22, 0 8px 18px rgba(0,0,0,0.5); color: #eef0f3; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+  .slim .spd { display: flex; align-items: baseline; gap: 6px; }
+  .slim .spd b { font-size: 54px; font-weight: 600; letter-spacing: -0.02em; }
+  .slim .spd span { font-size: 15px; color: #8d939c; }
+  .slim .gear { font-size: 22px; font-weight: 700; color: #4b4f57; letter-spacing: 6px; }
+  .slim .gear .on { color: #fff; }
+  .slim .meta { text-align: right; font-size: 15px; line-height: 22px; color: #a6acb5; }
+  .slim .meta b { color: #eef0f3; font-weight: 600; }
+  /* 센터 디스플레이: 안쪽은 Pleos 실제 크기 2560×1440 으로 그리고 줄여서 얹는다 */
+  .display { position: absolute; left: 990px; top: 582px; width: 880px; height: 495px; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 0 0 6px #0b0c0e, 0 0 0 7px #2a2c31, 0 20px 40px rgba(0,0,0,0.6); }
+  .screen-in { position: absolute; left: 0; top: 0; width: 2560px; height: 1440px; transform: scale(0.34375); transform-origin: 0 0; color: var(--ink); }
+  .base { position: absolute; inset: 0; width: 2560px; height: 1440px; }
+  .cover { position: absolute; background: #fefefe; display: flex; align-items: center; justify-content: center; }
+  #spd { left: 300px; top: 78px; width: 260px; height: 118px; font-size: 132px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #000; }
+  #clk { left: 2392px; top: 22px; width: 160px; height: 46px; background: #f7f7f7; justify-content: flex-end; font-size: 31px; color: #1a1a1a; }
+  .app { position: absolute; left: 853px; top: 90px; width: 1680px; height: 1210px; background: #f6f8fc; overflow: hidden; }
+  .app img { width: 100%; height: 100%; object-fit: contain; }
+  .full { position: absolute; left: 0; top: 90px; width: 2560px; height: 1210px; overflow: hidden; background: #f6f8fc; }
+  .full img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: right center; }
+  .shift { position: absolute; left: 0; top: 0; width: 853px; height: 1440px; }
+  /* 내비 칸: Pleos 내비 주행 화면의 구성(위 안내판, 다음 회전, 아래 도착 카드, 파란 원 차 표시, 2D·소리·설정 단추)을 따라 그린다.
+     지도는 OpenStreetMap 도로·물길을 기울여 진행 방향이 위로 오게 돌린다 */
+  .nav { position: absolute; left: 853px; top: 90px; width: 840px; height: 1210px; overflow: hidden; background: #eceef1; perspective: 1000px; perspective-origin: 420px 700px; font-family: "Noto Sans KR", sans-serif; }
+  .navmap { position: absolute; left: -420px; top: -1180px; width: 1680px; height: 2400px; transform: rotateX(50deg); transform-origin: 840px 1900px; }
+  .navcar { position: absolute; left: 420px; top: 720px; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 7px #1f6fe5, 0 6px 16px rgba(0,0,0,0.3); }
+  .navcar::after { content: ""; position: absolute; left: 24px; top: 16px; border-left: 22px solid transparent; border-right: 22px solid transparent; border-bottom: 52px solid #1f6fe5; }
+  .tbt { position: absolute; left: 24px; top: 24px; width: 580px; background: #000; color: #fff; }
+  .tbt .main { display: flex; align-items: center; gap: 26px; height: 150px; padding: 0 30px; }
+  .tbt .main svg { flex: none; width: 76px; height: 96px; }
+  .tbt .dist { font-size: 74px; line-height: 80px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+  .tbt .dir { font-size: 30px; color: #b8bcc2; }
+  .tbt .lanes { height: 86px; border-top: 1px solid #2c2d30; display: flex; align-items: center; justify-content: center; gap: 40px; }
+  .tbt .lanes svg { width: 34px; height: 46px; }
+  .next { position: absolute; left: 24px; width: 292px; height: 80px; background: #333; color: #fff; display: flex; align-items: center; gap: 30px; padding: 0 30px; box-sizing: border-box; font-size: 40px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+  .next svg { width: 40px; height: 52px; }
+  .eta { position: absolute; left: 24px; top: 870px; width: 580px; height: 316px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; }
+  .eta .dots { text-align: center; font-size: 30px; line-height: 20px; letter-spacing: 4px; }
+  .eta .row { display: flex; justify-content: space-between; align-items: baseline; padding: 0 24px; }
+  .eta .time { font-size: 34px; font-weight: 700; }
+  .eta .left { font-size: 28px; color: #6b7078; }
+  .eta .road { font-size: 28px; color: #6b7078; }
+  .eta .bar { position: relative; margin: 22px 30px 0; height: 6px; background: linear-gradient(90deg, #2f7cf6 0 30%, #f5a623 30% 45%, #2f7cf6 45% 70%, #f5a623 70% 100%); }
+  .eta .bar i { position: absolute; top: -9px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: #fff; border: 4px solid #6b7078; box-sizing: border-box; }
+  .eta .bar b { position: absolute; top: -12px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: #1f6fe5; }
+  .eta .end { position: absolute; left: 0; right: 0; bottom: 0; height: 100px; border-top: 1px solid #d9dce1; display: flex; align-items: center; }
+  .eta .end span { flex: none; width: 98px; height: 100%; border-right: 1px solid #d9dce1; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+  .eta .end strong { flex: 1; text-align: center; font-size: 32px; background: #f6f7f8; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .navbtn { position: absolute; width: 100px; height: 100px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; }
+  .toast { position: absolute; left: 40px; right: 40px; top: 30px; padding: 26px 30px; border-radius: 22px; background: #131417; color: #fff; font-size: 30px; line-height: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  .toast b { display: block; font-size: 34px; }
+  .pane { position: absolute; left: 1693px; top: 90px; width: 840px; height: 1210px; display: flex; box-shadow: -2px 0 0 #e3e6ea; overflow: hidden; }
+  .pane .drive { border-radius: 0; padding: 44px 40px; gap: 20px; }
+  .pane .drive > .glow { position: absolute; inset: 0; background: radial-gradient(circle at 80% 8%, rgba(255,150,70,0.55), rgba(255,120,80,0.18) 45%, transparent 70%); pointer-events: none; }
+  .mini { position: relative; flex: 1 1 auto; min-height: 0; border-radius: 24px; overflow: hidden; background: #cfd6dd; }
+  .mini img { position: absolute; max-width: none; }
+  .mini svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .info-line { display: flex; flex-direction: column; gap: 4px; padding: 14px 20px; border-radius: 16px; background: var(--bg-raised); }
+  .info-line b { font-size: 30px; }
+  .info-line span { font-size: 26px; color: var(--ink-secondary); }
+  .tap { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 10px solid rgba(255,255,255,0.95); box-shadow: 0 0 0 6px rgba(0,0,0,0.3); }
+  /* 화면 위 글 */
+  .step { position: absolute; left: 48px; top: 40px; max-width: 1200px; padding: 14px 24px; border-radius: 14px; background: rgba(10,11,13,0.78); color: #fff; font-size: 30px; line-height: 40px; font-weight: 600; }
+  .step small { display: block; font-size: 22px; line-height: 30px; font-weight: 400; color: #c9ced6; }
+  .voice { position: absolute; left: 48px; bottom: 48px; padding: 16px 30px; border-radius: 40px; background: rgba(10,11,13,0.86); color: #fff; font-size: 34px; font-weight: 600; white-space: nowrap; display: flex; gap: 16px; align-items: center; }
+  .voice i { font-style: normal; color: #f0a45a; font-size: 24px; }
+  .note { position: absolute; right: 24px; top: 18px; padding: 6px 14px; border-radius: 10px; background: rgba(10,11,13,0.7); color: rgba(255,255,255,0.85); font-size: 18px; }
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #0b0c0e; color: #f2f3f5; text-align: center; }
+  .card h1 { margin: 0; font-family: "Gowun Batang", serif; font-size: 96px; color: #f0a45a; }
+  .card p { margin: 0; font-size: 30px; line-height: 44px; }
+  .card .credits { font-size: 20px; line-height: 30px; color: #9aa0a8; }
+</style>
+</head>
+<body>
+<div id="view">
+  <div id="world">
+    <canvas id="road" width="1920" height="720"></canvas>
+    <svg class="frame" viewBox="0 0 1920 1080" aria-hidden="true">
+      <defs>
+        <linearGradient id="dash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26282c"/><stop offset="0.25" stop-color="#17181b"/><stop offset="1" stop-color="#0a0b0d"/></linearGradient>
+        <linearGradient id="pillar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0c0d0f"/><stop offset="1" stop-color="#16171a"/></linearGradient>
+      </defs>
+      <!-- 지붕, 기둥, 룸미러 -->
+      <path d="M0 0 H1920 V34 Q960 74 0 34 Z" fill="#0d0e10"/>
+      <path d="M0 0 L210 0 L60 640 L0 640 Z" fill="url(#pillar)"/>
+      <path d="M1920 0 L1710 0 L1860 640 L1920 640 Z" fill="url(#pillar)"/>
+      <rect x="880" y="40" width="190" height="56" rx="14" fill="#101114"/><rect x="965" y="20" width="20" height="30" fill="#101114"/>
+      <!-- 가로로 긴 대시보드와 앰비언트 라이트 -->
+      <path d="M0 610 Q960 585 1920 610 V1080 H0 Z" fill="url(#dash)"/>
+      <path d="M0 610 Q960 585 1920 610" stroke="#34363b" stroke-width="2" fill="none"/>
+      <rect x="0" y="742" width="1920" height="10" fill="#0a0b0d"/>
+      <rect id="ambient" x="0" y="752" width="1920" height="4" fill="#ffd9a0" opacity="0.5"/>
+      <rect x="40" y="770" width="200" height="16" rx="8" fill="#08090a"/><rect x="1880" y="770" width="0" height="0"/>
+    </svg>
+    <div class="slim">
+      <div class="spd"><b id="sSpeed">0</b><span>km/h</span></div>
+      <div class="gear" id="sGear"><span>P</span><span>R</span><span>N</span><span>D</span></div>
+      <div class="meta"><b id="sDest">두물머리까지 50.3km</b><br><span id="sMedia">미디어 없음</span></div>
+    </div>
+    <svg class="frame" viewBox="0 0 1920 1080" aria-hidden="true">
+      <!-- 운전대: 슬림 디스플레이 아래로 림이 지나간다 -->
+      <circle cx="550" cy="1185" r="360" fill="none" stroke="#141518" stroke-width="58"/>
+      <circle cx="550" cy="1185" r="389" fill="none" stroke="#24262a" stroke-width="2"/>
+      <path d="M215 1080 Q380 1020 470 1060 L630 1060 Q720 1020 885 1080 Z" fill="#141518"/>
+      <rect x="455" y="1030" width="190" height="60" rx="24" fill="#191a1d" stroke="#2a2c31" stroke-width="2"/>
+    </svg>
+    <div class="display">
+      <div class="screen-in stage" data-theme="day" id="screen">
+        <img class="base" id="basePark" src="pleos/park.png" alt="">
+        <img class="base" id="baseDrive" src="pleos/drive.png" alt="">
+        <img class="shift" id="shift" alt="">
+        <div class="cover" id="spd">0</div>
+        <div class="cover" id="clk">05:42 오후</div>
+        <div class="app" id="sumApp"><img src="stills/SummaryDay.png" alt=""></div>
+        <div class="nav" id="nav">
+          <svg class="navmap" id="navmap" viewBox="0 0 1680 2400"><g id="navg"></g></svg>
+          <div class="navcar"></div>
+          <div class="tbt"><div class="main"><svg id="tbtArrow" viewBox="0 0 76 96"></svg><div><div class="dist" id="tbtDist"></div><div class="dir" id="tbtDir"></div></div></div>
+            <div class="lanes"><svg viewBox="0 0 34 46"><path d="M17 44 V12 M5 22 L17 8 L29 22" stroke="#fff" stroke-width="5" fill="none"/></svg><svg viewBox="0 0 34 46"><path d="M17 44 V12 M5 22 L17 8 L29 22" stroke="#666" stroke-width="5" fill="none"/></svg></div></div>
+          <div class="next" id="next" style="top: 260px;"><svg id="nextArrow" viewBox="0 0 76 96"></svg><span id="nextDist"></span></div>
+          <div class="navbtn" style="left: 716px; top: 24px; flex-direction: column; font-size: 28px; line-height: 28px;">2D<span style="font-size: 26px;">▲</span></div>
+          <div class="eta"><div class="dots">···</div>
+            <div class="row" style="margin-top: 22px;"><span class="time" id="etaTime"></span><span class="left" id="etaLeft"></span></div>
+            <div class="row" style="margin-top: 12px;"><span class="road" id="etaRoad"></span><span class="left">▬ 78%</span></div>
+            <div class="bar"><i style="left: 30%"></i><i style="left: 72%"></i><b id="etaPos" style="left: 0%"></b></div>
+            <div class="end"><span>⌕</span><strong>안내 종료</strong></div></div>
+          <div class="navbtn" style="left: 716px; top: 988px; font-size: 34px;">🔈</div>
+          <div class="navbtn" style="left: 716px; top: 1086px; font-size: 34px;">⚙</div>
+        </div>
+        <div class="pane" id="pane">
+          <section class="drive" id="drive" style="flex: 1 1 auto;">
+            <div class="glow" id="glow"></div>
+            <div class="drive-head"><span class="t-drive-line bold">팔당 노을</span><span class="t-label ink-2 num" id="secno">구간 1/3</span></div>
+            <h1 class="t-drive-section" id="secname">남한산성 고갯길</h1>
+            <div class="drive-remain"><span class="t-drive-number num" id="remain">50.3</span><span class="t-drive-unit ink-2">km</span><span class="t-drive-line ink-2">남은 거리</span></div>
+            <div class="sec-bar sec-bar-lg" id="bar"></div>
+            <div class="drive-line" id="lineBox"><p class="t-drive-line" id="line"></p></div>
+            <div class="mini" id="mini"><img id="miniImg" alt=""><svg id="miniSvg"></svg></div>
+            <div class="info-line"><b id="cabin"></b><span>차 안 연출 · 창문·풍량·조명</span></div>
+            <div class="info-line"><b id="music"></b><span>연결된 음악 앱에 재생 요청</span></div>
+          </section>
+          <div class="toast" id="toast"><b>내비에 코스를 입혔습니다</b>경유지를 2곳씩 나눠 이어서 안내합니다</div>
+        </div>
+        <div class="full" id="full"><img id="fullImg" alt=""></div>
+        <div class="tap" id="tap"></div>
+      </div>
+    </div>
+  </div>
+  <div class="step" id="step"></div>
+  <div class="voice" id="voice"><i>에움길 음성</i><span id="voiceText"></span></div>
+  <div class="note">시안으로 만든 재현 영상 · 센터 화면 바탕과 변속 장면은 Pleos 에뮬레이터 · 실내·3D 도로·내비 화면은 연출 · 거리는 시간을 줄여 표시</div>
+  <div class="card" id="card">
+    <h1>에움길</h1>
+    <p>내비는 길을 안내하고, 에움길은 그 길을 달리는 시간을 안내합니다.</p>
+    <p class="credits">시안으로 만든 재현 영상입니다. 실제 앱 화면이 아닙니다.<br>
+    센터 화면 바탕·변속 장면: Pleos 에뮬레이터 캡처 · 내비 화면: Pleos 내비 구성을 따른 연출, 지도 © OpenStreetMap contributors (ODbL)<br>실내와 3D 도로: 연출(도로 굽이와 고도는 코스 파일의 실제 경로)<br>
+    먼 풍경 사진: Marco Schmidt (CC BY-SA 3.0), Jpbarrass (Public domain) · Wikimedia Commons<br>
+    위성 사진: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016) · 3D: three.js · 음성: macOS 음성 합성</p>
+  </div>
+</div>
+<script type="module">
+import { createRoad } from "./road3d.js";
+/* ---- 자료 ---- */
+const COURSE = window.COURSES.find((c) => c.id === 'paldang-sunset');
+const TOTAL = COURSE.km;
+const SECTIONS = [
+  { name: '남한산성 고갯길', mood: 'forest', end: 17.6, light: '#9fe0a8', cabin: '창문 2단 · 풍량 3단 · 조명 40%', music: "'숲길 드라이브 음악'" },
+  { name: '하남 팔당대교', mood: 'city', end: 39.5, light: '#9fb6ff', cabin: '창문 닫음 · 풍량 3단 · 조명 30%', music: "'도심 드라이브 음악'" },
+  { name: '팔당 강변', mood: 'river', end: TOTAL, light: '#ffc27a', cabin: '창문 2단 · 풍량 2단 · 조명 70%', music: "'바닷가 드라이브 음악'" },
+];
+const SHIFT = 19.6, SHIFT_FRAMES = 97, SHIFT_FPS = 15, SHIFT_END = SHIFT + SHIFT_FRAMES / SHIFT_FPS;
+const APPLY = 15.3, END = 88;
+/* 앱 문구(core/engine/Messages.kt, feature/guide)와 같다 */
+const VOICE = [
+  [16.8, '팔당 노을 코스를 시작합니다.'], [33.0, '남한산성 고갯길 구간입니다.'], [48.3, '하남 팔당대교 구간입니다.'],
+  [52.5, '다음 구간으로 이어갑니다.'], [62.3, '팔당 강변 구간입니다.'], [68.0, '잠시 후 양평 두물머리입니다.'], [75.6, '코스를 끝까지 달렸습니다.'],
+];
+const STEPS = [
+  [0, '주차장 · 출발 전', '에움길 전체 화면에 날씨와 시간대에 맞는 코스가 뜬다'],
+  [6.3, '코스 고르기 · 둘러보기', '지역을 누르면 지도가 그 지역으로, 카드를 누르면 그 코스로 다가간다'],
+  [13.2, '코스 자세히 보기', '코스 주변 경치·음식점·명소와 경로를 본다'],
+  [14.9, '내비에 코스 입히기', '화면이 차량 정보 · 내장 내비 · 에움길 주행 칸으로 나뉜다'],
+  [19.2, '기어 D · Pleos 주행 화면으로 바뀐다', 'Pleos 에뮬레이터의 실제 변속 장면'],
+  [23.6, '주차장을 빠져나간다', ''],
+  [31.6, '주행 중 · 숲길 구간', '구간에 맞춰 창문·풍량·조명과 음악이 바뀐다'],
+  [46.6, '구간 전환 · 도심 구간', '경유지는 2곳씩 나눠 내비에 이어 입힌다'],
+  [60.6, '강변 구간 · 노을 시간대', '화면에 노을 분위기가 든다'],
+  [74, '완주 · P단에서 기록 요약', ''],
+];
+/* 카메라: [배율, 화면 중심 x, y] */
+const W = [1, 960, 540], D = [2.0, 1430, 829], P = [2.45, 1716, 819], L = [2.0, 1137, 830];
+const CAM = [[0, W], [4, W], [6, D], [18, D], [19.3, L], [22.4, L], [24, W], [30.6, W], [32, D], [34, D], [35.5, W], [45.5, W], [47, P], [52, P], [53.5, W], [59.5, W], [61, P], [65, P], [66.5, W], [76, W], [77.5, D], [END, D]];
+const KM = [[0, 0], [SHIFT + 3, 0], [48, 17.6], [62, 39.5], [75.5, TOTAL], [END, TOTAL]];
+/* 3D 장면: 0 주차장, 1 숲, 2 도심, 3 강변. 바뀌는 시각은 카메라가 센터 화면을 보고 있을 때다 */
+const WORLD_AT = [0, 32, 48, 62];
+
+/* ---- 계산 ---- */
+const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+const lerp = (a, b, x) => a + (b - a) * x;
+const span = (t, a, b) => ease((t - a) / (b - a));
+const piece = (pts, t, smooth) => {
+  for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) {
+    const [t0, v0] = pts[i - 1], [t1, v1] = pts[i], x = (t - t0) / (t1 - t0);
+    return Array.isArray(v0) ? v0.map((v, k) => lerp(v, v1[k], smooth ? ease(x) : x)) : lerp(v0, v1, smooth ? ease(x) : x);
+  }
+  return pts[pts.length - 1][1];
+};
+/* 변속 장면 속 실제 속도(3, 6, 9, 9, 12, 15)에 맞춘다 */
+const CREEP = [[SHIFT + 3.0, 0], [SHIFT + 3.2, 3], [SHIFT + 3.6, 6], [SHIFT + 4.0, 9], [SHIFT + 4.4, 9], [SHIFT + 4.8, 12], [SHIFT + 5.2, 15]];
+const speedAt = (t) => {
+  if (t < SHIFT + 3.0 || t > 75.5) return 0;
+  if (t < SHIFT + 5.2) return Math.round(piece(CREEP, t, false));
+  if (t < 30) return 15;
+  if (t < 34) return Math.round(lerp(15, 45, ease((t - 30) / 4)));
+  if (t < 73.5) return Math.round(45 + 4 * Math.sin(t * 0.6) + 2 * Math.sin(t * 1.9));
+  return Math.max(0, Math.round(45 * (1 - ease((t - 73.5) / 2))));
+};
+const worldAt = (t) => (t < WORLD_AT[1] ? 0 : t < WORLD_AT[2] ? 1 : t < WORLD_AT[3] ? 2 : 3);
+const roadDist = (t) => { const wi = worldAt(t); let d = 0; for (let x = WORLD_AT[wi]; x < t; x += 1 / 60) d += (speedAt(x) / 3.6) / 60; return [wi, d]; };
+const sectionAt = (km) => { const i = SECTIONS.findIndex((s) => km < s.end - 1e-6); return i === -1 ? 2 : i; };
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const css = getComputedStyle(document.getElementById('screen'));
+const AIR = SECTIONS.map((s) => hex(css.getPropertyValue('--air-' + s.mood).trim()));
+const SEC = SECTIONS.map((s) => css.getPropertyValue('--section-' + s.mood).trim());
+
+/* 코스 선(장면 좌표)과 그 위 위치·방향 */
+const pts = [];
+COURSE.scene.sections.forEach((s) => s.d.slice(1).split(' L').forEach((p) => { const [x, y] = p.split(' ').map(Number); pts.push([x, y]); }));
+const lens = [0];
+for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+const along = (f) => {
+  const goal = Math.min(Math.max(f, 0), 1) * lens[lens.length - 1];
+  let i = lens.findIndex((l) => l >= goal); if (i <= 0) i = 1;
+  const x = (goal - lens[i - 1]) / (lens[i] - lens[i - 1] || 1);
+  return [lerp(pts[i - 1][0], pts[i][0], x), lerp(pts[i - 1][1], pts[i][1], x)];
+};
+const headingAt = (f) => { const [x1, y1] = along(f - 0.004), [x2, y2] = along(f + 0.004); return Math.atan2(y2 - y1, x2 - x1); };
+
+/* 미니 지도 */
+const BOX = [1540, 110, 2344, 1000];
+function setupMini() {
+  const mini = document.getElementById('mini'), w = mini.clientWidth, h = mini.clientHeight;
+  const bw = BOX[2] - BOX[0], bh = BOX[3] - BOX[1], s = Math.min(w / bw, h / bh) * 0.92;
+  const ox = Math.max((w - bw * s) / 2 - BOX[0] * s, w - 2404 * s), oy = (h - bh * s) / 2 - BOX[1] * s;
+  const img = document.getElementById('miniImg');
+  img.src = '../../design/screens/' + COURSE.scene.day;
+  Object.assign(img.style, { left: ox + 'px', top: oy + 'px', width: 2404 * s + 'px', height: 1210 * s + 'px' });
+  const svg = document.getElementById('miniSvg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = COURSE.scene.sections.map((sec) => `<path class="route route-line sec-${sec.mood}" transform="translate(${ox} ${oy}) scale(${s})" d="${sec.d}" style="vector-effect: non-scaling-stroke; stroke-width: 8px"/>`).join('')
+    + '<circle id="here" r="16" fill="var(--accent)" stroke="#fff" stroke-width="5"/>';
+  window.MINI = { s, ox, oy };
+}
+/* 주행 내비: 지도는 osm/navmap.json(코스 출발점 기준 m 좌표). 차 위치는 앞 유리 3D 장면과 같은 경로 지점을 같은 속도로 따라간다 */
+let NAV = null, CUM = [0], TURNS = [];
+const NAV_SCALE = 1.15, NAV_DIR = ['남한산성 방면', '팔당대교 방면', '두물머리 방면'];
+const arrow = (dir) => dir === 'left'
+  ? '<path d="M58 92 V44 Q58 30 44 30 H22" stroke="#fff" stroke-width="12" fill="none"/><path d="M28 10 L4 30 L28 50 Z" fill="#fff"/>'
+  : dir === 'right' ? '<path d="M18 92 V44 Q18 30 32 30 H54" stroke="#fff" stroke-width="12" fill="none"/><path d="M48 10 L72 30 L48 50 Z" fill="#fff"/>'
+  : '<path d="M38 92 V24" stroke="#fff" stroke-width="12" fill="none"/><path d="M14 30 L38 4 L62 30 Z" fill="#fff"/>';
+function setupNav(navmap) {
+  NAV = navmap; const r = NAV.route;
+  for (let i = 1; i < r.length; i++) CUM.push(CUM[i - 1] + Math.hypot(r[i][0] - r[i - 1][0], r[i][1] - r[i - 1][1]));
+  /* 회전 지점: 앞뒤 두 점으로 본 진행 방향이 40도 넘게 바뀌는 곳. 화면 좌표(y 아래)라 시계 방향이 오른쪽 */
+  const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (let i = 2; i < r.length - 2; i++) {
+    let d = ang(r[i], r[i + 2]) - ang(r[i - 2], r[i]); d = Math.atan2(Math.sin(d), Math.cos(d));
+    if (Math.abs(d) > 0.7 && (!TURNS.length || i - TURNS[TURNS.length - 1].i > 4)) TURNS.push({ i, at: CUM[i], dir: d > 0 ? 'right' : 'left' });
+  }
+  const line = (pts) => 'M' + pts.map((p) => p[0] + ' ' + p[1]).join('L');
+  const g = [];
+  NAV.water.forEach((w) => g.push(`<path d="${line(w)}Z" fill="#b7d1ea"/>`));
+  const W = { hw: [20, '#c9a24a', '#f8d27a'], main: [15, '#c3c7cd', '#ffffff'], link: [10, '#c3c7cd', '#ffffff'], minor: [9, '#cfd2d7', '#ffffff'] };
+  ['minor', 'link', 'main', 'hw'].forEach((c) => { const [w, edge, fill] = W[c]; const d = NAV.roads[c].map(line).join(''); g.push(`<path d="${d}" fill="none" stroke="${edge}" stroke-width="${w + 4}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${fill}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); });
+  g.push(`<path d="${line(r)}" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>`);
+  g.push(`<path id="routeAhead" d="${line(r)}" fill="none" stroke="#2f7cf6" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>`);
+  g.push(`<path id="routeDone" d="" fill="none" stroke="#9aa3ad" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>`);
+  document.getElementById('navg').innerHTML = g.join('');
+}
+/* 경로 위 거리 s(m)의 위치와 진행 방향 */
+const routeAt = (s) => {
+  const r = NAV.route; let i = CUM.findIndex((c) => c >= s); if (i <= 0) i = 1; if (i === -1) i = r.length - 1;
+  const x = (s - CUM[i - 1]) / (CUM[i] - CUM[i - 1] || 1);
+  const p = [lerp(r[i - 1][0], r[i][0], x), lerp(r[i - 1][1], r[i][1], x)];
+  const a = r[Math.max(0, i - 2)], b = r[Math.min(r.length - 1, i + 1)];
+  return { p, i, h: Math.atan2(b[1] - a[1], b[0] - a[0]) };
+};
+const fmt = (m) => (m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.max(10, Math.round(m / 10) * 10) + 'm');
+document.getElementById('bar').innerHTML = SECTIONS.map((s, i) => `<i class="sec-${s.mood}" style="flex: ${(s.end - (i ? SECTIONS[i - 1].end : 0)).toFixed(1)}"><b></b></i>`).join('');
+
+/* 고르는 과정 화면(record-film.mjs 가 시안을 눌러 가며 찍은 것) */
+let STEPSDATA = null;
+const stepImage = (t) => {
+  const S = STEPSDATA, at = (list, from) => { const x = t - from; let f = list[0][1]; list.forEach(([a, file]) => { if (x >= a) f = file; }); return f; };
+  if (t < 7.0) return 'main.jpg';
+  if (t < 8.5) return 'browse.jpg';
+  if (t < 10.8) return at(S.region, 8.5);
+  if (t < 13.8) return at(S.card, 10.8);
+  return 'main.jpg';
+};
+const TAPS = () => [[6.5, STEPSDATA.tapBrowse], [8.4, STEPSDATA.tapRegion], [10.7, STEPSDATA.tapCard], [13.3, STEPSDATA.tapDetail], [15.0, STEPSDATA.tapGo]];
+const SHIFT_IMGS = [];
+
+/* ---- 그리기 ---- */
+function render(t) {
+  const [s, cx, cy] = piece(CAM, t, true);
+  document.getElementById('world').style.transform = `translate(${960 - s * cx}px, ${540 - s * cy}px) scale(${s})`;
+  const km = piece(KM, t, false), si = sectionAt(km), sec = SECTIONS[si], v = speedAt(t);
+  const applied = t >= APPLY, finished = t >= 77;
+  /* 기어와 속도 */
+  const gear = t >= SHIFT + 0.4 && t < 76.5 ? 'D' : 'P';
+  document.querySelectorAll('#sGear span').forEach((g) => g.className = g.textContent === gear ? 'on' : '');
+  document.getElementById('sSpeed').textContent = v;
+  const shifting = t >= SHIFT && t < SHIFT_END;
+  const shiftEl = document.getElementById('shift');
+  shiftEl.style.display = shifting ? 'block' : 'none';
+  if (shifting) shiftEl.src = SHIFT_IMGS[Math.min(SHIFT_FRAMES - 1, Math.floor((t - SHIFT) * SHIFT_FPS))].src;
+  const driveBase = gear === 'D';
+  document.getElementById('basePark').style.opacity = driveBase ? 0 : 1;
+  document.getElementById('baseDrive').style.opacity = driveBase ? 1 : 0;
+  document.getElementById('spd').style.display = driveBase && t >= SHIFT_END ? 'flex' : 'none';
+  document.getElementById('spd').textContent = v;
+  document.getElementById('sDest').textContent = !applied ? '목적지 없음' : finished ? '도착 · 양평 두물머리' : '두물머리까지 ' + (TOTAL - km).toFixed(1) + 'km';
+  document.getElementById('sMedia').textContent = t < 16.8 ? '미디어 없음' : '♪ ' + sec.music.replace(/'/g, '');
+  const minute = 40 + Math.floor(km * 1.3);
+  document.getElementById('clk').textContent = `${String(5 + Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')} 오후`;
+  /* 앞 유리: 3D */
+  if (window.ROAD) { const [wi, d] = roadDist(t); ROAD.draw(wi, d); }
+  document.getElementById('ambient').setAttribute('fill', sec.light);
+  document.getElementById('ambient').setAttribute('opacity', t < 16.8 ? 0.25 : 0.7);
+  /* 센터 화면: 전체 화면 앱 → 내비에 입히면 세 칸으로 나뉜다 → 완주하면 요약 */
+  const sw = span(t, APPLY, APPLY + 1.3);
+  const full = document.getElementById('full');
+  full.style.display = sw < 1 ? 'block' : 'none';
+  Object.assign(full.style, { opacity: 1 - span(t, APPLY + 0.2, APPLY + 1.0), transform: `scale(${1 - 0.03 * sw})` });
+  if (STEPSDATA) { const f = 'stills/steps/' + stepImage(t); const img = document.getElementById('fullImg'); if (!img.src.endsWith(f)) img.src = f; }
+  const shown = finished ? 1 - span(t, 77, 78) : span(t, APPLY + 0.2, APPLY + 1.0);
+  const pane = document.getElementById('pane');
+  pane.style.opacity = shown; pane.style.transform = `translateX(${(1 - shown) * 120}px)`;
+  const nav = document.getElementById('nav');
+  nav.style.opacity = shown;
+  document.getElementById('sumApp').style.opacity = span(t, 77.2, 78.2);
+  document.getElementById('toast').style.opacity = span(t, 15.9, 16.3) * (1 - span(t, 20.5, 21));
+  /* 누르는 자리 */
+  const tap = document.getElementById('tap');
+  const hit = STEPSDATA ? TAPS().find(([at]) => t >= at && t < at + 0.8) : null;
+  if (hit) { const p = (t - hit[0]) / 0.8; Object.assign(tap.style, { opacity: 1 - p, left: hit[1][0] + 'px', top: 90 + hit[1][1] + 'px', transform: `scale(${0.5 + p})` }); } else tap.style.opacity = 0;
+  /* 주행 내비 */
+  const f = km / TOTAL;
+  if (NAV && window.ROAD) {
+    const [wi, dd] = roadDist(t), s0 = CUM[ROAD.starts[wi]] + (wi === 0 ? Math.max(0, dd - 25) : dd);
+    const { p, i, h } = routeAt(s0);
+    document.getElementById('navg').setAttribute('transform', `translate(840 1900) rotate(${(-h * 180) / Math.PI - 90}) scale(${NAV_SCALE}) translate(${-p[0]} ${-p[1]})`);
+    const r = NAV.route, done = r.slice(0, i).concat([p]);
+    document.getElementById('routeDone').setAttribute('d', 'M' + done.map((q) => q[0] + ' ' + q[1]).join('L'));
+    const ahead = TURNS.filter((x) => x.at > s0 + 5);
+    const t1 = ahead[0], t2 = ahead[1];
+    document.getElementById('tbtArrow').innerHTML = arrow(t1 && t1.at - s0 < 2000 ? t1.dir : 'straight');
+    document.getElementById('tbtDist').textContent = t1 ? fmt(t1.at - s0) : '';
+    document.getElementById('tbtDir').textContent = NAV_DIR[si];
+    document.getElementById('nextArrow').innerHTML = arrow(t2 ? t2.dir : 'straight');
+    document.getElementById('nextDist').textContent = t2 ? fmt(t2.at - s0) : '';
+    const leftKm = TOTAL - km, mins = Math.round(leftKm / 45 * 60), mm = 40 + Math.floor(km * 1.3) + mins;
+    document.getElementById('etaTime').textContent = `${6 + Math.floor((mm - 20) / 60)}:${String(((mm - 20) % 60 + 60) % 60).padStart(2, '0')} PM`;
+    document.getElementById('etaLeft').textContent = `${mins}분 · ${leftKm.toFixed(1)}km`;
+    document.getElementById('etaRoad').textContent = sec.name;
+    document.getElementById('etaPos').style.left = (f * 100).toFixed(1) + '%';
+  }
+  /* 주행 칸 */
+  const prev = Math.max(0, si - 1), mix = si === 0 ? 1 : Math.min(1, Math.max(0, (km - SECTIONS[prev].end) / 1.2));
+  const air = AIR[si].map((c, i) => Math.round(lerp(AIR[prev][i], c, mix)));
+  document.getElementById('drive').style.background = `rgb(${air.join(',')})`;
+  document.getElementById('glow').style.opacity = span(t, 62.5, 66) * 0.9;
+  document.getElementById('secno').textContent = `구간 ${si + 1}/3`;
+  const name = document.getElementById('secname');
+  name.textContent = sec.name; name.style.color = SEC[si];
+  name.style.transform = `translateY(${(1 - mix) * 24}px)`; name.style.opacity = 0.3 + 0.7 * mix;
+  document.getElementById('remain').textContent = (TOTAL - km).toFixed(1);
+  [...document.querySelectorAll('#bar > i')].forEach((el, i) => {
+    const start = i ? SECTIONS[i - 1].end : 0, fr = Math.min(1, Math.max(0, (km - start) / (SECTIONS[i].end - start)));
+    el.className = `sec-${SECTIONS[i].mood} ${fr >= 1 ? 'is-done' : 'is-todo'}`;
+    el.firstChild.style.width = (fr * 100).toFixed(1) + '%';
+  });
+  const line = t >= 68 && t < 75.6 ? '잠시 후 양평 두물머리입니다' : t >= 75.6 ? '코스를 끝까지 달렸습니다' : si === 0 ? '다음 스팟 · 남한산성 남문(지화문)' : si === 1 ? '팔당대교를 건너면 다음 구간으로 이어갑니다' : '다음 스팟 · 양평 두물머리';
+  document.getElementById('line').textContent = line;
+  document.getElementById('lineBox').style.borderLeftColor = SEC[si];
+  document.getElementById('cabin').textContent = sec.cabin;
+  document.getElementById('music').textContent = sec.music;
+  if (window.MINI) { const [x, y] = along(f), here = document.getElementById('here'); here.setAttribute('cx', MINI.ox + x * MINI.s); here.setAttribute('cy', MINI.oy + y * MINI.s); }
+  /* 글 */
+  const step = [...STEPS].reverse().find(([at]) => t >= at);
+  document.getElementById('step').innerHTML = step[1] + (step[2] ? `<small>${step[2]}</small>` : '');
+  document.getElementById('step').style.opacity = t < END - 4 ? 1 : 0;
+  const said = [...VOICE].reverse().find(([at]) => t >= at && t < at + 3.2);
+  document.getElementById('voice').style.opacity = said ? 1 : 0;
+  document.getElementById('voiceText').textContent = said ? said[1] : '';
+  document.getElementById('card').style.opacity = span(t, END - 4, END - 3);
+}
+window.render = render; window.VOICE = VOICE; window.END = END;
+window.ready = (async () => {
+  STEPSDATA = await (await fetch('stills/steps/steps.json')).json();
+  const files = ['main.jpg', 'browse.jpg', ...STEPSDATA.region.map((x) => x[1]), ...STEPSDATA.card.map((x) => x[1])];
+  await Promise.all(files.map((f) => { const im = new Image(); im.src = 'stills/steps/' + f; return im.decode().catch(() => null); }));
+  for (let i = 0; i < SHIFT_FRAMES; i++) { const im = new Image(); im.src = `pleos/shift/${String(i).padStart(3, '0')}.jpg`; SHIFT_IMGS.push(im); }
+  await Promise.all(SHIFT_IMGS.map((im) => im.decode().catch(() => null)));
+  const course = await (await fetch('../../app/src/main/assets/courses/paldang-sunset.json')).json();
+  setupNav(await (await fetch('osm/navmap.json')).json());
+  window.ROAD = await createRoad(document.getElementById('road'), course, SECTIONS.map((x) => x.mood));
+  await Promise.all([document.fonts.ready, ...[...document.images].map((im) => im.decode().catch(() => null))]);
+  setupMini(); render(0); return true;
+})();
+</script>
+</body>
+</html>

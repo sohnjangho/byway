@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko" data-theme="night">
+<head>
+<meta charset="utf-8">
+<title>에움길 화면 시안</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: "Asta Sans", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    flex: none;
+    min-height: 68px;
+    padding: 12px 28px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--line-subtle);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand { font-family: "Gowun Batang", "Apple Myungjo", serif; font-size: 24px; font-weight: 700; color: var(--accent); }
+  .group { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg-deep); }
+  .group.push { margin-left: auto; }
+  .group button {
+    height: 38px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--ink-secondary);
+    font: 600 14px/1 "Asta Sans", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    cursor: pointer;
+  }
+  .group button.active { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; }
+  #stage-wrap { display: flex; align-items: center; justify-content: center; transform-origin: center center; }
+  iframe.screen-frame { display: block; border: 0; border-radius: 40px; box-shadow: var(--shadow-card); background: var(--bg); }
+  .grid-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; width: 100%; max-width: 1760px; align-self: flex-start; }
+  .grid-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 24px;
+    background: var(--bg-raised);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+  }
+  .grid-card strong { padding: 0 6px; font-size: 16px; }
+  .grid-iframe-holder { position: relative; width: 100%; aspect-ratio: 1706 / 1210; overflow: hidden; border-radius: 18px; background: var(--bg); }
+  .grid-iframe-holder iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">에움길</span>
+  <div class="group" id="tabs"></div>
+  <div class="group push">
+    <button type="button" id="btn-night">야간</button>
+    <button type="button" id="btn-day">주간</button>
+  </div>
+  <div class="group">
+    <button type="button" id="btn-single">한 화면</button>
+    <button type="button" id="btn-grid">전체 보기</button>
+  </div>
+</header>
+<main id="main"></main>
+<script>
+const SCREENS = [
+  { name: 'Main', label: '홈', w: 1700, h: 1184 },
+  { name: 'Browse', label: '둘러보기', w: 1700, h: 1184 },
+  { name: 'Drive', label: '주행 칸', w: 1706, h: 1210 },
+  { name: 'DriveAuto', label: '자율주행 구상', w: 1706, h: 1210 },
+  { name: 'Summary', label: '정차 요약', w: 1700, h: 1184 },
+  { name: 'Ranking', label: '랭킹', w: 1700, h: 1184 },
+  { name: 'Me', label: '내 코스', w: 1700, h: 1184 },
+  { name: 'Waiting', label: '주행 중 대기', w: 1700, h: 1184 },
+];
+
+let currentIdx = 0;
+let viewMode = 'single';
+let theme = 'night';
+
+const fileOf = (s) => s.name + (theme === 'day' ? 'Day' : '') + '.dc.html';
+
+function renderControls() {
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('btn-night').className = theme === 'night' ? 'active' : '';
+  document.getElementById('btn-day').className = theme === 'day' ? 'active' : '';
+  document.getElementById('btn-single').className = viewMode === 'single' ? 'active' : '';
+  document.getElementById('btn-grid').className = viewMode === 'grid' ? 'active' : '';
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  SCREENS.forEach((s, idx) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.label;
+    if (viewMode === 'single' && idx === currentIdx) b.className = 'active';
+    b.onclick = () => show(idx);
+    tabs.appendChild(b);
+  });
+}
+
+function show(idx) {
+  currentIdx = idx;
+  viewMode = 'single';
+  render();
+}
+
+function makeFrame(s) {
+  const iframe = document.createElement('iframe');
+  iframe.src = fileOf(s);
+  iframe.title = s.label;
+  iframe.style.width = s.w + 'px';
+  iframe.style.height = s.h + 'px';
+  return iframe;
+}
+
+function render() {
+  renderControls();
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  if (viewMode === 'single') {
+    const s = SCREENS[currentIdx];
+    const wrap = document.createElement('div');
+    wrap.id = 'stage-wrap';
+    const iframe = makeFrame(s);
+    iframe.className = 'screen-frame';
+    wrap.appendChild(iframe);
+    main.appendChild(wrap);
+    fitSingle();
+  } else {
+    const grid = document.createElement('div');
+    grid.className = 'grid-view';
+    SCREENS.forEach((s, idx) => {
+      const card = document.createElement('div');
+      card.className = 'grid-card';
+      card.onclick = () => show(idx);
+      const title = document.createElement('strong');
+      title.textContent = s.label;
+      const holder = document.createElement('div');
+      holder.className = 'grid-iframe-holder';
+      holder.appendChild(makeFrame(s));
+      card.append(title, holder);
+      grid.appendChild(card);
+    });
+    main.appendChild(grid);
+    requestAnimationFrame(fitGrid);
+  }
+}
+
+function fitSingle() {
+  const wrap = document.getElementById('stage-wrap');
+  if (!wrap) return;
+  const s = SCREENS[currentIdx];
+  const main = document.getElementById('main');
+  const scale = Math.min(1, (main.clientWidth - 48) / s.w, (main.clientHeight - 48) / s.h);
+  wrap.style.transform = 'scale(' + scale.toFixed(4) + ')';
+}
+
+function fitGrid() {
+  document.querySelectorAll('.grid-iframe-holder').forEach((holder) => {
+    holder.querySelector('iframe').style.transform = 'scale(' + (holder.clientWidth / 1706).toFixed(4) + ')';
+  });
+}
+
+window.addEventListener('resize', () => (viewMode === 'single' ? fitSingle() : fitGrid()));
+document.getElementById('btn-night').onclick = () => { theme = 'night'; render(); };
+document.getElementById('btn-day').onclick = () => { theme = 'day'; render(); };
+document.getElementById('btn-single').onclick = () => { viewMode = 'single'; render(); };
+document.getElementById('btn-grid').onclick = () => { viewMode = 'grid'; render(); };
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+{
+  "id": "baegun-lake",
+  "name": "호수 잇는 길",
+  "region": "수도권",
+  "summary": "하오고개를 넘어 백운호수를 지나고, 왕송호수까지 호숫가 두 곳을 잇는 짧은 길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "lake",
+      "forest"
+    ],
+    "moods": [
+      "date",
+      "family"
+    ],
+    "times": [
+      "day",
+      "sunset"
+    ],
+    "seasons": [
+      "spring"
+    ],
+    "ages": [
+      "30s"
+    ]
+  },
+  "waypoints": [
+    [
+      37.3947,
+      127.1112
+    ],
+    [
+      37.393548,
+      127.038016
+    ],
+    [
+      37.379,
+      127.006
+    ],
+    [
+      37.3179,
+      126.947
+    ],
+    [
+      37.30806,
+      126.95291
+    ]
+  ],
+  "sections": [
+    {
+      "name": "운중동 하오고개",
+      "mood": "forest"
+    },
+    {
+      "name": "백운호수 가는 길",
+      "mood": "river"
+    },
+    {
+      "name": "왕송호수 가는 길",
+      "mood": "city"
+    },
+    {
+      "name": "왕송호수 둘레",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "운중저수지",
+      "kind": "view",
+      "lat": 37.39275,
+      "lon": 127.04772
+    },
+    {
+      "name": "백운호수",
+      "kind": "view",
+      "lat": 37.37944,
+      "lon": 127.00376
+    },
+    {
+      "name": "철도박물관",
+      "kind": "photo",
+      "lat": 37.31402,
+      "lon": 126.95083
+    },
+    {
+      "name": "왕송호수",
+      "kind": "view",
+      "lat": 37.30721,
+      "lon": 126.94712
+    }
+  ],
+  "fidelity": {
+    "measuredOn": "2026-11-07",
+    "rows": [
+      {
+        "toleranceMeters": 800.0,
+        "stops": 4,
+        "legEndIndex": 426,
+        "courseMeters": 22966,
+        "naviMeters": 22000,
+        "ratio": 0.958,
+        "firstStopTollFare": 1000
+      },
+      {
+        "toleranceMeters": 1200.0,
+        "stops": 4,
+        "legEndIndex": 426,
+        "courseMeters": 22966,
+        "naviMeters": 22000,
+        "ratio": 0.958,
+        "firstStopTollFare": 1000
+      },
+      {
+        "toleranceMeters": 2000.0,
+        "stops": 2,
+        "legEndIndex": 497,
+        "courseMeters": 25293,
+        "naviMeters": 24000,
+        "ratio": 0.949,
+        "firstStopTollFare": 1000
+      }
+    ]
+  },
+  "sceneryCredit": "사진: Aspere (CC0, Wikimedia Commons)"
+}

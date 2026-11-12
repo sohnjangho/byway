@@ -1,0 +1,96 @@
+{
+  "id": "gampo-coast",
+  "name": "감포 가는 길",
+  "region": "경상",
+  "summary": "보문호에서 덕동호를 끼고 추령을 넘어, 감은사지와 이견대를 지나 동해를 따라 감포까지 가는 길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "coast",
+      "mountain",
+      "lake"
+    ],
+    "moods": [
+      "family",
+      "alone"
+    ],
+    "times": [
+      "sunrise",
+      "day"
+    ],
+    "seasons": [
+      "spring"
+    ],
+    "ages": [
+      "50s"
+    ]
+  },
+  "waypoints": [
+    [
+      35.844987,
+      129.282406
+    ],
+    [
+      35.841104,
+      129.316319
+    ],
+    [
+      35.81199,
+      129.363076
+    ],
+    [
+      35.744358,
+      129.483611
+    ],
+    [
+      35.804203,
+      129.502552
+    ]
+  ],
+  "sections": [
+    {
+      "name": "덕동호 가는 길",
+      "mood": "river"
+    },
+    {
+      "name": "추령 고갯길",
+      "mood": "forest"
+    },
+    {
+      "name": "문무대왕로",
+      "mood": "forest"
+    },
+    {
+      "name": "감포 해안",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "추령",
+      "kind": "view",
+      "lat": 35.811965,
+      "lon": 129.362584
+    },
+    {
+      "name": "경주 감은사지",
+      "kind": "photo",
+      "lat": 35.747995,
+      "lon": 129.477029
+    },
+    {
+      "name": "이견대",
+      "kind": "view",
+      "lat": 35.744243,
+      "lon": 129.483698
+    },
+    {
+      "name": "감포공설시장",
+      "kind": "food",
+      "lat": 35.804077,
+      "lon": 129.501897
+    }
+  ],
+  "fidelity": null,
+  "sceneryCredit": "사진: Ronnie Dayo (CC BY-SA 4.0, Wikimedia Commons)"
+}

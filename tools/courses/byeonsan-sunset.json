@@ -1,0 +1,85 @@
+{
+  "id": "byeonsan-sunset",
+  "name": "변산 노을",
+  "region": "전라",
+  "summary": "변산해수욕장을 떠나 적벽강과 채석강을 지나고, 서해를 곁에 두고 모항을 돌아 곰소항까지 가는 해안길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "coast"
+    ],
+    "moods": [
+      "date",
+      "family"
+    ],
+    "times": [
+      "sunset"
+    ],
+    "seasons": [
+      "autumn"
+    ],
+    "ages": [
+      "40s"
+    ]
+  },
+  "waypoints": [
+    [
+      35.680159,
+      126.531269
+    ],
+    [
+      35.638122,
+      126.464415
+    ],
+    [
+      35.582927,
+      126.508118
+    ],
+    [
+      35.586093,
+      126.609567
+    ]
+  ],
+  "sections": [
+    {
+      "name": "변산로 해안",
+      "mood": "river"
+    },
+    {
+      "name": "격포 모항 해안",
+      "mood": "river"
+    },
+    {
+      "name": "곰소만 청자로",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "적벽강",
+      "kind": "view",
+      "lat": 35.638287,
+      "lon": 126.464233
+    },
+    {
+      "name": "채석강",
+      "kind": "photo",
+      "lat": 35.627036,
+      "lon": 126.468178
+    },
+    {
+      "name": "모항해수욕장",
+      "kind": "rest",
+      "lat": 35.582588,
+      "lon": 126.50748
+    },
+    {
+      "name": "곰소항",
+      "kind": "view",
+      "lat": 35.58609,
+      "lon": 126.609568
+    }
+  ],
+  "fidelity": null,
+  "sceneryCredit": "사진: Byungjoon Kim (CC BY 2.0, Wikimedia Commons)"
+}

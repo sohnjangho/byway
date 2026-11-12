@@ -1,0 +1,94 @@
+{
+  "id": "dalmaji-coast",
+  "name": "달맞이 바닷길",
+  "region": "남해안",
+  "summary": "해운대에서 달맞이길을 넘어 송정으로 내려오고, 기장 바다를 따라 대변과 일광을 지나 임랑까지 가는 길.",
+  "toleranceMeters": 1200.0,
+  "tags": {
+    "themes": [
+      "coast",
+      "city"
+    ],
+    "moods": [
+      "date"
+    ],
+    "times": [
+      "night",
+      "sunrise"
+    ],
+    "seasons": [
+      "spring"
+    ],
+    "ages": [
+      "20s"
+    ]
+  },
+  "waypoints": [
+    [
+      35.162239,
+      129.165188
+    ],
+    [
+      35.161276,
+      129.184578
+    ],
+    [
+      35.224521,
+      129.227415
+    ],
+    [
+      35.27698,
+      129.249157
+    ],
+    [
+      35.321683,
+      129.26721
+    ]
+  ],
+  "sections": [
+    {
+      "name": "달맞이길",
+      "mood": "city"
+    },
+    {
+      "name": "기장해안로",
+      "mood": "river"
+    },
+    {
+      "name": "대변 일광",
+      "mood": "city"
+    },
+    {
+      "name": "임랑 가는 길",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "해월전망대",
+      "kind": "view",
+      "lat": 35.155725,
+      "lon": 129.182806
+    },
+    {
+      "name": "청사포다릿돌전망대",
+      "kind": "photo",
+      "lat": 35.164202,
+      "lon": 129.196176
+    },
+    {
+      "name": "송정해수욕장",
+      "kind": "rest",
+      "lat": 35.180461,
+      "lon": 129.203347
+    },
+    {
+      "name": "임랑해수욕장",
+      "kind": "rest",
+      "lat": 35.3213997,
+      "lon": 129.2677023
+    }
+  ],
+  "fidelity": null,
+  "sceneryCredit": "사진: H. Y. Shin 000 (CC0, Wikimedia Commons)"
+}

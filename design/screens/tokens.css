@@ -1,0 +1,88 @@
+/* tools/make-theme.py 가 design/tokens.json 에서 만든 파일이다. 직접 고치지 않는다. */
+:root, [data-theme="night"] {
+  --bg: #131417;
+  --bg-deep: #0d0e10;
+  --bg-raised: #1d1e21;
+  --bg-elevated: #26282d;
+  --bg-pressed: #313236;
+  --line: #44464e;
+  --line-subtle: #ffffff14;
+  --ink: #f7f8fa;
+  --ink-secondary: #c7c9ce;
+  --ink-muted: #a4a8ae;
+  --accent: #f0a45a;
+  --accent-pressed: #d4883e;
+  --accent-soft: #f0a45a26;
+  --on-accent: #181006;
+  --autonomy: #6a57ff;
+  --section-forest: #6ee798;
+  --section-city: #8ca8f9;
+  --section-river: #4fd1e8;
+  --air-forest: #0f1c18;
+  --air-city: #111827;
+  --air-river: #0d1d25;
+  --photo-scrim: #0d0e10cc;
+  --on-photo: #f7f8fa;
+  --soft-wash: #1314178c;
+  --shadow-card: 0 2px 2px #00000040;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --radius-window: 40px;
+  --window-width: 1700px;
+  --window-height: 1184px;
+  --window-split-width: 840px;
+  --window-full-width: 2560px;
+  --window-tall-height: 1210px;
+  --touch-min: 76px;
+  --button-large: 100px;
+  --button-medium: 80px;
+  --button-small: 64px;
+  --pick-height: 44px;
+  --course-line: 6px;
+  --course-line-thumb: 3px;
+}
+[data-theme="day"] {
+  --bg: #f7f8fa;
+  --bg-deep: #edeef2;
+  --bg-raised: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-pressed: #edeef2;
+  --line: #e0e1e6;
+  --line-subtle: #13141712;
+  --ink: #131417;
+  --ink-secondary: #44464e;
+  --ink-muted: #686a72;
+  --accent: #a85e14;
+  --accent-pressed: #8f4f10;
+  --accent-soft: #a85e141f;
+  --on-accent: #ffffff;
+  --autonomy: #5a46fa;
+  --section-forest: #24753d;
+  --section-city: #3b528f;
+  --section-river: #167487;
+  --air-forest: #e8f4ec;
+  --air-city: #e9eef9;
+  --air-river: #e4f3f6;
+  --photo-scrim: #0d0e10cc;
+  --on-photo: #f7f8fa;
+  --soft-wash: #f7f8fa8c;
+  --shadow-card: 0 6px 24px #1314171a;
+}
+.t-drive-number { font-size: 112px; line-height: 134px; font-weight: 700; letter-spacing: -0.03em; }
+.t-drive-unit { font-size: 36px; line-height: 44px; font-weight: 400; }
+.t-drive-section { font-size: 40px; line-height: 52px; font-weight: 700; }
+.t-drive-line { font-size: 32px; line-height: 40px; font-weight: 400; }
+.t-title { font-size: 48px; line-height: 64px; font-weight: 700; }
+.t-value { font-size: 40px; line-height: 52px; font-weight: 700; }
+.t-heading { font-size: 36px; line-height: 44px; font-weight: 700; }
+.t-body { font-size: 28px; line-height: 36px; font-weight: 400; }
+.t-small { font-size: 26px; line-height: 34px; font-weight: 400; }
+.t-label { font-size: 24px; line-height: 28px; font-weight: 400; }
+.t-brand { font-size: 40px; line-height: 52px; font-weight: 700; }

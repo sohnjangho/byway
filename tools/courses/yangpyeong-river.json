@@ -1,0 +1,117 @@
+{
+  "id": "yangpyeong-river",
+  "name": "남한강 물길",
+  "region": "수도권",
+  "summary": "경안천 습지를 지나 염치고개를 넘고, 남한강 남쪽 강변을 따라 양평읍까지 가는 길.",
+  "toleranceMeters": 2000.0,
+  "tags": {
+    "themes": [
+      "river"
+    ],
+    "moods": [
+      "alone",
+      "date"
+    ],
+    "times": [
+      "day",
+      "sunrise"
+    ],
+    "seasons": [
+      "summer"
+    ],
+    "ages": [
+      "30s"
+    ]
+  },
+  "waypoints": [
+    [
+      37.3947,
+      127.1112
+    ],
+    [
+      37.461,
+      127.302
+    ],
+    [
+      37.50211,
+      127.42135
+    ],
+    [
+      37.4843,
+      127.4954
+    ]
+  ],
+  "sections": [
+    {
+      "name": "경안천 가는 길",
+      "mood": "city"
+    },
+    {
+      "name": "염치고개",
+      "mood": "forest"
+    },
+    {
+      "name": "남한강 강변",
+      "mood": "river"
+    }
+  ],
+  "spots": [
+    {
+      "name": "경안천습지생태공원",
+      "kind": "view",
+      "lat": 37.45691,
+      "lon": 127.30364
+    },
+    {
+      "name": "강하예술공원",
+      "kind": "photo",
+      "lat": 37.49926,
+      "lon": 127.4143
+    },
+    {
+      "name": "나루께 축제공원",
+      "kind": "view",
+      "lat": 37.4839,
+      "lon": 127.48645
+    },
+    {
+      "name": "갈산공원",
+      "kind": "rest",
+      "lat": 37.48414,
+      "lon": 127.49555
+    }
+  ],
+  "fidelity": {
+    "measuredOn": "2026-11-07",
+    "rows": [
+      {
+        "toleranceMeters": 800.0,
+        "stops": 10,
+        "legEndIndex": 317,
+        "courseMeters": 17055,
+        "naviMeters": 20000,
+        "ratio": 1.173,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 1200.0,
+        "stops": 8,
+        "legEndIndex": 317,
+        "courseMeters": 17055,
+        "naviMeters": 20000,
+        "ratio": 1.173,
+        "firstStopTollFare": 0
+      },
+      {
+        "toleranceMeters": 2000.0,
+        "stops": 6,
+        "legEndIndex": 536,
+        "courseMeters": 24119,
+        "naviMeters": 26000,
+        "ratio": 1.078,
+        "firstStopTollFare": 0
+      }
+    ]
+  },
+  "sceneryCredit": "사진: Mereytan (CC0, Wikimedia Commons)"
+}

@@ -1,0 +1,466 @@
+<title>에움길 작동 목업</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 차 안의 해 질 녘. 코스 선이 주인공이고, 구간마다 선과 공기의 색이 바뀐다. 한 가지 어두운 세계로 고정한다. */
+:root {
+  color-scheme: dark;
+  --dusk: #101820;
+  --dusk-raised: #18232D;
+  --dusk-line: #2B3A47;
+  --paper: #EFEAE0;
+  --mist: #93A3AF;
+  --glow: #F0A868;
+  --forest: #7CC48F;
+  --city: #A3B3D1;
+  --river: #5FC6D8;
+  --outside: #0A0F14;
+  --nav-ground: #E9ECEF;
+  --nav-ink: #1B2228;
+  --display: "Gowun Batang", "AppleMyungjo", "Batang", "Noto Serif KR", serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+html, body { height: auto; }
+body { background: var(--outside); color: var(--paper); font-family: var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 28px; }
+.page { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; }
+.notice { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; font-size: 14px; color: var(--mist); }
+.notice b { color: var(--glow); font-weight: 600; }
+.notice h1 { font: 700 20px var(--display); color: var(--paper); margin: 0; }
+
+/* 차 화면은 1280×720 기준으로 그리고 폭에 맞춰 축소한다 */
+.fit { width: 100%; overflow: hidden; border-radius: 14px; background: #000; }
+.stage { width: 1280px; height: 720px; transform-origin: 0 0; display: grid; grid-template-columns: 300px 1fr; background: #000; }
+.fit.narrow .stage { width: 980px; grid-template-columns: 1fr; }
+.fit.narrow .cluster { display: none; }
+.cluster { display: grid; grid-template-rows: auto 1fr auto; padding: 26px 26px 24px; background: linear-gradient(180deg, #0D141A, #0A1015); color: var(--paper); }
+.gearline { display: flex; gap: 12px; font-size: 22px; font-weight: 600; color: #46535E; }
+.gearline span.on { color: var(--dusk); background: var(--paper); border-radius: 6px; padding: 0 9px; }
+.speed { align-self: center; justify-self: center; text-align: center; }
+.speed strong { display: block; font-size: 112px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.speed small { font-size: 18px; color: var(--mist); }
+.clusternote { font-size: 13px; line-height: 1.5; color: #5F6E7A; }
+
+.app { position: relative; overflow: hidden; background: var(--dusk); }
+.screen { position: absolute; inset: 0; display: grid; }
+.screen[hidden] { display: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
+.cta { min-height: 76px; border: 0; border-radius: 16px; background: var(--glow); color: #231509; font-size: 24px; font-weight: 700; }
+.cta:active { background: #D58F52; }
+.quiet { min-height: 52px; border: 1px solid var(--dusk-line); border-radius: 12px; background: transparent; color: var(--paper); font-size: 17px; padding: 0 20px; }
+
+/* 홈 */
+#home { grid-template-columns: 300px 1fr; }
+.brand { padding: 40px 28px 30px 36px; display: flex; flex-direction: column; gap: 10px; }
+.brand h2 { font: 700 64px/1.05 var(--display); margin: 0; color: var(--glow); }
+.gloss { font-size: 15px; line-height: 1.6; color: var(--mist); margin: 0; }
+.gloss i { font-style: normal; color: var(--paper); }
+.brand p.line { font: 400 25px/1.45 var(--display); margin: 14px 0 0; text-wrap: balance; }
+.brand .quiet { margin-top: auto; align-self: flex-start; }
+.courses { display: grid; grid-auto-rows: 1fr; padding: 18px 24px 18px 0; gap: 8px; min-height: 0; }
+.course { display: grid; grid-template-columns: 1fr 150px; gap: 18px; align-items: center; text-align: left; width: 100%;
+  padding: 8px 14px 8px 22px; background: var(--dusk-raised); border: 0; border-radius: 16px; min-width: 0; }
+.course:active { background: #203040; }
+.course h3 { font: 700 25px/1.2 var(--display); margin: 0; }
+.course p { font-size: 15.5px; line-height: 1.35; color: var(--mist); margin: 3px 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta { display: flex; gap: 10px; align-items: center; font-size: 15px; font-variant-numeric: tabular-nums; }
+.tag { color: var(--glow); font-size: 14px; }
+.course canvas { width: 150px; height: 96px; }
+
+/* 코스 미리보기 */
+#preview { grid-template-columns: 420px 1fr; }
+.side { padding: 24px 12px 24px 34px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.side h2 { font: 700 42px/1.15 var(--display); margin: 2px 0 0; }
+.side .about-line { font-size: 17px; line-height: 1.45; color: var(--mist); margin: 0; text-wrap: pretty; }
+.timeline { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.timeline li { display: grid; grid-template-columns: 12px 1fr auto; gap: 12px; align-items: center; font-size: 18px; }
+.timeline li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+.timeline span { font-variant-numeric: tabular-nums; color: var(--mist); }
+.spots { font-size: 15.5px; line-height: 1.5; color: var(--mist); margin: 0; }
+.convert { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 8px; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--dusk-line); }
+.convert div { display: grid; }
+.convert strong { font-size: 27px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.convert small { font-size: 13.5px; color: var(--mist); }
+.convert i { color: var(--mist); font-style: normal; }
+.mapwrap { position: relative; min-height: 0; }
+.mapwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.back { position: absolute; right: 22px; top: 20px; }
+
+/* 주행 */
+#drive { grid-template-columns: 500px 1fr; background: var(--air, var(--dusk)); }
+.dash { padding: 30px 12px 26px 40px; display: flex; flex-direction: column; min-height: 0; }
+.dash .section { font: 700 42px/1.2 var(--display); margin: 0; color: var(--sec, var(--paper)); min-height: 102px; text-wrap: balance; }
+.remain { font-size: 104px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; margin: 4px 0 2px; letter-spacing: -0.02em; }
+.remain small { font-size: 34px; font-weight: 500; letter-spacing: 0; margin-left: 6px; }
+.remainlabel { font-size: 17px; color: var(--mist); }
+.bar { display: flex; gap: 4px; height: 10px; margin: 20px 0 16px; }
+.bar i { display: block; border-radius: 5px; background: color-mix(in srgb, var(--c) 28%, var(--dusk)); position: relative; overflow: hidden; }
+.bar i b { position: absolute; inset: 0 auto 0 0; background: var(--c); }
+.voice { font-size: 21px; line-height: 1.35; min-height: 58px; margin: 0; text-wrap: pretty; }
+.cabin { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 auto; }
+.cabin div { display: grid; gap: 3px; }
+.cabin small { font-size: 14px; color: var(--mist); }
+.cabin strong { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dash .cta { background: transparent; border: 1px solid var(--dusk-line); color: var(--paper); font-size: 21px; font-weight: 600; min-height: 66px; }
+
+/* 요약, 대기, 앱 정보 */
+#summary { grid-template-columns: 420px 1fr; }
+.done { color: var(--glow); font-size: 18px; font-weight: 600; margin: 0; }
+.stats { display: flex; gap: 34px; margin: 6px 0 0; }
+.stats div { display: grid; }
+.stats strong { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stats small { font-size: 15px; color: var(--mist); }
+.side .cta { margin-top: auto; }
+#waiting { place-items: center; text-align: center; }
+#waiting p { font: 400 38px/1.45 var(--display); margin: 0; }
+#waiting small { display: block; font: 400 18px var(--body); color: var(--mist); margin-top: 12px; }
+#about { padding: 34px 40px; gap: 10px; align-content: start; }
+#about h2 { font: 700 38px var(--display); margin: 0; }
+#about p { font-size: 18px; line-height: 1.6; margin: 0; color: var(--mist); max-width: 60ch; }
+#about .quiet { justify-self: start; margin-top: 12px; }
+
+/* 내장 내비 모의 화면 */
+.nav { position: absolute; inset: 0; background: var(--nav-ground); color: var(--nav-ink); display: grid; grid-template-columns: 330px 1fr; }
+.nav[hidden] { display: none; }
+.navcard { background: #fff; padding: 26px 24px; display: flex; flex-direction: column; gap: 8px; }
+.navcard small { font-size: 14px; color: #5B6770; }
+.navcard strong { font-size: 30px; font-weight: 700; }
+.navcard p { font-size: 17px; margin: 0; }
+.navstart { margin-top: auto; background: var(--nav-ink); color: #fff; border-radius: 10px; padding: 16px; text-align: center; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.navmap { position: relative; }
+.navmap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* 시연 조작 */
+.panel { display: grid; grid-template-columns: auto auto 1fr; gap: 14px 22px; align-items: center; background: #101820; border-radius: 14px; padding: 14px 18px; }
+.group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.group > span { font-size: 14px; color: var(--mist); }
+.seg { display: inline-flex; border: 1px solid var(--dusk-line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--paper); min-width: 56px; min-height: 44px; font-size: 16px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--paper); color: var(--dusk); }
+.act { min-height: 46px; border-radius: 10px; border: 1px solid var(--dusk-line); background: transparent; color: var(--paper); padding: 0 16px; font-size: 16px; }
+.act:disabled { opacity: .4; cursor: default; }
+.hint { font-size: 17px; line-height: 1.4; margin: 0; min-width: 0; }
+.hint b { color: var(--glow); font-weight: 600; }
+.log { grid-column: 1 / -1; margin: 0; padding: 10px 0 0; border-top: 1px solid var(--dusk-line); list-style: none; display: grid; gap: 3px; font-size: 14px; color: var(--mist); min-height: 66px; }
+@media (max-width: 760px) { .panel { grid-template-columns: 1fr; } }
+</style>
+
+<div class="page">
+  <div class="notice"><h1>에움길 작동 목업</h1><span><b>시뮬레이션</b> 코스와 화면 규칙은 앱과 같지만, 이 페이지는 실제 내비와 차량을 움직이지 않습니다. 실제 동작은 시연 영상과 APK로 확인합니다.</span></div>
+  <div class="fit" id="fit"><div class="stage" id="stage">
+    <aside class="cluster">
+      <div class="gearline" id="gearline"><span data-g="P">P</span><span>R</span><span>N</span><span data-g="D">D</span></div>
+      <div class="speed"><strong id="speed">0</strong><small>km/h</small></div>
+      <div class="clusternote">차량 화면 모의</div>
+    </aside>
+    <main class="app">
+      <section class="screen" id="home">
+        <div class="brand">
+          <h2>에움길</h2>
+          <p class="gloss"><i>명사</i> 빙 둘러서 가는 굽은 길</p>
+          <p class="line">최단 경로가 아니라, 그 길을 달리게 합니다</p>
+          <button class="quiet" id="toAbout">앱 정보</button>
+        </div>
+        <div class="courses" id="courses"></div>
+      </section>
+      <section class="screen" id="preview">
+        <div class="side">
+          <h2 id="pName"></h2>
+          <p class="about-line" id="pSummary"></p>
+          <ol class="timeline" id="pSections"></ol>
+          <p class="spots" id="pSpots"></p>
+          <div class="convert">
+            <div><strong id="cPath"></strong><small>코스 좌표</small></div><i>→</i>
+            <div><strong id="cStops"></strong><small>내비 지점</small></div><i>→</i>
+            <div><strong id="cLegs"></strong><small>번에 나눠 안내</small></div>
+          </div>
+          <button class="cta" id="start">내비에 코스 입히기</button>
+        </div>
+        <div class="mapwrap"><canvas id="pMap"></canvas><button class="quiet back" id="back">뒤로</button></div>
+      </section>
+      <section class="screen" id="drive">
+        <div class="dash">
+          <p class="section" id="dSection"></p>
+          <div class="remain"><span id="dRemain"></span><small>km</small></div>
+          <div class="remainlabel">코스 남은 거리</div>
+          <div class="bar" id="dBar"></div>
+          <p class="voice" id="dVoice"></p>
+          <div class="cabin">
+            <div><small>창문</small><strong id="kWindow">-</strong></div>
+            <div><small>풍량</small><strong id="kFan">-</strong></div>
+            <div><small>조명</small><strong id="kLight">-</strong></div>
+          </div>
+          <button class="cta" id="stop">코스 끝내기</button>
+        </div>
+        <div class="mapwrap"><canvas id="dMap"></canvas></div>
+      </section>
+      <section class="screen" id="summary">
+        <div class="side">
+          <p class="done">끝까지 달렸습니다</p>
+          <h2 id="sName"></h2>
+          <div class="stats">
+            <div><strong id="sKm"></strong><small>km</small></div>
+            <div><strong id="sSections"></strong><small>구간</small></div>
+          </div>
+          <ol class="timeline" id="sList"></ol>
+          <button class="cta" id="home2">홈으로</button>
+        </div>
+        <div class="mapwrap"><canvas id="sMap"></canvas></div>
+      </section>
+      <section class="screen" id="waiting"><p>정차하면 코스를 고를 수 있습니다<small>주행 중에는 화면을 조작하지 않습니다</small></p></section>
+      <section class="screen" id="about">
+        <h2>앱 정보</h2>
+        <p>코스 도로 좌표: © OpenStreetMap contributors (ODbL)</p>
+        <p>스팟 이름과 위치는 공개 지도 데이터로 확인했습니다. 운영 여부는 다를 수 있습니다.</p>
+        <button class="quiet" id="aboutBack">뒤로</button>
+      </section>
+      <div class="nav" id="nav" hidden>
+        <div class="navcard">
+          <small>차량 내장 내비 · 모의 화면</small>
+          <strong id="nLabel"></strong>
+          <p id="nVia"></p>
+          <div class="navstart" id="nCount"></div>
+        </div>
+        <div class="navmap"><canvas id="nMap"></canvas></div>
+      </div>
+    </main>
+  </div></div>
+
+  <div class="panel">
+    <div class="group"><span>기어</span><div class="seg"><button id="gP" aria-pressed="true">P</button><button id="gD" aria-pressed="false">D</button></div></div>
+    <div class="group"><button class="act" id="strayBtn" disabled>코스 이탈</button><span>배속</span><div class="seg"><button id="r1" aria-pressed="true">1×</button><button id="r3" aria-pressed="false">3×</button></div></div>
+    <p class="hint" id="hint"></p>
+    <ul class="log" id="log"></ul>
+  </div>
+</div>
+
+<script>
+/*SIM*/
+const COURSES = /*DATA*/;
+const MOOD = { forest: "--forest", city: "--city", river: "--river" };
+const AIR = { forest: "#121F1C", city: "#141B26", river: "#10212A" };
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const color = (mood) => css(MOOD[mood] || "--glow");
+const $ = (id) => document.getElementById(id);
+const sim = createSim(COURSES);
+const TAGS = { river: "강변", forest: "숲길", mountain: "산길", lake: "호수", city: "도심", coast: "해안", sunset: "노을", sunrise: "일출", day: "낮", night: "밤", alone: "혼자", date: "데이트", family: "가족" };
+const KINDS = { view: "전망", food: "식사", rest: "쉼터", photo: "사진" };
+
+/* 코스 그림: 구간 색으로 선을 긋고, 길을 따라 번지는 등고선을 뒤에 깐다 */
+function projector(path, w, h, pad) {
+  const lats = path.map((p) => p[0]), lons = path.map((p) => p[1]);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const k = Math.cos((minLat + maxLat) / 2 * Math.PI / 180);
+  const s = Math.min((w - 2 * pad) / ((maxLon - minLon) * k), (h - 2 * pad) / (maxLat - minLat));
+  const ox = (w - (maxLon - minLon) * k * s) / 2, oy = (h - (maxLat - minLat) * s) / 2;
+  return (p) => [ox + (p[1] - minLon) * k * s, h - oy - (p[0] - minLat) * s];
+}
+function trace(ctx, points, from, to) {
+  ctx.beginPath();
+  for (let i = from; i <= to; i++) i === from ? ctx.moveTo(...points[i]) : ctx.lineTo(...points[i]);
+}
+function prepare(canvas) {
+  const w = canvas.clientWidth || canvas.width, h = canvas.clientHeight || canvas.height;
+  canvas.width = w * 2; canvas.height = h * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(2, 2); ctx.lineJoin = "round"; ctx.lineCap = "round";
+  return { ctx, w, h };
+}
+function contours(ctx, points, w, h, tint) {
+  const off = document.createElement("canvas");
+  off.width = w * 2; off.height = h * 2;
+  const o = off.getContext("2d");
+  o.scale(2, 2); o.lineJoin = "round"; o.lineCap = "round";
+  for (const width of [150, 112, 78, 48, 24]) {
+    trace(o, points, 0, points.length - 1);
+    o.globalCompositeOperation = "source-over"; o.strokeStyle = tint; o.lineWidth = width; o.stroke();
+    trace(o, points, 0, points.length - 1);
+    o.globalCompositeOperation = "destination-out"; o.lineWidth = width - 2; o.stroke();
+  }
+  ctx.drawImage(off, 0, 0, w, h);
+}
+function drawCourse(canvas, course, opts = {}) {
+  const { ctx, w, h } = prepare(canvas);
+  const pad = opts.pad ?? 56;
+  const project = projector(course.path, w, h, pad);
+  const points = course.path.map(project);
+  if (opts.contour !== false) contours(ctx, points, w, h, "rgba(147,163,175,.16)");
+  ctx.lineWidth = opts.line ?? 6;
+  for (const s of course.sections) {
+    trace(ctx, points, s.startIndex, Math.min(s.endIndex + 1, points.length - 1));
+    ctx.strokeStyle = color(s.mood); ctx.stroke();
+  }
+  if (opts.stops) {
+    ctx.fillStyle = css("--paper");
+    for (const i of course.stops) { ctx.beginPath(); ctx.arc(...points[i], 6, 0, 7); ctx.fill(); }
+  }
+  if (opts.car) {
+    const [x, y] = project(opts.car);
+    ctx.fillStyle = "rgba(240,168,104,.25)"; ctx.beginPath(); ctx.arc(x, y, 20, 0, 7); ctx.fill();
+    ctx.fillStyle = css("--glow"); ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fill();
+  }
+}
+function pointAt(run) {
+  let i = 0;
+  while (i < run.sums.length - 2 && run.sums[i + 1] <= run.meters) i++;
+  const a = run.course.path[i], b = run.course.path[i + 1];
+  const t = (run.meters - run.sums[i]) / Math.max(run.sums[i + 1] - run.sums[i], 1);
+  const away = run.offset / 111000;
+  return [a[0] + (b[0] - a[0]) * t + away, a[1] + (b[1] - a[1]) * t + away];
+}
+
+/* 화면 */
+function buildHome() {
+  $("courses").innerHTML = "";
+  for (const c of COURSES) {
+    const b = document.createElement("button");
+    b.className = "course"; b.id = "course-" + c.id;
+    const tags = [...c.tags.themes, ...c.tags.times].slice(0, 3).map((t) => TAGS[t]).filter(Boolean);
+    b.innerHTML = `<div style="min-width:0"><h3>${c.name}</h3><p>${c.summary}</p><div class="meta"><span>${c.km.toFixed(1)}km</span>${tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div></div><canvas></canvas>`;
+    b.onclick = () => { sim.select(c.id); paint(true); };
+    $("courses").append(b);
+    drawCourse(b.querySelector("canvas"), c, { pad: 8, line: 2.5, contour: false });
+  }
+}
+function timeline(list, course) {
+  list.innerHTML = course.sections.map((s) => `<li style="--c:${color(s.mood)}">${s.name}<span>${s.km.toFixed(1)}km</span></li>`).join("");
+}
+function buildPreview(c) {
+  $("pName").textContent = c.name;
+  $("pSummary").textContent = c.summary;
+  timeline($("pSections"), c);
+  $("pSpots").textContent = c.spots.map((s) => `${KINDS[s.kind] || ""} ${s.name}`).join(" · ");
+  $("cPath").textContent = c.path.length.toLocaleString("ko-KR");
+  $("cStops").textContent = c.stops.length;
+  $("cLegs").textContent = Math.ceil(c.stops.length / 3);
+  drawCourse($("pMap"), c, { stops: true });
+}
+function buildBar(c) {
+  $("dBar").innerHTML = c.sections.map((s) => `<i style="flex:${s.km};--c:${color(s.mood)}"><b></b></i>`).join("");
+}
+function paintDrive() {
+  const run = sim.state.run, c = run.course;
+  const air = AIR[run.section.mood];
+  $("drive").style.setProperty("--air", air || css("--dusk"));
+  $("drive").style.setProperty("--sec", color(run.section.mood));
+  $("dSection").textContent = run.section.name;
+  $("dRemain").textContent = ((run.total - run.meters) / 1000).toFixed(1);
+  $("dVoice").textContent = sim.state.spoken || "";
+  const k = run.cabin || {};
+  $("kWindow").textContent = k.window === undefined ? "-" : k.window * 10 + "%";
+  $("kFan").textContent = k.fan ?? "-";
+  $("kLight").textContent = k.light ?? "-";
+  let start = 0;
+  [...$("dBar").children].forEach((cell, i) => {
+    const length = c.sections[i].km * 1000;
+    cell.firstChild.style.width = Math.max(0, Math.min(1, (run.meters - start) / length)) * 100 + "%";
+    start += length;
+  });
+  drawCourse($("dMap"), c, { stops: true, car: pointAt(run) });
+}
+function paintSummary(c) {
+  $("sName").textContent = c.name;
+  $("sKm").textContent = c.km.toFixed(1);
+  $("sSections").textContent = c.sections.length;
+  timeline($("sList"), c);
+  drawCourse($("sMap"), c, {});
+}
+function paintNav() {
+  const nav = sim.state.nav;
+  $("nav").hidden = !nav;
+  if (!nav) return;
+  $("nLabel").textContent = nav.label;
+  $("nVia").textContent = nav.waypoints ? `경유지 ${nav.waypoints}개 포함` : "코스 지점으로 복귀";
+  $("nCount").textContent = `안내 시작 ${Math.ceil(nav.left)}`;
+}
+function paintNavMap() {
+  const nav = sim.state.nav, run = sim.state.run;
+  if (!nav || !run) return;
+  const { ctx, w, h } = prepare($("nMap"));
+  const path = run.course.path, last = nav.stops[nav.stops.length - 1] ?? 0;
+  const from = run.sums.findIndex((m) => m >= run.meters);
+  const part = path.slice(Math.max(from, 0), Math.max(last, from + 1) + 1);
+  const project = projector(part.length > 1 ? part : path, w, h, 46);
+  const points = part.map(project);
+  ctx.fillStyle = css("--nav-ground"); ctx.fillRect(0, 0, w, h);
+  ctx.lineWidth = 9; ctx.strokeStyle = "#2F7BE5";
+  trace(ctx, points, 0, points.length - 1); ctx.stroke();
+  ctx.fillStyle = "#1B2228";
+  for (const i of nav.stops) { const p = project(path[i]); ctx.beginPath(); ctx.arc(p[0], p[1], 7, 0, 7); ctx.fill(); }
+}
+function hint() {
+  const s = sim.state, screen = sim.screen();
+  if (screen === "waiting") return s.finished ? "<b>기어를 P로</b> 바꾸면 달린 코스를 정리합니다." : "주행 중에는 목록이 닫힙니다. <b>기어를 P로</b> 바꿔 보세요.";
+  if (screen === "home") return "<b>코스를 눌러</b> 살펴보세요. <b>기어를 D로</b> 바꾸면 규제 화면을 볼 수 있습니다.";
+  if (screen === "preview") return "<b>내비에 코스 입히기</b>를 누르면 코스가 내장 내비에 올라갑니다.";
+  if (screen === "drive") {
+    if (s.gear === "P") return "내비 안내가 시작됐습니다. <b>기어를 D로</b> 바꾸면 출발합니다.";
+    return s.run.stray ? "코스 밖으로 나갔습니다. 위치를 세 번 확인한 뒤 복귀를 안내합니다." : "구간이 바뀌면 안내, 내비 경로, 차 안 연출이 함께 바뀝니다. <b>코스 이탈</b>도 눌러 보세요.";
+  }
+  if (screen === "summary") return "완주했습니다. <b>홈으로</b> 돌아가 다른 코스도 달려 보세요.";
+  return "";
+}
+const LOG_LINES = { say: (e) => `음성 안내: ${e.text}`, route: (e) => `내비에 올림: ${e.label}, 경유지 ${e.waypoints}개`, cabin: (e) => `차 안: 창문 ${e.scene.window * 10}%, 풍량 ${e.scene.fan}, 조명 ${e.scene.light}` };
+let lastScreen = null, lastNav = null, spokenCount = 0;
+const sound = { on: false };
+function paint(force) {
+  const s = sim.state, screen = sim.screen();
+  if (screen !== lastScreen || force) {
+    for (const id of ["home", "preview", "drive", "summary", "waiting", "about"]) $(id).hidden = id !== screen;
+    if (screen === "preview") buildPreview(COURSES.find((c) => c.id === s.selected));
+    if (screen === "drive") buildBar(s.run.course);
+    if (screen === "summary") paintSummary(s.finished);
+    if (screen === "home") buildHome();
+    lastScreen = screen;
+  }
+  if (screen === "drive") paintDrive();
+  paintNav();
+  if (s.nav !== lastNav) { lastNav = s.nav; paintNavMap(); }
+  document.querySelectorAll("#gearline [data-g]").forEach((e) => e.classList.toggle("on", e.dataset.g === s.gear));
+  $("speed").textContent = s.run && s.gear === "D" ? 60 : 0;
+  $("gP").setAttribute("aria-pressed", s.gear === "P");
+  $("gD").setAttribute("aria-pressed", s.gear === "D");
+  $("strayBtn").disabled = !(s.run && s.gear === "D" && !s.run.stray);
+  $("hint").innerHTML = hint();
+  $("log").innerHTML = sim.log.slice(-3).reverse().map((e) => `<li>${LOG_LINES[e.kind](e)}</li>`).join("");
+}
+$("gP").onclick = () => { sim.shift("P"); paint(); };
+$("gD").onclick = () => { sim.shift("D"); paint(); };
+$("r1").onclick = () => { sim.setRate(1); $("r1").setAttribute("aria-pressed", true); $("r3").setAttribute("aria-pressed", false); };
+$("r3").onclick = () => { sim.setRate(3); $("r3").setAttribute("aria-pressed", true); $("r1").setAttribute("aria-pressed", false); };
+$("strayBtn").onclick = () => { sim.stray(); paint(); };
+$("start").onclick = () => { sim.start(); paint(); };
+$("stop").onclick = () => { sim.stop(); paint(); };
+$("back").onclick = () => { sim.select(null); paint(); };
+$("home2").onclick = () => { sim.home(); paint(); };
+$("toAbout").onclick = () => { sim.about(true); paint(); };
+$("aboutBack").onclick = () => { sim.about(false); paint(); };
+
+function fit() {
+  const box = $("fit"), narrow = box.clientWidth < 760;
+  box.classList.toggle("narrow", narrow);
+  const base = narrow ? 980 : 1280, scale = box.clientWidth / base;
+  $("stage").style.transform = `scale(${scale})`;
+  box.style.height = 720 * scale + "px";
+}
+addEventListener("resize", fit);
+fit();
+function jump(name) {
+  const c = "paldang-sunset";
+  if (name === "preview") sim.select(c);
+  if (name === "waiting") sim.shift("D");
+  if (name === "drive" || name === "summary") {
+    sim.select(c); sim.start(); sim.tick(9); sim.shift("D");
+    for (let t = 0; t < (name === "drive" ? 47 : 80); t += 0.1) { sim.tick(0.1); sim.state.nav = null; }
+    if (name === "summary") sim.shift("P");
+  }
+}
+if (location.hash) jump(location.hash.slice(1));
+paint(true);
+const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
+fonts.then(() => paint(true));
+setInterval(() => { sim.tick(0.1); paint(); }, 100);
+</script>

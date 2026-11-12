@@ -1,0 +1,18 @@
+<!-- @dsCard group="정보" height=340 width=1400 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  body { margin: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .stage { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-8); }
+</style>
+<template id="sample">
+  <div class="info-box soft">
+    <img class="soft-img" src="/_blob/f45c0df4f934e811c505b6eca7cf891c" alt="">
+    <h1 class="t-title">팔당 노을</h1>
+    <p class="t-body ink-2">남한산성 고갯길을 넘어 팔당대교를 건너고, 강을 따라 두물머리에서 노을을 만나는 길.</p>
+  </div>
+</template>
+<section class="stage" data-theme="night"></section>
+<section class="stage" data-theme="day"></section>
+<script>
+  document.querySelectorAll('.stage').forEach((stage) => stage.append(document.getElementById('sample').content.cloneNode(true)));
+</script>

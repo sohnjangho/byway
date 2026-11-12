@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 내 코스</title>
+<script src="./support.js"></script>
+<script src="courses.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day" data-window="third">
+<div class="screen screen-rail screen-over">
+  <nav class="rail">
+    <a href="MainThirdDay.dc.html" class="brand t-brand">에움길</a>
+    <a href="MainThirdDay.dc.html" class="rail-item t-small">홈</a>
+    <a href="BrowseThirdDay.dc.html" class="rail-item t-small">둘러보기</a>
+    <a href="RankingThirdDay.dc.html" class="rail-item t-small">랭킹</a>
+    <a href="MeThirdDay.dc.html" class="rail-item t-small is-on">내 코스</a>
+    <a href="MeThirdDay.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
+  </nav>
+  <div class="scene scene-atlas scene-mine">
+    <div class="atlas">
+      <div class="atlas-world" style="{{ a.world }}">
+        <img class="atlas-ground" src="{{ a.ground }}" alt="한국 위성 지도">
+        <img class="{{ a.detailCls }}" src="{{ a.detail }}" alt="" style="{{ a.detailStyle }}">
+        <svg class="atlas-lines" aria-hidden="true">
+          <sc-for list="{{ a.lines }}" as="s"><path class="route route-case {{ s.cls }}" d="{{ s.d }}"/></sc-for>
+          <sc-for list="{{ a.lines }}" as="s"><path class="route route-line sec-{{ s.mood }} {{ s.cls }}" d="{{ s.d }}"/></sc-for>
+        </svg>
+      </div>
+      <sc-for list="{{ a.labels }}" as="l"><span class="{{ l.cls }}" style="{{ l.style }}">{{ l.name }}</span></sc-for>
+      <sc-for list="{{ a.pins }}" as="p">
+        <button type="button" onClick="{{ p.pick }}" class="{{ p.cls }}" style="{{ p.style }}"><span class="atlas-no t-label num">{{ p.no }}</span><span class="atlas-name t-label">{{ p.name }}</span></button>
+      </sc-for>
+      <div class="atlas-shade"></div>
+      <div class="atlas-tools">
+        <button type="button" onClick="{{ a.zoomIn }}" class="atlas-tool t-heading" aria-label="확대">+</button>
+        <button type="button" onClick="{{ a.zoomOut }}" class="atlas-tool t-heading" aria-label="축소">−</button>
+        <button type="button" onClick="{{ a.reset }}" class="atlas-tool atlas-all t-small">{{ a.resetLabel }}</button>
+      </div>
+      <span class="atlas-hint t-label">두 손가락으로 벌리면 확대</span>
+      <p class="atlas-credit">위성 사진: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)</p>
+    </div>
+    <div class="side side-me">
+      <div class="me-id">
+        <span class="avatar avatar-lg t-heading">나</span>
+        <div><h1 class="t-heading">내 코스</h1><p class="t-label ink-2">기록은 이 차에만 저장됩니다</p></div>
+      </div>
+      <dl class="facts">
+        <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+          <div class="fact"><dd class="t-value num">{{ f.value }}<span class="t-label ink-2"> {{ f.unit }}</span></dd><dt class="t-label ink-2">{{ f.label }}</dt></div>
+        </sc-for>
+      </dl>
+      <sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}">
+        <div class="mine-card soft">
+          <img class="soft-img" src="{{ d.soft }}" alt="">
+          <span class="t-label">{{ d.note }}</span>
+          <h2 class="side-head">{{ d.name }}</h2>
+          <div class="picks"><sc-for list="{{ d.tags }}" as="tag" hint-placeholder-count="3"><span class="pick t-label">{{ tag.text }}</span></sc-for></div>
+          <p class="t-small">{{ d.summary }}</p>
+          <span class="t-label">{{ d.facts }}</span>
+          <div class="btn-row"><button type="button" onClick="{{ d.back }}" class="btn-quiet t-body">내 코스 전체</button><a href="DriveDay.dc.html" class="btn-primary t-body">내비에 입히기</a></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ d.off }}" hint-placeholder-val="{{ false }}">
+        <div class="pick-rows mine-rows">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+            <button type="button" onClick="{{ r.pick }}" class="pick-row">
+              <span class="atlas-no t-label num">{{ r.no }}</span>
+              <span class="pick-body"><span class="t-small bold">{{ r.name }}</span><span class="t-label ink-2">{{ r.note }}</span></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div class="toggles">
+        <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="4">
+          <div class="toggle-row"><span class="t-small bold">{{ t.name }}</span><span class="toggle" aria-label="켜짐"></span></div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":841,"height":1210}}'>
+const COVER = "coverDay";
+const NIGHT = COVER === 'coverNight';
+const WINDOW = "third";
+/* 지도가 들어갈 자리. 왼쪽 글 칸과 메뉴를 뺀 곳이다 */
+const FOCUS = { two: { x: 816, y: 96, w: 844, h: 960 }, full: { x: 1316, y: 96, w: 1204, h: 990 }, third: { x: 24, y: 116, w: 793, h: 480 } };
+/* 한국 지도: 지도 좌표는 tools/make-atlas.py 가 만든 픽셀이다. 보기는 가운데 좌표와 배율로 둔다 */
+const grow = (b, room, least) => {
+  const w = Math.max(b.w, least), h = Math.max(b.h, least), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  return { x: cx - w * (0.5 + room), y: cy - h * (0.5 + room), w: w * (1 + 2 * room), h: h * (1 + 2 * room) };
+};
+const union = (boxes) => {
+  const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
+  return { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y };
+};
+const fit = (b) => { const F = FOCUS[WINDOW]; return { s: Math.min(F.w / b.w, F.h / b.h), cx: b.x + b.w / 2, cy: b.y + b.h / 2 }; };
+const courseView = (c) => fit(grow(c.atlas.box, 0.18, 120));
+/* 코스를 고르면 지도가 코스로 커지고, 그 코스의 위성 장면이 제자리에 겹쳐 또렷해진다 */
+const drawAtlas = ({ view, courses, chosen, named, pick, setView, reset, resetLabel }) => {
+  const F = FOCUS[WINDOW], K = window.KOREA, s = view.s;
+  const x = F.x + F.w / 2 - s * view.cx, y = F.y + F.h / 2 - s * view.cy;
+  const at = (px, py) => 'left: ' + (px * s + x).toFixed(1) + 'px; top: ' + (py * s + y).toFixed(1) + 'px';
+  const close = chosen && s >= courseView(chosen).s * 0.6;
+  const f = chosen ? chosen.atlas.frame : { x: 0, y: 0, w: 1, h: 1 };
+  return {
+    world: 'width: ' + K.size[0] + 'px; height: ' + K.size[1] + 'px; transform: translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px) scale(' + s.toFixed(4) + '); --s: ' + s.toFixed(4),
+    ground: NIGHT ? K.night : K.day,
+    detail: chosen ? (NIGHT ? chosen.scene.night : chosen.scene.day) : (NIGHT ? K.night : K.day),
+    detailCls: close ? 'atlas-detail is-on' : 'atlas-detail',
+    detailStyle: 'left: ' + f.x + 'px; top: ' + f.y + 'px; width: ' + f.w + 'px; height: ' + f.h + 'px',
+    lines: courses.flatMap((c) => c.atlas.lines.map((l) => ({ ...l, cls: chosen && chosen.id !== c.id ? 'is-dim' : '' }))),
+    labels: K.labels.map((l) => {
+      const sx = l.x * s + x, sy = l.y * s + y, inside = sx > F.x - 40 && sx < F.x + F.w + 40 && sy > F.y - 40 && sy < F.y + F.h;
+      const on = inside && (l.kind === 'region' ? s < 1.6 && !close : s >= 1.6 && s < 14);
+      return { name: l.name, style: at(l.x, l.y), cls: 'atlas-label atlas-' + l.kind + (on ? '' : ' is-off') };
+    }),
+    pins: courses.map((c, i) => ({
+      no: i + 1, name: c.name, style: at(c.atlas.x, c.atlas.y), pick: () => pick(c.id),
+      cls: 'atlas-pin' + (named || s >= 2.4 ? ' is-named' : '') + (chosen && chosen.id === c.id ? (close ? ' is-off' : ' is-on') : '') + (chosen && chosen.id !== c.id ? ' is-dim' : ''),
+    })),
+    zoomIn: () => setView({ ...view, s: Math.min(s * 1.6, 24) }),
+    zoomOut: () => setView({ ...view, s: Math.max(s / 1.6, 0.3) }),
+    reset, resetLabel,
+  };
+};
+/* 시안의 기록은 예시다. 앱은 주행 기록에서 채운다 */
+const MINE = [
+  { id: 'paldang-sunset', note: '11월 1일에 달림 · 1시간 24분' },
+  { id: 'gonjiam-forest', note: '10월 25일에 달림 · 48분' },
+  { id: 'yangpyeong-river', note: '10월 19일에 달림 · 1시간 31분' },
+  { id: 'gwanggyo-mountain', note: '저장한 코스' },
+  { id: 'baegun-lake', note: '저장한 코스' },
+];
+const TOGGLES = ['차 안 연출', '음성 안내', '음악 앱 재생', '날씨·시간 분위기'];
+const mine = () => MINE.map((m) => ({ ...window.COURSES.find((c) => c.id === m.id), note: m.note }));
+const mineView = () => fit(grow(union(mine().map((c) => c.atlas.box)), 0.08, 200));
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { chosen: null, view: mineView() }; }
+  renderVals() {
+    const list = mine();
+    const chosen = list.find((c) => c.id === this.state.chosen) || null;
+    const pick = (id) => this.setState({ chosen: id, view: courseView(list.find((c) => c.id === id)) });
+    const back = () => this.setState({ chosen: null, view: mineView() });
+    return {
+      a: drawAtlas({ view: this.state.view, courses: list, chosen, named: true, pick, setView: (view) => this.setState({ view }), reset: back, resetLabel: '내 코스' }),
+      facts: [['완주한 코스', 3, '개'], ['달린 거리', '127.1', 'km'], ['지나온 굽이', 85, '개'], ['저장한 코스', 2, '개']].map(([label, value, unit]) => ({ label, value, unit })),
+      d: chosen ? {
+        on: true, off: false, name: chosen.name, note: chosen.note, soft: chosen.soft, summary: chosen.summary, back,
+        tags: chosen.picks.map((text) => ({ text })),
+        facts: [chosen.region, chosen.km.toFixed(1) + 'km', '굽이 ' + chosen.curves + '개', '오르막 ' + chosen.gain + 'm'].join(' · '),
+      } : { on: false, off: true },
+      rows: list.map((c, i) => ({ no: i + 1, name: c.name, note: c.note, pick: () => pick(c.id) })),
+      toggles: TOGGLES.map((name) => ({ name })),
+    };
+  }
+}
+</script>
+</body>
+</html>

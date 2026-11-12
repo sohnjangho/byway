@@ -1,0 +1,109 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: "Asta Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+#css, #gl { position: fixed; inset: 0; width: 100%; height: 100%; }
+#gl { z-index: 1; display: block; touch-action: none; }
+#css { z-index: 0; }
+body.screen-mode #gl { pointer-events: none; }
+.hud { position: fixed; left: 16px; top: 16px; z-index: 5; display: flex; flex-direction: column; gap: 8px; max-width: 560px; color: #fff; pointer-events: none; }
+.hud > * { background: rgba(10, 11, 13, 0.72); border-radius: 10px; padding: 8px 12px; }
+.hud-title { font-size: 18px; font-weight: 700; }
+.hud-title span { font-weight: 400; font-size: 13px; color: #c9ced6; margin-left: 8px; }
+.hud-keys { font-size: 13px; line-height: 20px; color: #d6dae0; }
+.hud-keys b { color: #f0a45a; }
+.hud-state { display: flex; gap: 16px; font-size: 14px; }
+.hud-jump { display: flex; gap: 6px; pointer-events: auto; background: none; padding: 0; }
+.hud-jump button { min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.loading { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; background: #0b0c0e; }
+/* 센터 화면: Pleos 실제 크기 2560×1440.
+   overflow 를 숨기지 않는다: 3D 변환된 요소에 overflow: hidden 이 있으면 Chrome 이 누른 점을 찾지 못해 화면 속 앱이 실제 클릭·탭을 받지 못한다.
+   화면 밖으로 넘친 것은 어차피 WebGL 캔버스의 구멍(화면 판) 바깥이라 보이지 않는다 */
+.pleos { position: relative; width: 2560px; height: 1440px; overflow: visible; background: #f6f8fc; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+.pleos > img.base { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pleos .shift { position: absolute; left: 0; top: 0; width: 853px; height: 1440px; }
+.pleos .cover { position: absolute; display: flex; align-items: center; justify-content: center; }
+.pleos .spd { left: 300px; top: 78px; width: 260px; height: 118px; background: #fefefe; font-size: 132px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.pleos .clk { left: 2392px; top: 22px; width: 160px; height: 46px; background: #f7f7f7; justify-content: flex-end; font-size: 31px; color: #1a1a1a; }
+.pleos .apparea { position: absolute; left: 853px; top: 90px; width: 1680px; height: 1210px; background: #f6f8fc; }
+.pleos .appfull { position: absolute; left: 0; top: 90px; width: 2560px; height: 1210px; background: #f6f8fc; }
+.pleos .appfull img, .pleos .apparea img { width: 100%; height: 100%; object-fit: cover; }
+.slim { width: 960px; height: 216px; box-sizing: border-box; background: #050607; color: #eef0f3; display: flex; align-items: center; justify-content: space-between; padding: 0 44px; font-variant-numeric: tabular-nums; font-family: "Asta Sans", "Noto Sans KR", sans-serif; }
+.slim .spd { display: flex; align-items: baseline; gap: 10px; }
+.slim .spd b { font-size: 120px; font-weight: 600; }
+.slim .spd span { font-size: 30px; color: #8d939c; }
+.slim .gear { font-size: 46px; font-weight: 700; color: #4b4f57; letter-spacing: 12px; }
+.slim .gear .on { color: #fff; }
+.slim .meta { text-align: right; font-size: 32px; line-height: 46px; color: #a6acb5; }
+.slim .meta b { color: #eef0f3; }
+
+/* 센터 화면 속 내비와 에움길 주행 칸(영상 도구와 같은 모양) */
+.pleos .nav { position: absolute; left: 853px; top: 90px; width: 840px; height: 1210px; overflow: hidden; background: #eceef1; perspective: 1000px; perspective-origin: 420px 700px; font-family: "Noto Sans KR", sans-serif; }
+.pleos .navmap { position: absolute; left: -420px; top: -1180px; width: 1680px; height: 2400px; transform: rotateX(50deg); transform-origin: 840px 1900px; }
+.pleos .navcar { position: absolute; left: 420px; top: 720px; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 7px #1f6fe5, 0 6px 16px rgba(0,0,0,0.3); }
+.pleos .navcar::after { content: ""; position: absolute; left: 24px; top: 16px; border-left: 22px solid transparent; border-right: 22px solid transparent; border-bottom: 52px solid #1f6fe5; }
+.pleos .tbt { position: absolute; left: 24px; top: 24px; width: 580px; background: #000; color: #fff; }
+.pleos .tbt .main { display: flex; align-items: center; gap: 26px; height: 150px; padding: 0 30px; }
+.pleos .tbt .main svg { flex: none; width: 76px; height: 96px; }
+.pleos .tbt .dist { font-size: 74px; line-height: 80px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+.pleos .tbt .dir { font-size: 30px; color: #b8bcc2; }
+.pleos .tbt .lanes { height: 86px; border-top: 1px solid #2c2d30; display: flex; align-items: center; justify-content: center; gap: 40px; }
+.pleos .tbt .lanes svg { width: 34px; height: 46px; }
+.pleos .next { position: absolute; left: 24px; width: 292px; height: 80px; background: #333; color: #fff; display: flex; align-items: center; gap: 30px; padding: 0 30px; box-sizing: border-box; font-size: 40px; font-weight: 700; font-family: "Asta Sans", sans-serif; }
+.pleos .next svg { width: 40px; height: 52px; }
+.pleos .eta { position: absolute; left: 24px; top: 870px; width: 580px; height: 316px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; }
+.pleos .eta .dots { text-align: center; font-size: 30px; line-height: 20px; letter-spacing: 4px; }
+.pleos .eta .row { display: flex; justify-content: space-between; align-items: baseline; padding: 0 24px; }
+.pleos .eta .time { font-size: 34px; font-weight: 700; }
+.pleos .eta .left { font-size: 28px; color: #6b7078; }
+.pleos .eta .road { font-size: 28px; color: #6b7078; }
+.pleos .eta .bar { position: relative; margin: 22px 30px 0; height: 6px; background: linear-gradient(90deg, #2f7cf6 0 30%, #f5a623 30% 45%, #2f7cf6 45% 70%, #f5a623 70% 100%); }
+.pleos .eta .bar i { position: absolute; top: -9px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: #fff; border: 4px solid #6b7078; box-sizing: border-box; }
+.pleos .eta .bar b { position: absolute; top: -12px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: #1f6fe5; }
+.pleos .eta .end { position: absolute; left: 0; right: 0; bottom: 0; height: 100px; border-top: 1px solid #d9dce1; display: flex; align-items: center; }
+.pleos .eta .end span { flex: none; width: 98px; height: 100%; border-right: 1px solid #d9dce1; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.pleos .eta .end strong { flex: 1; text-align: center; font-size: 32px; background: #f6f7f8; height: 100%; display: flex; align-items: center; justify-content: center; }
+.pleos .navbtn { position: absolute; width: 100px; height: 100px; background: #fff; border: 1px solid #d9dce1; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; }
+.pleos .toast { position: absolute; left: 40px; right: 40px; top: 30px; padding: 26px 30px; border-radius: 22px; background: #131417; color: #fff; font-size: 30px; line-height: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+.pleos .toast b { display: block; font-size: 34px; }
+.pleos .pane { position: absolute; left: 1693px; top: 90px; width: 840px; height: 1210px; display: flex; box-shadow: -2px 0 0 #e3e6ea; overflow: hidden; }
+.pleos .pane .drive { border-radius: 0; padding: 44px 40px; gap: 20px; }
+.pleos .pane .drive > .glow { position: absolute; inset: 0; background: radial-gradient(circle at 80% 8%, rgba(255,150,70,0.55), rgba(255,120,80,0.18) 45%, transparent 70%); pointer-events: none; }
+.pleos .info-line { display: flex; flex-direction: column; gap: 4px; padding: 14px 20px; border-radius: 16px; background: var(--bg-raised); }
+.pleos .info-line b { font-size: 30px; }
+.pleos .info-line span { font-size: 26px; color: var(--ink-secondary); }
+.pleos .next { top: 260px; }
+.pleos iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.pleos .pane .drive { flex: 1 1 auto; }
+.pleos .toast { transition: opacity 0.4s; }
+.voice { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 6; padding: 12px 22px; border-radius: 30px; background: rgba(10,11,13,0.86); color: #fff; font-size: 22px; font-weight: 600; display: none; gap: 12px; align-items: center; }
+.voice i { font-style: normal; color: #f0a45a; font-size: 16px; }
+.cabin-note { position: fixed; right: 16px; top: 16px; z-index: 6; padding: 10px 14px; border-radius: 10px; background: rgba(10,11,13,0.72); color: #fff; font-size: 14px; line-height: 20px; max-width: 320px; }
+.cabin-note b { color: #f0a45a; }
+
+.pleos .appfull.as-area { left: 853px; width: 1680px; }
+.pleos .pane .scene-mood { width: 100%; -webkit-mask-image: none; mask-image: none; z-index: 0; }
+.hud-weather { display: flex; flex-wrap: wrap; gap: 6px; pointer-events: auto; background: none; padding: 0; }
+.hud-weather button { min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; padding: 8px 12px; background: rgba(10, 11, 13, 0.72); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.hud-weather button.on, .hud-jump button:active { background: #f0a45a; color: #231509; font-weight: 700; }
+
+.touch { position: fixed; right: 16px; bottom: 16px; z-index: 6; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.touch-row { display: flex; gap: 8px; }
+.touch button { min-width: 64px; height: 52px; border: 0; border-radius: 12px; background: rgba(10, 11, 13, 0.78); color: #fff; font: 600 16px "Noto Sans KR", sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+.touch button.big { min-width: 96px; height: 72px; font-size: 18px; }
+.touch button.go { background: rgba(240, 164, 90, 0.92); color: #231509; }
+.touch button:active { transform: scale(0.96); }
+
+/* 처음 안내 카드: 지금 할 단계(now)는 주황, 끝난 단계(done)는 흐리게 */
+.hud-guide ol { margin: 0; padding: 0; list-style: none; counter-reset: g; display: flex; flex-direction: column; gap: 4px; }
+.hud-guide li { counter-increment: g; display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 22px; color: #9aa0a8; }
+.hud-guide li::before { content: counter(g); flex: none; width: 22px; height: 22px; border-radius: 50%; background: #3a3d42; color: #d6dae0; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.hud-guide li.now { color: #fff; font-weight: 700; }
+.hud-guide li.now::before { background: #f0a45a; color: #231509; }
+.hud-guide li.done { text-decoration: line-through; opacity: 0.6; }
+.hud-guide li.done::before { content: "✓"; }
+.hud-guide b { color: inherit; }
+.hud-guide li.now b { color: #f0a45a; }
+/* 화면 모드: 운전 단추는 숨기고 '운전석으로' 단추를 보인다 */
+.back-seat { display: none; position: fixed; left: 16px; bottom: 16px; z-index: 7; min-height: 56px; padding: 0 22px; border: 0; border-radius: 14px; background: rgba(240, 164, 90, 0.95); color: #231509; font: 700 18px "Noto Sans KR", sans-serif; cursor: pointer; touch-action: manipulation; }
+body.screen-mode .back-seat { display: block; }
+body.screen-mode .touch { display: none; }
+/* 태블릿 폭에서는 날씨·구간 단추가 화면 왼쪽 위를 덮어 앱 대신 눌린다. 화면 모드에서는 접어 둔다 */
+body.screen-mode .hud-weather, body.screen-mode .hud-jump, body.screen-mode .hud-state { display: none; }

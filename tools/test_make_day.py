@@ -1,0 +1,82 @@
+"""야간 시안에서 주간판을 만드는 규칙을 시험한다. 실행: python3 tools/test_make_day.py"""
+import importlib.util
+import unittest
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("make_day", Path(__file__).parent / "make-day.py")
+day = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(day)
+
+SOURCE = '<div class="stage" data-theme="night"><a href="Main.dc.html"><img src="images/covers/paldang-sunset-night.jpg"></a></div>'
+
+
+class DayVersionTest(unittest.TestCase):
+    def setUp(self):
+        self.page = day.day_version(SOURCE, ["Main", "Preview"])
+
+    def test_the_theme_becomes_day(self):
+        self.assertIn('data-theme="day"', self.page)
+
+    def test_covers_lose_the_night_suffix(self):
+        self.assertIn("images/covers/paldang-sunset.jpg", self.page)
+
+    def test_links_stay_inside_the_day_screens(self):
+        self.assertIn('href="MainDay.dc.html"', self.page)
+
+    def test_screens_read_the_day_cover_field(self):
+        page = day.day_version(SOURCE + "", ["Main"]) + day.day_version('<i data-theme="night"></i>const COVER = "coverNight";', ["Main"])
+        self.assertIn('const COVER = "coverDay";', page)
+
+    def test_a_screen_must_name_its_theme_once(self):
+        with self.assertRaises(SystemExit):
+            day.day_version(SOURCE + SOURCE, ["Main"])
+
+
+class WindowVersionTest(unittest.TestCase):
+    source = '<div class="stage" data-theme="night" data-window="two"></div><script data-props=\'{"$preview":{"width":1700,"height":1184}}\'></script>'
+
+    def test_the_stage_names_its_window(self):
+        self.assertIn('data-window="third"', day.window_version(self.source, "third", 841, 1210))
+
+    def test_a_narrow_window_lists_one_place_of_each_kind(self):
+        source = self.source + "const LIMIT = { view: 2, sight: 2, food: 2 };"
+        self.assertIn("const LIMIT = { view: 1, sight: 1, food: 1 };", day.window_version(source, "third", 841, 1210))
+
+    def test_the_preview_takes_the_window_size(self):
+        self.assertIn('"$preview":{"width":841,"height":1210}', day.window_version(self.source, "third", 841, 1210))
+
+    def test_menu_links_stay_in_the_same_window(self):
+        source = self.source + '<a href="Browse.dc.html"></a><a href="Me.dc.html"></a>'
+        page = day.window_version(source, "full", 2560, 1210)
+        self.assertIn('href="BrowseFull.dc.html"', page)
+        self.assertIn('href="MeFull.dc.html"', page)
+
+    def test_the_script_knows_its_window(self):
+        page = day.window_version(self.source + 'const WINDOW = "two";', "full", 2560, 1210)
+        self.assertIn('const WINDOW = "full";', page)
+
+    def test_screens_without_window_versions_keep_their_links(self):
+        page = day.window_version(self.source + '<a href="Drive.dc.html"></a>', "third", 841, 1210)
+        self.assertIn('href="Drive.dc.html"', page)
+
+
+class WindowScreensTest(unittest.TestCase):
+    def test_every_menu_screen_gets_full_and_third_windows(self):
+        names = set(day.window_screens())
+        for screen in ("Main", "Browse", "Ranking", "Me"):
+            self.assertIn(f"{screen}Full", names)
+            self.assertIn(f"{screen}Third", names)
+
+
+class MoodVersionTest(unittest.TestCase):
+    source = '<div data-mood="plain"></div><script>const MOOD = "plain";</script>'
+
+    def test_the_stage_names_its_mood(self):
+        self.assertIn('data-mood="rain"', day.mood_version(self.source, "rain"))
+
+    def test_the_script_knows_its_mood(self):
+        self.assertIn('const MOOD = "rain";', day.mood_version(self.source, "rain"))
+
+
+if __name__ == "__main__":
+    unittest.main()

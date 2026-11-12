@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>에움길 둘러보기</title>
+<script src="./support.js"></script>
+<script src="courses.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Asta+Sans:wght@400;500;600;700&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+</helmet>
+<div class="stage" data-theme="day" data-window="full">
+<div class="screen screen-rail screen-over">
+  <nav class="rail">
+    <a href="MainFullDay.dc.html" class="brand t-brand">에움길</a>
+    <a href="MainFullDay.dc.html" class="rail-item t-small">홈</a>
+    <a href="BrowseFullDay.dc.html" class="rail-item t-small is-on">둘러보기</a>
+    <a href="RankingFullDay.dc.html" class="rail-item t-small">랭킹</a>
+    <a href="MeFullDay.dc.html" class="rail-item t-small">내 코스</a>
+    <a href="MeFullDay.dc.html" class="rail-me" aria-label="내 정보"><span class="avatar t-small">나</span></a>
+  </nav>
+  <div class="scene scene-atlas scene-browse">
+    <div class="atlas">
+      <div class="atlas-world" style="{{ a.world }}">
+        <img class="atlas-ground" src="{{ a.ground }}" alt="한국 위성 지도">
+        <img class="{{ a.detailCls }}" src="{{ a.detail }}" alt="" style="{{ a.detailStyle }}">
+        <svg class="atlas-lines" aria-hidden="true">
+          <sc-for list="{{ a.lines }}" as="s"><path class="route route-case {{ s.cls }}" d="{{ s.d }}"/></sc-for>
+          <sc-for list="{{ a.lines }}" as="s"><path class="route route-line sec-{{ s.mood }} {{ s.cls }}" d="{{ s.d }}"/></sc-for>
+        </svg>
+      </div>
+      <sc-for list="{{ a.labels }}" as="l"><span class="{{ l.cls }}" style="{{ l.style }}">{{ l.name }}</span></sc-for>
+      <sc-for list="{{ a.pins }}" as="p">
+        <button type="button" onClick="{{ p.pick }}" class="{{ p.cls }}" style="{{ p.style }}"><span class="atlas-no t-label num">{{ p.no }}</span><span class="atlas-name t-label">{{ p.name }}</span></button>
+      </sc-for>
+      <div class="atlas-shade"></div>
+      <div class="atlas-tools">
+        <button type="button" onClick="{{ a.zoomIn }}" class="atlas-tool t-heading" aria-label="확대">+</button>
+        <button type="button" onClick="{{ a.zoomOut }}" class="atlas-tool t-heading" aria-label="축소">−</button>
+        <button type="button" onClick="{{ a.reset }}" class="atlas-tool atlas-all t-small">{{ a.resetLabel }}</button>
+      </div>
+      <span class="atlas-hint t-label">두 손가락으로 벌리면 확대</span>
+      <p class="atlas-credit">위성 사진: Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016)</p>
+    </div>
+    <div class="cards-panel">
+      <span class="side-kick t-small">코스 {{ count }}개</span>
+      <h1 class="side-head">어느 길을 달려 볼까요</h1>
+      <div class="filter">
+        <span class="t-label ink-2">지역</span>
+        <div class="chips chips-wrap">
+          <sc-for list="{{ regions }}" as="f" hint-placeholder-count="8">
+            <button type="button" onClick="{{ f.pick }}" class="{{ f.cls }}">{{ f.label }} <span class="chip-count">{{ f.count }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="filter">
+        <span class="t-label ink-2">풍경</span>
+        <div class="chips chips-wrap">
+          <sc-for list="{{ themes }}" as="f" hint-placeholder-count="5">
+            <button type="button" onClick="{{ f.pick }}" class="{{ f.cls }}">{{ f.label }} <span class="chip-count">{{ f.count }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="card-grid">
+        <sc-for list="{{ cards }}" as="k" hint-placeholder-count="6">
+          <button type="button" onClick="{{ k.pick }}" class="{{ k.cls }}">
+            <img src="{{ k.cover }}" alt="">
+            <span class="pick-body"><span class="t-small bold">{{ k.name }}</span><span class="t-label ink-2">{{ k.line }}</span></span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ picked }}" hint-placeholder-val="{{ true }}">
+        <a href="MainFullDay.dc.html" class="btn-primary t-body">{{ pickedName }} 자세히 보기</a>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2560,"height":1210}}'>
+const COVER = "coverDay";
+const NIGHT = COVER === 'coverNight';
+const WINDOW = "full";
+/* 지도가 들어갈 자리. 오른쪽 카드 칸과 메뉴를 뺀 곳이다 */
+const FOCUS = { two: { x: 196, y: 40, w: 744, h: 1104 }, full: { x: 196, y: 40, w: 1324, h: 1130 }, third: { x: 24, y: 116, w: 793, h: 440 } };
+/* 한국 지도: 지도 좌표는 tools/make-atlas.py 가 만든 픽셀이다. 보기는 가운데 좌표와 배율로 둔다 */
+const grow = (b, room, least) => {
+  const w = Math.max(b.w, least), h = Math.max(b.h, least), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  return { x: cx - w * (0.5 + room), y: cy - h * (0.5 + room), w: w * (1 + 2 * room), h: h * (1 + 2 * room) };
+};
+const union = (boxes) => {
+  const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
+  return { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y };
+};
+const fit = (b) => { const F = FOCUS[WINDOW]; return { s: Math.min(F.w / b.w, F.h / b.h), cx: b.x + b.w / 2, cy: b.y + b.h / 2 }; };
+const courseView = (c) => fit(grow(c.atlas.box, 0.18, 120));
+/* 코스를 고르면 지도가 코스로 커지고, 그 코스의 위성 장면이 제자리에 겹쳐 또렷해진다 */
+const drawAtlas = ({ view, courses, chosen, named, pick, setView, reset, resetLabel }) => {
+  const F = FOCUS[WINDOW], K = window.KOREA, s = view.s;
+  const x = F.x + F.w / 2 - s * view.cx, y = F.y + F.h / 2 - s * view.cy;
+  const at = (px, py) => 'left: ' + (px * s + x).toFixed(1) + 'px; top: ' + (py * s + y).toFixed(1) + 'px';
+  const close = chosen && s >= courseView(chosen).s * 0.6;
+  const f = chosen ? chosen.atlas.frame : { x: 0, y: 0, w: 1, h: 1 };
+  return {
+    world: 'width: ' + K.size[0] + 'px; height: ' + K.size[1] + 'px; transform: translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px) scale(' + s.toFixed(4) + '); --s: ' + s.toFixed(4),
+    ground: NIGHT ? K.night : K.day,
+    detail: chosen ? (NIGHT ? chosen.scene.night : chosen.scene.day) : (NIGHT ? K.night : K.day),
+    detailCls: close ? 'atlas-detail is-on' : 'atlas-detail',
+    detailStyle: 'left: ' + f.x + 'px; top: ' + f.y + 'px; width: ' + f.w + 'px; height: ' + f.h + 'px',
+    lines: courses.flatMap((c) => c.atlas.lines.map((l) => ({ ...l, cls: chosen && chosen.id !== c.id ? 'is-dim' : '' }))),
+    labels: K.labels.map((l) => {
+      const sx = l.x * s + x, sy = l.y * s + y, inside = sx > F.x - 40 && sx < F.x + F.w + 40 && sy > F.y - 40 && sy < F.y + F.h;
+      const on = inside && (l.kind === 'region' ? s < 1.6 && !close : s >= 1.6 && s < 14);
+      return { name: l.name, style: at(l.x, l.y), cls: 'atlas-label atlas-' + l.kind + (on ? '' : ' is-off') };
+    }),
+    pins: courses.map((c, i) => ({
+      no: i + 1, name: c.name, style: at(c.atlas.x, c.atlas.y), pick: () => pick(c.id),
+      cls: 'atlas-pin' + (named || s >= 2.4 ? ' is-named' : '') + (chosen && chosen.id === c.id ? (close ? ' is-off' : ' is-on') : '') + (chosen && chosen.id !== c.id ? ' is-dim' : ''),
+    })),
+    zoomIn: () => setView({ ...view, s: Math.min(s * 1.6, 24) }),
+    zoomOut: () => setView({ ...view, s: Math.max(s / 1.6, 0.3) }),
+    reset, resetLabel,
+  };
+};
+const REGIONS = ['수도권', '강원', '충청', '경상', '전라', '남해안', '제주'];
+const THEMES = [['coast', '바다'], ['mountain', '고개'], ['river', '강'], ['lake', '호수'], ['forest', '숲']];
+const allView = (list) => fit(grow(union(list.map((c) => c.atlas.box)), 0.12, 260));
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { region: '전체', theme: null, chosen: null, view: allView(window.COURSES) }; }
+  filter(region, theme) {
+    const shown = window.COURSES.filter((c) => (region === '전체' || c.region === region) && (!theme || c.themes.includes(theme)));
+    this.setState({ region, theme, chosen: null, view: allView(shown.length ? shown : window.COURSES) });
+  }
+  renderVals() {
+    const { region, theme } = this.state;
+    const all = window.COURSES;
+    const shown = all.filter((c) => (region === '전체' || c.region === region) && (!theme || c.themes.includes(theme)));
+    const chosen = shown.find((c) => c.id === this.state.chosen) || null;
+    const chip = (on, label, count, pick) => ({ label, count, pick, cls: on ? 'chip t-small is-on' : 'chip t-small' });
+    const pick = (id) => this.setState({ chosen: id, view: courseView(all.find((c) => c.id === id)) });
+    return {
+      count: shown.length,
+      picked: !!chosen, pickedName: chosen ? chosen.name : '',
+      a: drawAtlas({
+        view: this.state.view, courses: shown, chosen, named: false, pick,
+        setView: (view) => this.setState({ view }),
+        reset: () => this.setState({ chosen: null, view: allView(shown) }), resetLabel: region === '전체' ? '전국' : region,
+      }),
+      regions: ['전체', ...REGIONS].map((r) => chip(region === r, r, r === '전체' ? all.length : all.filter((c) => c.region === r).length, () => this.filter(r, theme))),
+      themes: THEMES.map(([id, label]) => chip(theme === id, label, all.filter((c) => c.themes.includes(id)).length, () => this.filter(region, theme === id ? null : id))),
+      cards: shown.map((c) => ({
+        name: c.name, cover: c[COVER], line: [c.region, c.km.toFixed(1) + 'km', c.picks[0]].join(' · '),
+        cls: chosen && c.id === chosen.id ? 'map-card is-on' : 'map-card', pick: () => pick(c.id),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
