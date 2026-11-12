@@ -132,6 +132,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
             background = pressable(android.graphics.Color.TRANSPARENT, palette.bgPressed)
             val inset = dp(Dimens.SPACE_2)
             setPadding(inset, inset, inset, inset)
+            pressMotion()
             setOnClickListener { onPick(course.id) }
             val number = label("${i + 1}", Dimens.LABEL, palette.onAccent, bold = true).tabular().apply {
                 gravity = Gravity.CENTER
@@ -149,7 +150,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
     return ScrollView(this).apply {
         isVerticalScrollBarEnabled = false
         addView(list)
-    }
+    }.bounceAtEnds(vertical = true)
 }
 
 private fun Context.courseCard(kit: BrowseKit, course: Course, recent: List<String>, onBack: () -> Unit, onStart: (String) -> Unit): View = column().apply {
@@ -206,6 +207,7 @@ private fun Context.toggleRow(title: String, initial: Boolean, onChange: (Boolea
     addView(label(title, Dimens.LABEL).atMostLines(1), LinearLayout.LayoutParams(0, WRAP, 1f))
     addView(pill, LinearLayout.LayoutParams(dp(Dimens.TOGGLE_WIDTH), dp(Dimens.TOGGLE_HEIGHT)))
     contentDescription = title
+    pressMotion()
     setOnClickListener {
         on = !on
         onChange(on)

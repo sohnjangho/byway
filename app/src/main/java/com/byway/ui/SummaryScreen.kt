@@ -31,7 +31,7 @@ internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onH
             addView(saveToggle(course, Context::quietButton), LinearLayout.LayoutParams(0, MATCH, 1f))
         }
         val text = column().apply {
-            addView(ScrollView(context).apply { addView(details) }, fill())
+            addView(ScrollView(context).apply { addView(details) }.bounceAtEnds(vertical = true), fill())
             addSpaced(buttons, Dimens.SPACE_6)
         }
         val drawing = CoursePathView(this).apply {

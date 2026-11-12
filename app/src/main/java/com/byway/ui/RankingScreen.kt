@@ -53,10 +53,10 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
         val detail = quietButton("") { kit.onCourse(chosen.course) }
         val rows = mutableMapOf<String, View>()
 
-        fun paintFor(item: Ranked) {
+        fun paintFor(item: Ranked, reveal: Boolean = false) {
             val course = item.course
             val scene = SceneCatalog.of(context, course.id)
-            sceneView.show(course, scene, emptyList(), night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)))
+            sceneView.show(course, scene, emptyList(), night, canSwipeToScenery(course.sceneryCredit, Covers.hasScenery(context, course)), reveal)
             Covers.loadSoft(context, course.id) { soft.setPicture(it) }
             scene?.let { locator.place(Px(it.atlas.x / SceneCatalog.index(context).koreaSize.x, it.atlas.y / SceneCatalog.index(context).koreaSize.y)) }
             where.text = course.region
@@ -68,7 +68,7 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
             chosen = item
             current = current.copy(picked = item.course.id)
             update(current)
-            paintFor(item)
+            paintFor(item, reveal = true)
         }
 
         val side = column().apply {
@@ -86,7 +86,7 @@ internal fun rankingScreen(context: Context, kit: BrowseKit, nav: Nav, update: (
                 ScrollView(context).apply {
                     isVerticalScrollBarEnabled = false
                     addView(list)
-                },
+                }.bounceAtEnds(vertical = true),
                 fill().apply { topMargin = dp(Dimens.SPACE_2) },
             )
             if (!third) {
@@ -120,6 +120,7 @@ private fun Context.rankRows(kit: BrowseKit, ranked: List<Ranked>, by: RankBy, r
             val inset = dp(Dimens.SPACE_2)
             setPadding(inset, inset, inset, inset)
             rows[item.course.id] = this
+            pressMotion()
             setOnClickListener { onPick(item) }
             addView(
                 label("${i + 1}", Dimens.HEADING, if (i == 0) palette.accent else palette.ink, bold = true).tabular().apply { gravity = Gravity.CENTER },
