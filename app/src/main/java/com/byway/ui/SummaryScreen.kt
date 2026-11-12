@@ -15,12 +15,12 @@ internal fun summaryScreen(context: Context, kit: BrowseKit, course: Course, onH
         val meters = kit.book.sectionMeters(course)
         val details = column().apply {
             addView(label("끝까지 달렸습니다", Dimens.SMALL, palette.inkSecondary))
-            addView(label(course.name, Dimens.TITLE, bold = true))
+            addView(label(withDummyMark(course, course.name), Dimens.TITLE, bold = true))
             val numbers = listOf(
                 Fact(kmText(facts.meters), "코스 거리"),
-                Fact("${facts.curves}", "지나온 커브"),
-                Fact("${funScore(facts, course.elevation.isNotEmpty())}점", "운전 즐거움"),
-                Fact("${naturePercent(facts.moodShare)}%", "도심 밖"),
+                Fact(measured(course, "${facts.curves}"), "지나온 커브"),
+                Fact(measured(course, "${funScore(facts, course.elevation.isNotEmpty())}점"), "운전 즐거움"),
+                Fact(measured(course, "${naturePercent(facts.moodShare)}%"), "도심 밖"),
             )
             addSpaced(factRow(numbers, Dimens.HEADING), Dimens.SPACE_6)
             course.sections.forEachIndexed { i, section ->

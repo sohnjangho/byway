@@ -178,4 +178,10 @@ class CourseFileTest {
             .map { it.event }.filterIsInstance<DriveEvent.SectionEntered>().map { it.section.name }
         assertEquals(demoCourse.sections.map { it.name }, entered)
     }
+
+    @Test
+    fun weathersRoundTrip() {
+        val course = parseCourse(json()).copy(tags = CourseTags(themes = listOf("forest"), weathers = listOf("rain")))
+        assertEquals(listOf("rain"), parseCourse(writeCourse(course.copy(attribution = "OSM"))).tags.weathers)
+    }
 }

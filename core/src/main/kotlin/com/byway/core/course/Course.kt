@@ -21,6 +21,8 @@ data class CourseTags(
     /** 추천 계절과 나이대. 앞의 값이 대표다. 주행 통계가 아니라 사람이 고른 편집 추천이다. */
     val seasons: List<String> = emptyList(),
     val ages: List<String> = emptyList(),
+    /** 어울리는 날씨. 지금은 "rain" 하나다. */
+    val weathers: List<String> = emptyList(),
 )
 
 data class Course(
@@ -42,6 +44,10 @@ data class Course(
     val sceneryCredit: String = "",
     /** 앱 정보에 적는 풍경 사진의 출처 전문. 제목과 라이선스, 원본 주소, 변형 사실까지 담는다. */
     val sceneryDetail: String = "",
+    /** 지도(경로선) 없이 코스 정보만 있는 시연용 더미 코스. path 는 지점을 직선으로 이은 것이다. */
+    val dummy: Boolean = false,
+    /** 더미 코스의 표기 거리(m). 실제 도로로 달릴 때의 대략 거리다. */
+    val declaredMeters: Double? = null,
 )
 
 /** 내비에 올리는 코스 위의 한 지점. */

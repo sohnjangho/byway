@@ -11,7 +11,7 @@ internal fun Context.courseStrip(kit: BrowseKit, chosen: Course, previous: Int?,
     val scroller = HorizontalScrollView(this).bounceAtEnds(vertical = false)
     val row = LinearLayout(this)
     var chosenIndex = 0
-    kit.book.courses.forEachIndexed { i, course ->
+    kit.book.featured(chosen.id).forEachIndexed { i, course ->
         if (course.id == chosen.id) chosenIndex = i
         val size = LinearLayout.LayoutParams(dp(Dimens.STRIP_CARD_WIDTH), dp(Dimens.STRIP_CARD_HEIGHT)).apply {
             if (i > 0) marginStart = dp(Dimens.SPACE_3)

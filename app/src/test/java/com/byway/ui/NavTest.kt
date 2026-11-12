@@ -1,5 +1,9 @@
 package com.byway.ui
 
+import com.byway.core.course.CourseFilter
+import com.byway.core.course.LengthBand
+import com.byway.core.course.NearRange
+
 import com.byway.core.course.RankBy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -12,6 +16,15 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 class NavTest {
+    /** 걸러 보기는 메뉴를 옮겼다 돌아와도 남는다. 펼친 칩 줄은 닫는다(더 많은 코스 설계 5절). */
+    @Test
+    fun toTabKeepsFilterButClosesOpenRow() {
+        val filter = CourseFilter(query = "노을", mood = "times:sunset")
+        val nav = Nav(tab = Tab.BROWSE, filter = filter, openFilter = "mood").toTab(Tab.HOME)
+        assertEquals(filter, nav.filter)
+        assertEquals(null, nav.openFilter)
+    }
+
     /** 창 막대를 끌면 Activity 가 다시 만들어진다. Bundle 에 담기는 값이어야 고른 화면이 남는다. */
     @Test
     fun everyChoiceSurvivesBeingSaved() {
@@ -19,8 +32,8 @@ class NavTest {
             tab = Tab.RANKING,
             courseId = "c1",
             about = true,
-            theme = "river",
-            region = "강원",
+            filter = CourseFilter(query = "노을", near = NearRange.KM50, mood = "weathers:rain", length = LengthBand.UP_TO_60, region = "강원", theme = "river"),
+            openFilter = "mood",
             rankBy = RankBy.SCENERY,
             atlas = AtlasCamera(1f, 2f, 3f),
             picked = "c2",

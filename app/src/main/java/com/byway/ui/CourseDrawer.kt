@@ -51,7 +51,7 @@ internal class CourseDrawer(
         }
         panel.addView(header)
         val list = context.column()
-        drawerOrder(kit.book.courses, chosen.id) { it.id }.forEachIndexed { i, course ->
+        drawerOrder(kit.book.featured(chosen.id), chosen.id) { it.id }.forEachIndexed { i, course ->
             list.addSpaced(row(course), if (i == 0) 0 else Dimens.SPACE_2)
         }
         list.setPadding(0, 0, 0, context.dp(Dimens.SPACE_6))

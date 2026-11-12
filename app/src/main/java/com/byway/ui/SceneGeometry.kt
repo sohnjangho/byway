@@ -1,5 +1,7 @@
 package com.byway.ui
 
+import com.byway.core.geo.Viewport
+
 /** 장면 그림이 놓이는 자리(dp). 값은 시안 app.css 와 같다. */
 data class SceneRect(val left: Float, val top: Float, val width: Float, val height: Float)
 
@@ -44,6 +46,24 @@ fun sceneFade(window: WindowClass, list: Boolean = false, strip: Boolean = false
         strip -> FadeBand(true, 332f, 630f, 1f)
         else -> FadeBand(true, 423f, 711f, 1f)
     }
+}
+
+/**
+ * 장면 그림이 없는 코스(더미 코스)의 선을 그릴 자리(dp). 지도가 다 드러나는 곳에만 그려 글 칸·띠·출처 아래로 들어가지 않는다.
+ * 넓은 창은 글 칸 띠가 끝난 오른쪽, 1/3 창은 위 메뉴 아래부터 띠가 시작하기 전까지다.
+ * 주행·랭킹의 넓은 창([list])은 장면 칸 자체가 지도 자리라 null(칸 전체)이다.
+ */
+fun fallbackFit(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = false, strip: Boolean = false): Viewport? {
+    val rect = sceneRect(window, viewW, viewH, list, strip)
+    val band = sceneFade(window, list, strip)
+    if (band.vertical) {
+        val top = maxOf(rect.top, Dimens.RAIL_TOP_HEIGHT.toFloat())
+        return Viewport(0f, top, viewW, rect.top + band.from - top)
+    }
+    if (list) return null
+    val left = rect.left + band.to
+    val top = Dimens.SPACE_8.toFloat()
+    return Viewport(left, top, viewW - left - Dimens.SPACE_8, viewH - Dimens.SCENE_CREDIT_BOTTOM - top)
 }
 
 /** 지도가 글 칸과 만나는 띠를 화면 좌표로 옮긴 값. 주행 화면 배경은 이 띠에서 지도와 서로 넘어간다. */

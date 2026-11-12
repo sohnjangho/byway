@@ -36,6 +36,9 @@ private const val MOVE_MS = MotionSpec.LONG2
 private const val REGION_LABEL_MAX = 1.6f
 private const val CITY_LABEL_MAX = 14f
 private const val NAMED_MIN = 2.4f
+
+/** 더미 코스 점의 반지름(dp). 실제 코스 핀(18dp)보다 작게 해 지도에 많이 찍혀도 실제 코스가 묻히지 않는다. */
+private const val DUMMY_DOT = 6f
 private const val CLOSE_RATIO = 0.6f
 private const val EDGE_FADE = 0.12f
 
@@ -83,6 +86,23 @@ internal class AtlasView(context: Context) : FrameLayout(context) {
     /** 분위기 배경에 흐린 코스 사진을 깔면 그 출처를 지도 출처 아래 줄에 적는다. */
     fun setPhotoCredit(line: String?) {
         creditView?.text = creditText(mapCreditLine(currentMapStyle()), line, null, onPhoto = false)
+    }
+
+    private var noteView: TextView? = null
+
+    /** 지도 위 가운데 위쪽 안내. 더미 코스를 고르면 경로선이 없다고 알린다(더 많은 코스 설계 6절). [leftDp]는 글 칸이 끝나는 자리다. */
+    fun setNote(text: String?, leftDp: Int = 0) {
+        val note = noteView ?: context.label("", Dimens.SMALL, colors.onPhoto, bold = true).apply {
+            background = context.rounded(colors.photoScrim, Dimens.RADIUS_SM)
+            setPadding(context.dp(Dimens.SPACE_3), context.dp(Dimens.SPACE_2), context.dp(Dimens.SPACE_3), context.dp(Dimens.SPACE_2))
+            noteView = this
+            addView(this, LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
+                marginStart = context.dp(leftDp + Dimens.SPACE_6)
+                topMargin = context.dp(Dimens.SPACE_6)
+            })
+        }
+        note.text = text.orEmpty()
+        note.visibility = if (text == null) View.GONE else View.VISIBLE
     }
 
     fun focusOn(camera: AtlasCamera, chosen: String?) {
@@ -335,6 +355,8 @@ private class AtlasCanvas(context: Context) : View(context) {
 
     private fun drawLines(canvas: Canvas, s: Float) {
         courses.forEach { (course, spot) ->
+            // 더미 코스는 150개 선이 겹치지 않게 고른 코스만 예시 경로를 그린다.
+            if (course.dummy && course.id != chosen) return@forEach
             val dim = chosen != null && chosen != course.id
             spot.lines.forEach { segment ->
                 val path = Path()
@@ -372,17 +394,31 @@ private class AtlasCanvas(context: Context) : View(context) {
         pinHits.clear()
         val radius = 18f * density
         val pad = 4f * density
-        courses.forEachIndexed { i, (course, spot) ->
+        // 더미 코스는 번호 없는 작은 점으로 먼저 그려 실제 코스 핀 아래에 둔다. 고르면 실제 코스처럼 이름표와 선을 보인다.
+        courses.withIndex().sortedBy { !it.value.first.dummy }.forEach { (i, pair) ->
+            val (course, spot) = pair
             val isChosen = course.id == chosen
-            if (isChosen && close) return@forEachIndexed
+            if (isChosen && close) return@forEach
             val at = toScreen(spot.x, spot.y, camera, focus)
             val cx = at.x * density
             val cy = at.y * density
             val alpha = if (chosen != null && !isChosen) 115 else 255
+            if (course.dummy && !isChosen) {
+                fill.color = colors.photoScrim
+                fill.alpha = alpha
+                canvas.drawCircle(cx, cy, DUMMY_DOT * density + 2 * density, fill)
+                fill.color = NightPalette.accent
+                fill.alpha = alpha
+                canvas.drawCircle(cx, cy, DUMMY_DOT * density, fill)
+                val touch = 10 * density
+                pinHits += RectF(cx - touch, cy - touch, cx + touch, cy + touch) to course.id
+                return@forEach
+            }
             val showName = named || s >= NAMED_MIN
             text.textAlign = Paint.Align.LEFT
             text.textSize = Dimens.LABEL * density
-            val nameWidth = if (showName) text.measureText(course.name) + 12 * density + 8 * density else 0f
+            val title = withDummyMark(course, course.name)
+            val nameWidth = if (showName) text.measureText(title) + 12 * density + 8 * density else 0f
             val body = RectF(cx - radius - pad, cy - radius - pad, cx + radius + pad + nameWidth, cy + radius + pad)
             fill.color = colors.photoScrim
             fill.alpha = alpha
@@ -405,7 +441,7 @@ private class AtlasCanvas(context: Context) : View(context) {
                 text.textAlign = Paint.Align.LEFT
                 text.color = colors.onPhoto
                 text.alpha = alpha
-                canvas.drawText(course.name, cx + radius + 12 * density, cy + text.textSize * 0.36f, text)
+                canvas.drawText(title, cx + radius + 12 * density, cy + text.textSize * 0.36f, text)
             }
             val touch = 16 * density
             pinHits += RectF(body.left - touch, body.top - touch, body.right + touch, body.bottom + touch) to course.id

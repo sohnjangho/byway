@@ -180,4 +180,11 @@ class HomeCopyTest {
         assertEquals(listOf("바다 90%", "적합도·즐거움·소요 시간은 예상 · 교통 상황 제외"), sceneryNotes("바다 90%", third = false))
         assertEquals(listOf("바다 90% · 예상치, 교통 제외"), sceneryNotes("바다 90%", third = true))
     }
+
+    /** 더미 코스처럼 경치 줄이 비면 앞에 구분점이나 빈 줄을 남기지 않는다. */
+    @Test
+    fun emptySceneryLeavesNoStraySeparator() {
+        assertEquals(listOf("예상치, 교통 제외"), sceneryNotes("", third = true))
+        assertEquals(listOf("적합도·즐거움·소요 시간은 예상 · 교통 상황 제외"), sceneryNotes("", third = false))
+    }
 }

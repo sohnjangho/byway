@@ -127,7 +127,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
         return column().apply {
             gravity = Gravity.CENTER_VERTICAL
             addView(label("아직 달리거나 저장한 코스가 없습니다", Dimens.BODY))
-            addSpaced(quietButton("코스 둘러보기", onBrowse), Dimens.SPACE_3)
+            addSpaced(quietButton("더 많은 코스 보기", onBrowse), Dimens.SPACE_3)
         }
     }
     val list = column()
@@ -145,7 +145,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
             }
             addView(number, LinearLayout.LayoutParams(dp(Dimens.PLACE_NUMBER), dp(Dimens.PLACE_NUMBER)).apply { marginEnd = dp(Dimens.SPACE_3) })
             val text = column().apply {
-                addView(label(course.name, Dimens.SMALL, bold = true).atMostLines(1))
+                addView(label(mineListName(course), Dimens.SMALL, bold = true).atMostLines(1))
                 addView(label(mineKind(course.id, recent), Dimens.LABEL, palette.inkSecondary).atMostLines(1))
             }
             addView(text, LinearLayout.LayoutParams(0, WRAP, 1f))
@@ -172,10 +172,10 @@ private fun Context.courseCard(
     setPadding(edge, dp(Dimens.SPACE_4), edge, dp(Dimens.SPACE_4))
     val facts = kit.book.facts(course)
     addView(label(mineKind(course.id, recent), Dimens.LABEL).atMostLines(1))
-    addView(label(course.name, Dimens.TITLE, bold = true).atMostLines(1))
+    addView(label(withDummyMark(course, course.name), Dimens.TITLE, bold = true).atMostLines(1))
     addSpaced(pickRow(course.tags), Dimens.SPACE_2)
     addSpaced(label(course.summary, Dimens.SMALL).atMostLines(3), Dimens.SPACE_2)
-    addSpaced(label(listOf(course.region, kmText(facts.meters), "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
+    addSpaced(label(listOf(course.region, kmText(facts.meters), if (course.dummy) DUMMY_WORD else "커브 ${facts.curves}개").filter { it.isNotEmpty() }.joinToString(" · "), Dimens.LABEL).atMostLines(1), Dimens.SPACE_2)
     if (course.id.startsWith("m-")) addSpaced(madeCourseActions(course, onShare, onChanged), Dimens.SPACE_4)
     addView(android.widget.Space(context), fill())
     val buttons = LinearLayout(context).apply {
@@ -191,3 +191,6 @@ internal fun mineKind(id: String, recent: List<String>): String = when {
     id in recent -> "달린 코스"
     else -> "저장한 코스"
 }
+
+/** 내 코스 목록 줄의 이름. 더미 코스는 "더미"를 붙인다(더 많은 코스 설계 6절). */
+internal fun mineListName(course: com.byway.core.course.Course): String = withDummyMark(course, course.name)

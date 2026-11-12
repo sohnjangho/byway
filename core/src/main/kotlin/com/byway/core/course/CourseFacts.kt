@@ -26,7 +26,7 @@ data class CourseFacts(
 
 fun factsOf(course: Course): CourseFacts {
     val path = course.path
-    val meters = lengthOf(path)
+    val meters = course.declaredMeters ?: lengthOf(path)
     val direct = path.first().distanceTo(path.last())
     return CourseFacts(
         meters = meters,
