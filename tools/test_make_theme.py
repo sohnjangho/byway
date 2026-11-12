@@ -85,5 +85,14 @@ class KotlinTest(unittest.TestCase):
         self.assertIn("const val SPACE_4 = 16", self.kt)
 
 
+
+class CheckedInTest(unittest.TestCase):
+    """저장소의 Palette.kt 는 tokens.json 에서 만든 그대로여야 한다. 손으로 고치면 다음 생성 때 사라진다."""
+
+    def test_palette_matches_the_tokens(self):
+        import json
+        tokens = json.loads(theme.SOURCE.read_text(encoding="utf-8"))
+        self.assertEqual(theme.kotlin(tokens), theme.KOTLIN_OUT.read_text(encoding="utf-8"))
+
 if __name__ == "__main__":
     unittest.main()

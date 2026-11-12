@@ -11,8 +11,8 @@ private const val SCENE_HEIGHT = 1210f
 private const val THIRD_WIDTH = 1683f
 private const val THIRD_HEIGHT = 847f
 private const val THIRD_TOP = 26f
-private const val STRIP_WIDTH = 1250f
-private const val STRIP_HEIGHT = 629f
+private const val STRIP_WIDTH = 1430f
+private const val STRIP_HEIGHT = 720f
 private const val LIST_WIDTH = 1394f
 private const val LIST_HEIGHT = 702f
 private const val LIST_TOP = 70f
@@ -28,16 +28,20 @@ fun sceneRect(window: WindowClass, viewW: Float, viewH: Float, list: Boolean = f
     else -> SceneRect(viewW - SCENE_WIDTH, viewH / 2 - SCENE_HEIGHT / 2, SCENE_WIDTH, SCENE_HEIGHT)
 }
 
+/** 글 칸 아래에 깔리는 지도의 불투명도. 글자 대비는 낮·밤 모두 4.5:1 이상이다(ThemeTest). */
+const val MAP_UNDER_TEXT = 0.16f
+
 /**
- * 지도가 글 칸과 만나는 띠. 넓은 창은 글 칸이 바탕색이고 지도가 그 옆에서 짧게 시작한다.
+ * 지도가 글 칸과 만나는 띠. 넓은 창은 지도가 글 칸 아래 전체에 16%로 옅게 깔리고, 글자 오른쪽 끝(글 칸 끝 − SPACE_8)부터 짙어져
+ * 칸 끝 50dp 뒤에서 다 드러난다(화면 다듬기 설계 1절). 글자 아래는 어디서도 16%를 넘지 않아 낮 위성 지도에서도 읽힌다.
  * 1/3 창은 지도가 아래로 길게 옅어져 글 칸과의 경계가 보이지 않는다. 값은 장면 그림 안의 좌표다.
  */
 fun sceneFade(window: WindowClass, list: Boolean = false, strip: Boolean = false): FadeBand = when (window) {
-    WindowClass.TWO -> FadeBand(false, 1460f, 1530f, 0f)
-    WindowClass.FULL -> FadeBand(false, 1140f, 1220f, 0f)
+    WindowClass.TWO -> FadeBand(false, 1448f, 1530f, MAP_UNDER_TEXT)
+    WindowClass.FULL -> FadeBand(false, 1088f, 1170f, MAP_UNDER_TEXT)
     WindowClass.THIRD -> when {
         list -> FadeBand(true, 309f, 533f, 1f)
-        strip -> FadeBand(true, 290f, 550f, 1f)
+        strip -> FadeBand(true, 332f, 630f, 1f)
         else -> FadeBand(true, 423f, 711f, 1f)
     }
 }

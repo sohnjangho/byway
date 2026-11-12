@@ -117,5 +117,6 @@ object Tokens {
     const val TEXT_BODY = 28f
     const val TEXT_SMALL = 26f
     const val TEXT_LABEL = 24f
+    const val TEXT_CREDIT = 20f
     const val TEXT_BRAND = 40f
 }

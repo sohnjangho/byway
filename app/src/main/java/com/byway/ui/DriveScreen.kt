@@ -39,20 +39,24 @@ internal class DriveScreen(
     private val full = window == WindowClass.FULL
 
     // 넓은 창에서 list 는 아래에 사진 띠가 없으니 출처를 아래로 내린다는 뜻이다.
-    // 1/3 창은 글 칸에 자리를 내느라 지도 칸이 짧아서, 홈의 사진 띠 화면과 같이 장면을 줄여 경로를 다 담는다.
-    private val sceneView = SceneView(context, window, list = !third, hintOnMap = false, strip = third)
+    // 1/3 창은 지도가 주인공이라 칸을 키우고(752dp) 줄이지 않은 장면에 경로를 다 담는다.
+    private val sceneView = SceneView(context, window, list = !third, hintOnMap = false)
     private val backdrop = DriveBackdrop(context, window)
     private val where = context.label("", Dimens.LABEL, colors.inkSecondary).tabular().fixedLines(1)
-    private val section = context.label("", Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
-    private val remaining = context.label("", Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
+    private val section = context.label("", if (third) Dimens.THIRD_DRIVE_SECTION else Dimens.DRIVE_SECTION, bold = true).fixedLines(1)
+    private val remaining = context.label("", if (third) Dimens.THIRD_DRIVE_NUMBER else Dimens.DRIVE_NUMBER, bold = true).tabular().apply { letterSpacing = Dimens.DRIVE_NUMBER_SPACING }
     private val bar = context.sectionBar(book, course)
-    private val spoken = context.label("", Dimens.DRIVE_LINE).fixedLines(2)
+    // 1/3 칸은 지도에 자리를 내느라 안내 문구를 한 단계 작게 둔다. 행동을 알리는 문구가 잘리지 않게 두 줄은 남긴다.
+    private val spoken = context.label("", if (third) Dimens.BODY else Dimens.DRIVE_LINE).fixedLines(2)
     private val aheadTitle = context.label("코스 주변", Dimens.SMALL, bold = true)
     private val rows = List(if (third) AHEAD_THIRD else AHEAD_WIDE) { AheadRow(context) }
     private val answer = context.primaryButton("", onAnswer).apply { visibility = GONE }
     private val end = context.outlineButton("코스 끝내기", onEnd)
 
-    /** 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다. */
+    /**
+     * 파티 확대 지도. 크기를 재야 범위를 맞출 수 있어 처음부터 자리를 잡아 두고 INVISIBLE 로 숨긴다.
+     * 확대 중에는 장면 지도를 숨기고 글 칸 배경을 화면 전체로 넓혀, 그 위에 바로 그린다. 배경이 하나라 이음매가 없다(화면 다듬기 설계 4절).
+     */
     private val zoomView = CoursePathView(context).apply { visibility = INVISIBLE }
     private var zoomFrame: GeoFrame? = null
 
@@ -65,7 +69,10 @@ internal class DriveScreen(
         addView(backdrop, matchFrame())
         sceneView.show(course, scene, places, context.night, sceneryAvailable = false, reveal = false)
         val style = currentMapStyle()
-        sceneView.setCredit(driveCredit(if (third) driveMapCredit(style) else mapCredit(style), course.sceneryCredit.takeIf { hasPhoto }))
+        // 지도 출처 한 줄, 글 칸 배경에 코스 사진을 흐리게 깔면 그 사진 출처 한 줄이다.
+        sceneView.setCredit(mapCreditLine(style))
+        sceneView.setBackdropCredit(moodPhotoCredit(course, hasPhoto))
+        zoomView.zoomCredits = listOfNotNull(course.attribution.takeIf { it.isNotBlank() }, moodPhotoCredit(course, hasPhoto))
         // 코스 그림으로 대신할 때는 글 칸과 겹치지 않게 옆에 둔다.
         addView(sceneView, LayoutParams(MATCH, if (third) context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) else MATCH).apply {
             if (!third && !hasPicture) leftMargin = sideWidth
@@ -85,11 +92,11 @@ internal class DriveScreen(
         } else {
             context.column().apply {
                 addView(info)
-                addView(near, fill().apply { topMargin = context.dp(Dimens.SPACE_6) })
+                addView(near, fill().apply { topMargin = context.dp(if (third) Dimens.SPACE_3 else Dimens.SPACE_6) })
             }
         }
         val edge = context.dp(if (third) Dimens.SPACE_6 else Dimens.SPACE_8)
-        side.setPadding(edge, if (third) context.dp(Dimens.SPACE_2) else edge, edge, context.dp(Dimens.SPACE_6))
+        side.setPadding(edge, if (third) context.dp(Dimens.SPACE_2) else edge, edge, context.dp(if (third) Dimens.SPACE_4 else Dimens.SPACE_6))
         addView(side, if (third) {
             LayoutParams(MATCH, MATCH).apply { topMargin = context.dp(Dimens.THIRD_DRIVE_SCENE_HEIGHT) }
         } else {
@@ -98,15 +105,15 @@ internal class DriveScreen(
     }
 
     private fun infoColumn(): View = context.column().apply {
-        addView(context.label(course.name, Dimens.SIDE_NAME, bold = true).atMostLines(1))
+        addView(context.label(course.name, if (third) Dimens.THIRD_DRIVE_NAME else Dimens.SIDE_NAME, bold = true).atMostLines(1))
         if (!third) addSpaced(context.pickRow(course.tags), Dimens.SPACE_2)
         addSpaced(context.row().apply {
             addView(section, LinearLayout.LayoutParams(0, WRAP, 1f))
             addView(where)
         }, if (third) Dimens.SPACE_2 else Dimens.SPACE_6)
         addView(distanceRow())
-        addView(bar, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.DRIVE_BAR_HEIGHT)).apply { topMargin = context.dp(Dimens.SPACE_3) })
-        addSpaced(spoken, Dimens.SPACE_4)
+        addView(bar, LinearLayout.LayoutParams(MATCH, context.dp(Dimens.DRIVE_BAR_HEIGHT)).apply { topMargin = context.dp(if (third) Dimens.SPACE_2 else Dimens.SPACE_3) })
+        addSpaced(spoken, if (third) Dimens.SPACE_2 else Dimens.SPACE_4)
     }
 
     private fun distanceRow(): View = LinearLayout(context).apply {
@@ -154,6 +161,8 @@ internal class DriveScreen(
             ?.let { partyFrame(it, pins.map { pin -> pin.point }, zoomView.width.toDouble() / zoomView.height, zoomFrame) }
         zoomFrame = zoom?.frame
         zoomView.visibility = if (zoom == null) INVISIBLE else VISIBLE
+        sceneView.visibility = if (zoom == null) VISIBLE else INVISIBLE
+        backdrop.full = zoom != null
         if (zoom == null) return
         zoomView.zoom(zoom.frame, zoom.far)
         zoomView.moveTo(me)

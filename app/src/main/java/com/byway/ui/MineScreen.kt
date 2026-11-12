@@ -36,8 +36,8 @@ internal fun mineScreen(
         val atlas = AtlasView(context)
         val shade = when {
             third -> null
-            full -> AtlasShade(false, 1220f, 1440f)
-            else -> AtlasShade(false, 700f, 920f)
+            full -> panelShade((Dimens.RAIL_WIDTH + Dimens.SIDE_WIDTH_FULL).toFloat())
+            else -> panelShade((Dimens.RAIL_WIDTH + Dimens.SIDE_WIDTH).toFloat())
         }
         val picked = nav.picked?.takeIf { id -> courses.any { it.id == id } }
         atlas.show(Tab.MINE, kit.window, courses, picked, nav.atlas, night, shade)

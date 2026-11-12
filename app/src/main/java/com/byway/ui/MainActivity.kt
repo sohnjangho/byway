@@ -207,7 +207,7 @@ class MainActivity : AppCompatActivity() {
                     onEnd = { DriveService.stop(this) },
                 )
                 screen == Screen.SplitGuide -> splitGuideScreen(
-                    this, kit,
+                    this, kit, book.courses.firstOrNull { it.id == nav.splitGuide?.courseId },
                     onPlain = {
                         val request = nav.splitGuide
                         go(nav.copy(splitGuide = null))

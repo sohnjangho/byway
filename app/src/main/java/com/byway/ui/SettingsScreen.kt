@@ -23,7 +23,7 @@ internal fun settingsScreen(context: Context, kit: BrowseKit, onAbout: () -> Uni
     FrameLayout(this).apply {
         setBackgroundColor(palette.bg)
         if (!third) {
-            val shade = if (full) AtlasShade(false, 1220f, 1440f) else AtlasShade(false, 700f, 920f)
+            val shade = panelShade((Dimens.RAIL_WIDTH + if (full) Dimens.SIDE_WIDTH_FULL else Dimens.SIDE_WIDTH).toFloat())
             val atlas = AtlasView(context)
             atlas.show(Tab.BROWSE, kit.window, kit.book.courses, null, null, night, shade)
             atlas.addCredit()

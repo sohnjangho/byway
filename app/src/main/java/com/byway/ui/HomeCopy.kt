@@ -127,3 +127,7 @@ fun paceCells(pace: Pace): List<PaceCell> = listOf(
     PaceCell(paceText(pace.rest), "쉬어 가며", "경치 좋은 곳 두 번"),
     PaceCell(paceText(pace.stay), "머물며", "명소와 식사까지"),
 )
+
+/** 경치 줄과 예상치 안내. 1/3 칸은 버튼 줄까지 화면에 들도록 한 줄로 합친다(화면 다듬기 설계 2절). */
+fun sceneryNotes(scenery: String, third: Boolean): List<String> =
+    if (third) listOf("$scenery · 예상치, 교통 제외") else listOf(scenery, "적합도·즐거움·소요 시간은 예상 · 교통 상황 제외")

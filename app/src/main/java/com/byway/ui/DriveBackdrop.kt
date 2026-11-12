@@ -16,15 +16,26 @@ import android.view.View
 private const val HALVINGS = 4
 private const val DOUBLINGS = 2
 
-/** 글 칸 오른쪽에서 미리 옅어지기 시작하는 길이(dp). 어두운 지도와 만나도 세로 경계가 보이지 않는다. */
-private const val SIDE_FADE_LEAD = 260f
-
 /**
  * 주행 화면 글 칸의 배경. 구간 색 위에 코스 사진을 흐리고 옅게 깔아 코스의 분위기를 낸다. 사진이 없는 코스는 구간 색만 쓴다.
  * 지도가 나타나는 자리에서 옅어져 지도와 이어진다. 움직이지 않고 구간이 바뀌면 그 자리에서 색만 바뀐다.
+ * [full]이면 지도와 잇지 않고 화면 전체에 깐다. 파티·요약·안내 화면과, 확대 지도가 보이는 주행 화면의 바탕이다(화면 다듬기 설계 4절).
+ * [strip]은 사진 띠 때문에 줄인 장면(1/3 홈)의 띠를 쓴다. [band]를 주면 그 띠(화면 dp)에서 옅어진다(둘러보기 글 칸).
  */
 @SuppressLint("ViewConstructor")
-internal class DriveBackdrop(context: Context, private val window: WindowClass) : View(context) {
+internal class DriveBackdrop(
+    context: Context,
+    private val window: WindowClass,
+    full: Boolean = false,
+    private val strip: Boolean = false,
+    private val band: FadeBand? = null,
+) : View(context) {
+    var full: Boolean = full
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
     private var tint = context.palette.bg
     private var soft: Bitmap? = null
     private val photo = Paint(Paint.FILTER_BITMAP_FLAG).apply {
@@ -50,11 +61,21 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass) 
         invalidate()
     }
 
+    fun clearPicture() {
+        soft = null
+        invalidate()
+    }
+
     private fun Bitmap.resized(w: Int, h: Int): Bitmap = Bitmap.createScaledBitmap(this, maxOf(1, w), maxOf(1, h), true)
 
     override fun onDraw(canvas: Canvas) {
+        if (full) {
+            canvas.drawColor(tint)
+            soft?.let { canvas.drawBitmap(it, centerCrop(it, width, height), Rect(0, 0, width, height), photo) }
+            return
+        }
         val density = resources.displayMetrics.density
-        val band = sceneFadeOnScreen(window, width / density, height / density, strip = window == WindowClass.THIRD)
+        val band = band ?: sceneFadeOnScreen(window, width / density, height / density, strip = strip)
         val from = band.from * density
         val to = band.to * density
         val layer = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)
@@ -66,7 +87,8 @@ internal class DriveBackdrop(context: Context, private val window: WindowClass) 
         mask.shader = if (band.vertical) {
             LinearGradient(0f, from, 0f, to, Color.TRANSPARENT, Color.BLACK, Shader.TileMode.CLAMP)
         } else {
-            LinearGradient(from - SIDE_FADE_LEAD * density, 0f, to, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            // 지도가 짙어지는 띠와 같은 자리에서 옅어진다. 띠가 글 칸 앞 300dp에서 시작하므로 따로 앞당기지 않는다.
+            LinearGradient(from, 0f, to, 0f, Color.BLACK, Color.TRANSPARENT, Shader.TileMode.CLAMP)
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mask)
         canvas.restoreToCount(layer)
