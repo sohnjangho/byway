@@ -46,7 +46,7 @@ fun findForVoice(
         .filter { !query.myCoursesOnly || it.id in mine }
         .filter { by == null || !it.dummy }
     val filter = CourseFilter(
-        query = query.searchTerm,
+        query = withoutCourseWord(query.searchTerm),
         near = query.nearbyKm?.let(::nearRangeFor),
         mood = query.mood?.let(MOOD_ENUM::get),
         length = query.length?.let(LENGTH_ENUM::get),
@@ -73,7 +73,8 @@ sealed interface NameMatch {
  * 말한 코스 이름을 코스 하나로 정한다(설계 3-2). 차례로 1) 공백·대소문자를 빼고 같은 이름, 2) 이름에 든 말,
  * 3) 모든 낱말이 이름·지역·[wordsOf]에 듦을 보고, 처음 결과가 나온 단계에서 멈춘다.
  */
-fun matchCourse(courses: List<Course>, name: String, wordsOf: (Course) -> List<String>): NameMatch {
+fun matchCourse(courses: List<Course>, spoken: String, wordsOf: (Course) -> List<String>): NameMatch {
+    val name = withoutCourseWord(spoken)
     val said = squash(name)
     if (said.isEmpty()) return NameMatch.None
     val words = name.lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
@@ -91,5 +92,8 @@ fun matchCourse(courses: List<Course>, name: String, wordsOf: (Course) -> List<S
     }
     return NameMatch.None
 }
+
+/** "팔당 노을 코스", "팔당노을코스"처럼 끝에 붙은 "코스"/"course" 를 뗀다. 말할 때 흔히 붙는다(검토 M7). */
+fun withoutCourseWord(text: String): String = text.trim().replace(Regex("(?i)(\\s*(코스|courses?))+$"), "").trim()
 
 private fun squash(text: String): String = text.lowercase().filterNot { it.isWhitespace() }

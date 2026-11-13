@@ -52,4 +52,25 @@ class GleoProtocolTest {
         assertEquals(12, COMMANDS.size)
         assertEquals(listOf(GleoNames.FIND, GleoNames.START, GleoNames.CONTROL), GleoNames.ALL)
     }
+
+    /** 문서 Kotlin 예시가 실제로 만드는 값: 바깥만 따옴표, 안쪽은 이스케이프 없음(검토 I3). */
+    @Test
+    fun paramsReadDocLiteral() {
+        val got = parseGleoParams("\"{\"title\":\"미팅\", \"dateTime\":\"2025-02-20T06:00:00Z\"}\"")
+        assertEquals("미팅", got["title"]!!.content)
+        assertEquals("2025-02-20T06:00:00Z", got["dateTime"]!!.content)
+    }
+
+    /** 문서 본문은 값마다 putExtra 한다고도 쓴다. ACTION_PARAM 이 없으면 extras 로 읽는다(검토 I3). */
+    @Test
+    fun paramsFallBackToExtras() {
+        val extras = mapOf<String, Any?>("courseName" to "팔당 노을", "resultRank" to 2, "resumeLastRun" to false, "other" to listOf(1))
+        val got = gleoParamsFrom(null, extras)
+        assertEquals("팔당 노을", got["courseName"]!!.content)
+        assertEquals(2.0, got["resultRank"]!!.double, 0.0)
+        assertEquals("false", got["resumeLastRun"]!!.content)
+        assertTrue("other" !in got)
+        assertEquals("노을", gleoParamsFrom("""{"searchTerm":"노을"}""", extras)["searchTerm"]!!.content)
+        assertEquals("팔당 노을", gleoParamsFrom("  ", extras)["courseName"]!!.content)
+    }
 }

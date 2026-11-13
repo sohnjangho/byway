@@ -25,4 +25,25 @@ class GleoReceiverTest {
         assertEquals(listOf("a"), GleoMemory.recall(599_999))
         assertEquals(emptyList<String>(), GleoMemory.recall(600_001))
     }
+
+    /** 주행 서비스가 받는 위치는 믿고, 둘러보기 위치는 2분 안의 것만 쓴다. 오래된 자리로 "근처"를 계산하지 않는다(검토 I4). */
+    @Test
+    fun positionMustBeFresh() {
+        val drive = com.byway.core.geo.GeoPoint(37.0, 127.0)
+        val browse = com.byway.core.geo.GeoPoint(35.0, 129.0)
+        assertEquals(drive, voicePosition(drive, driveLive = true, browse = browse, browseAgeMs = 0))
+        assertEquals(browse, voicePosition(drive, driveLive = false, browse = browse, browseAgeMs = 119_000))
+        assertEquals(null, voicePosition(drive, driveLive = false, browse = browse, browseAgeMs = 121_000))
+        assertEquals(null, voicePosition(null, driveLive = false, browse = null, browseAgeMs = null))
+    }
+
+    /** 실행 중 예외가 나도 앱이 죽지 않고 실패로 한 번 답한다(검토 M2). */
+    @Test
+    fun effectFailureBecomesFailReply() {
+        val ok = GleoReply(GleoNames.CONTROL, GleoStatus.SUCCESS, "done")
+        assertEquals(ok, safely(GleoNames.CONTROL, report = {}) { ok })
+        val failed = safely(GleoNames.CONTROL, report = {}) { throw IllegalArgumentException("boom") }
+        assertEquals(GleoStatus.FAIL, failed.status)
+        assertEquals(GleoNames.CONTROL, failed.function)
+    }
 }

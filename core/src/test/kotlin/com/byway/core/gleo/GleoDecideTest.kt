@@ -36,8 +36,9 @@ class GleoDecideTest {
         partyCode: String? = null,
         savedRun: Pair<String, Int>? = null,
         lastResults: List<String> = emptyList(),
+        locationGranted: Boolean = true,
     ) = GleoWorld(
-        courses, here, emptySet(), running, sectionIndex, remainingMeters, prompt, recording, partyCode, savedRun, lastResults,
+        courses, here, emptySet(), running, sectionIndex, remainingMeters, prompt, recording, partyCode, savedRun, lastResults, locationGranted,
         metersOf = { 50_300.0 }, wordsOf = { emptyList() }, moodNames = { listOf("노을") },
     )
 
@@ -97,7 +98,7 @@ class GleoDecideTest {
     fun startAmbiguousAsks() {
         val out = decideGleo(GleoNames.START, p("courseName" to "노을"), world())
         assertEquals(GleoStatus.ASKING, out.reply.status)
-        assertEquals(GleoEffect.None, out.effect)
+        assertTrue(out.effect is GleoEffect.Remember)
         assertTrue(out.reply.data.size in 2..3)
     }
 
@@ -214,5 +215,41 @@ class GleoDecideTest {
         assertEquals(GleoStatus.FAIL, control("fly", world(running = paldang)).reply.status)
         assertEquals(GleoStatus.ASKING, decideGleo(GleoNames.CONTROL, emptyMap(), world()).reply.status)
         assertEquals(GleoStatus.FAIL, decideGleo("OTHER", emptyMap(), world()).reply.status)
+    }
+
+    /** 되물은 후보를 "두 번째 거"로 고르면 그 후보가 출발한다(검토 I1). */
+    @Test
+    fun askingRemembersCandidates() {
+        val asked = decideGleo(GleoNames.START, p("courseName" to "노을"), world())
+        assertEquals(GleoEffect.Remember(listOf("paldang", "byeonsan", "aewol")), asked.effect)
+        val picked = decideGleo(GleoNames.START, p("resultRank" to 2), world(lastResults = (asked.effect as GleoEffect.Remember).ids))
+        assertEquals(GleoEffect.Start("byeonsan", 0), picked.effect)
+    }
+
+    /** 화면은 기록 중이면 출발 버튼이 없다. 음성도 같다(검토 I2). */
+    @Test
+    fun startWhileRecordingFails() {
+        val out = decideGleo(GleoNames.START, p("courseName" to "팔당 노을"), world(recording = true))
+        assertEquals(GleoStatus.FAIL, out.reply.status)
+        assertEquals(GleoEffect.None, out.effect)
+    }
+
+    /** 화면은 위치 권한부터 묻는다. 음성은 물을 수 없으니 에움길에서 허용해 달라고 답한다(검토 I2). */
+    @Test
+    fun startWithoutLocationPermissionFails() {
+        val out = decideGleo(GleoNames.START, p("courseName" to "팔당 노을"), world(locationGranted = false))
+        assertEquals(GleoStatus.FAIL, out.reply.status)
+        assertEquals(GleoEffect.None, out.effect)
+        assertTrue(out.reply.message, "location" in out.reply.message)
+    }
+
+    /** 다른 앱도 받을 수 있는 방송이라 차와 출발점의 거리는 5km 단위로만 알린다(검토 I5). 정렬은 정밀값이다. */
+    @Test
+    fun awayKmIsRough() {
+        val near = GeoPoint(base.lat - 12_300 / 111_200.0, base.lon)
+        val out = decideGleo(GleoNames.FIND, p("searchTerm" to "팔당"), world(here = near))
+        assertEquals(10.0, out.reply.data.single()["awayKm"])
+        val close = GeoPoint(base.lat - 1_200 / 111_200.0, base.lon)
+        assertEquals(5.0, decideGleo(GleoNames.FIND, p("searchTerm" to "팔당"), world(here = close)).reply.data.single()["awayKm"])
     }
 }

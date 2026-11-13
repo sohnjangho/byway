@@ -27,11 +27,35 @@ object GleoNames {
  */
 fun parseGleoParams(raw: String?): Map<String, JsonPrimitive> {
     if (raw.isNullOrBlank()) return emptyMap()
-    val outer = runCatching { Json.parseToJsonElement(raw) }.getOrNull() ?: return emptyMap()
+    val outer = runCatching { Json.parseToJsonElement(raw) }.getOrNull()
+        ?: docLiteral(raw)?.let { inner -> runCatching { Json.parseToJsonElement(inner) }.getOrNull() }
+        ?: return emptyMap()
     val inner = if (outer is JsonPrimitive && outer.isString) runCatching { Json.parseToJsonElement(outer.content) }.getOrNull() else outer
     val obj = inner as? JsonObject ?: return emptyMap()
     return obj.mapNotNull { (key, value) -> (value as? JsonPrimitive)?.takeIf { it !is JsonNull }?.let { key to it } }.toMap()
 }
+
+/**
+ * 문서 Kotlin 예시(`"\"{\"title\":...}\""`)가 실제로 만드는 값은 바깥만 따옴표로 감싸고 안쪽은 이스케이프하지 않은
+ * 문자열이다. 그 바깥 따옴표를 벗긴다(검토 I3).
+ */
+private fun docLiteral(raw: String): String? = raw.trim().takeIf { it.length > 2 && it.startsWith("\"{") && it.endsWith("}\"") }?.let { it.substring(1, it.length - 1) }
+
+/**
+ * Gleo 인자. [raw](`ACTION_PARAM`)를 먼저 읽고, 없거나 비면 Intent extras 의 글자·숫자·참거짓 값으로 읽는다.
+ * 문서 본문은 값마다 putExtra 한다고도 쓰기 때문이다(검토 I3).
+ */
+fun gleoParamsFrom(raw: String?, extras: Map<String, Any?>): Map<String, JsonPrimitive> =
+    parseGleoParams(raw).ifEmpty {
+        extras.mapNotNull { (key, value) ->
+            when (value) {
+                is String -> key to JsonPrimitive(value)
+                is Number -> key to JsonPrimitive(value)
+                is Boolean -> key to JsonPrimitive(value)
+                else -> null
+            }
+        }.toMap()
+    }
 
 enum class GleoStatus { SUCCESS, ASKING, FAIL }
 

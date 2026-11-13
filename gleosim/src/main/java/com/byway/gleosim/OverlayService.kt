@@ -98,7 +98,7 @@ class OverlayService : Service() {
         background = box(Color.parseColor("#F2F3F5"), Color.parseColor("#9AA0A6"))
         val pad = dp(24)
         setPadding(pad, pad, pad, pad)
-        addView(text("시연용 Gleo 흉내 · 실제 Gleo 아님", 26f, Color.parseColor("#5F6368")))
+        addView(text("시연용 Gleo 흉내 · 실제 Gleo 아님", 34f, Color.parseColor("#B3261E")).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
         userBubble = text("", 38f, Color.BLACK).apply { gravity = Gravity.END }
         replyBubble = text("말 버튼을 눌러 보세요", 38f, Color.BLACK).apply { background = box(Color.WHITE, Color.parseColor("#DADCE0")) }
         addView(userBubble, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })

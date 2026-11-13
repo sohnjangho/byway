@@ -116,4 +116,14 @@ class VoiceSearchTest {
         val got = matchCourse(all, "제주 바다") { if (it.id == "sea" || it.id == "east") listOf("바다") else emptyList() }
         assertEquals(NameMatch.One(sea), got)
     }
+
+    /** "팔당 노을 코스로 가자"처럼 말하면 courseName 에 "코스"가 붙어 온다(검토 M7). */
+    @Test
+    fun courseWordIsIgnored() {
+        val all = listOf(course("p", name = "팔당 노을"), course("m", name = "Morning River"))
+        assertEquals(NameMatch.One(all[0]), matchCourse(all, "팔당 노을 코스") { emptyList() })
+        assertEquals(NameMatch.One(all[0]), matchCourse(all, "팔당노을코스") { emptyList() })
+        assertEquals(NameMatch.One(all[1]), matchCourse(all, "Morning River course") { emptyList() })
+        assertEquals(1, find(all, VoiceQuery(searchTerm = "팔당 코스")).total)
+    }
 }

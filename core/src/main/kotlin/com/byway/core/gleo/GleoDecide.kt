@@ -26,6 +26,8 @@ data class GleoWorld(
     val partyCode: String?,
     val savedRun: Pair<String, Int>?,
     val lastResults: List<String>,
+    /** 위치 권한. 화면 출발은 권한부터 묻지만 음성은 물을 수 없다(검토 I2). */
+    val locationGranted: Boolean,
     val metersOf: (Course) -> Double,
     val wordsOf: (Course) -> List<String>,
     val moodNames: (Course) -> List<String>,
@@ -60,6 +62,9 @@ private fun Map<String, JsonPrimitive>.flag(key: String): Boolean = this[key]?.b
 
 private fun km(meters: Double): Double = (meters / 100.0).roundToLong() / 10.0
 
+/** 차와 출발점의 거리는 5km 단위로만 알린다. 다른 앱도 Callback 을 받을 수 있어 차 위치를 좁히지 못하게 한다(검토 I5). */
+private fun roughKm(meters: Double): Double = maxOf(5L, (meters / 5_000.0).roundToLong() * 5).toDouble()
+
 private fun find(params: Map<String, JsonPrimitive>, world: GleoWorld): GleoOutcome {
     val query = VoiceQuery(
         searchTerm = params.text("searchTerm"),
@@ -78,7 +83,7 @@ private fun find(params: Map<String, JsonPrimitive>, world: GleoWorld): GleoOutc
             put("name", found.course.name)
             put("region", found.course.region)
             put("km", km(world.metersOf(found.course)))
-            found.awayMeters?.let { put("awayKm", km(it)) }
+            found.awayMeters?.let { put("awayKm", roughKm(it)) }
             put("moods", world.moodNames(found.course))
             put("dummy", found.course.dummy)
         }
@@ -96,6 +101,9 @@ private fun start(params: Map<String, JsonPrimitive>, world: GleoWorld): GleoOut
     world.running?.let {
         return GleoOutcome(GleoReply(GleoNames.START, GleoStatus.FAIL, "The course ${it.name} is already running; end it before starting another."))
     }
+    // 화면과 같은 조건: 기록 중에는 출발 버튼이 없고, 위치 권한이 없으면 먼저 묻는다(검토 I2).
+    if (world.recording) return GleoOutcome(GleoReply(GleoNames.START, GleoStatus.FAIL, "A drive is being recorded; stop recording before starting a course."))
+    if (!world.locationGranted) return GleoOutcome(GleoReply(GleoNames.START, GleoStatus.FAIL, "Open 에움길 and allow location access first."))
     if (params.flag("resumeLastRun")) {
         val saved = world.savedRun?.let { (id, from) -> world.courses.firstOrNull { it.id == id }?.let { it to from } }
             ?: return GleoOutcome(GleoReply(GleoNames.START, GleoStatus.FAIL, "There is no paused course to resume."))
@@ -120,11 +128,16 @@ private fun start(params: Map<String, JsonPrimitive>, world: GleoWorld): GleoOut
     }
 }
 
-private fun asking(message: String, courses: List<Course>, world: GleoWorld) = GleoOutcome(
-    GleoReply(GleoNames.START, GleoStatus.ASKING, message, courses.take(VOICE_TOP).mapIndexed { i, c ->
-        mapOf("rank" to i + 1, "name" to c.name, "region" to c.region, "km" to km(world.metersOf(c)))
-    }),
-)
+/** 되물은 후보를 기억해 "두 번째 거"(resultRank)가 보여 준 후보를 고르게 한다(검토 I1). */
+private fun asking(message: String, courses: List<Course>, world: GleoWorld): GleoOutcome {
+    val shown = courses.take(VOICE_TOP)
+    return GleoOutcome(
+        GleoReply(GleoNames.START, GleoStatus.ASKING, message, shown.mapIndexed { i, c ->
+            mapOf("rank" to i + 1, "name" to c.name, "region" to c.region, "km" to km(world.metersOf(c)))
+        }),
+        GleoEffect.Remember(shown.map { it.id }),
+    )
+}
 
 /** 출발은 에움길이 스스로 안내 음성을 내므로 Gleo 는 말하지 않는다(silent, 설계 3-2). */
 private fun started(course: Course, from: Int, world: GleoWorld) = GleoOutcome(
