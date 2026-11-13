@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
-    <application android:label="Gleo 흉내(시연용)">
+    <application android:label="Gleo 시연">
         <activity android:name=".LauncherActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -18,7 +18,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="시연용 음성 비서 흉내 대화창" />
+                android:value="시연용 음성 비서 화면" />
         </service>
     </application>
 </manifest>

@@ -11,6 +11,7 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
@@ -21,7 +22,6 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import kotlinx.serialization.json.Json
@@ -29,28 +29,46 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
 /**
- * 다른 앱 위에 떠 있는 시연용 대화창(설계 9절). 말 버튼을 누르면 Gleo 와 같은 규격의 방송을 에움길에 보내고,
- * 에움길의 Callback 을 받아 한국어 답 말풍선을 보인다. 실제 Gleo 가 아님을 늘 보이고 Gleo 로고·색은 쓰지 않는다.
+ * 시연용 Gleo 화면(설계 9절, PM 11-13 "Gleo AI 디자인을 보고"). 디자인 가이드의 크롬·말풍선·패널(목록형)을 따른다.
+ * 운전석 쪽(왼쪽 차량 정보 칸 위)에 뜨고, 3분할의 내비·에움길 칸은 가리지 않는다.
+ * 말은 adb 로 넣는다: `am broadcast -a com.byway.gleosim.SAY -p com.byway.gleosim --ei n <SCENARIOS 번호>`.
+ * 그러면 듣는 중 → 사용자 말 → 생각 중(에움길에 Gleo 규격 방송) → 답 말풍선과 패널 → 잠시 뒤 사라짐 순서로 보인다.
  */
 class OverlayService : Service() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var windows: WindowManager
-    private lateinit var panel: View
-    private lateinit var userBubble: TextView
-    private lateinit var replyBubble: TextView
+    private lateinit var chrome: ChromeView
+    private lateinit var stack: LinearLayout
+    private lateinit var bubble: TextView
+    private lateinit var panel: LinearLayout
     private lateinit var voice: SimVoice
-    private val noAnswer = Runnable { replyBubble.text = "응답이 없어요" }
+    private var waiting = false
+
+    private val noAnswer = Runnable {
+        waiting = false
+        showReply("응답이 없어요", null)
+        main.postDelayed(::sleep, STANDBY_MS)
+    }
+
+    private val says = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            SCENARIOS.getOrNull(intent.getIntExtra("n", -1))?.let(::converse)
+        }
+    }
 
     private val responses = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.getStringExtra("packageName") != BYWAY) return
+            if (intent.getStringExtra("packageName") != BYWAY || !waiting) return
             val response = intent.getStringExtra("response") ?: return
             Log.i(TAG, "response $response")
+            waiting = false
             main.removeCallbacks(noAnswer)
             val text = koreanReply(response)
-            replyBubble.text = text
             val mode = runCatching { (Json.parseToJsonElement(response).jsonObject["mode"] as? JsonPrimitive)?.content }.getOrNull()
+            showReply(text, panelFor(response))
             if (mode == null || mode == "voice") voice.say(text)
+            // 응답 화면이 있으면 5초 머문다(가이드 Standby). 읽을 시간을 조금 더 둔다.
+            main.postDelayed(::sleep, STANDBY_MS)
         }
     }
 
@@ -61,90 +79,156 @@ class OverlayService : Service() {
         startInForeground()
         voice = SimVoice(this).also { it.start() }
         windows = getSystemService(WindowManager::class.java)
-        panel = buildPanel()
-        windows.addView(panel, WindowManager.LayoutParams(
-            dp(840), WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            // 왼쪽 차량 정보 칸 위에 둔다. 3분할의 에움길 칸(오른쪽 1/3)과 내비 칸을 가리지 않는다.
-            gravity = Gravity.BOTTOM or Gravity.START
-            x = dp(8)
-            y = dp(96)
-        })
-        val filter = IntentFilter(RESPONSE_ACTION)
-        if (Build.VERSION.SDK_INT >= 33) registerReceiver(responses, filter, RECEIVER_EXPORTED) else registerReceiver(responses, filter)
+        chrome = ChromeView(this).apply { visibility = View.GONE }
+        windows.addView(chrome, params(dp(CHROME_WIDTH), dp(CHROME_HEIGHT), dp(PANEL_X + PANEL_WIDTH / 2 - CHROME_WIDTH / 2), 0, touchable = false))
+        stack = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            visibility = View.GONE
+        }
+        bubble = TextView(this).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 28f)
+            setTextColor(Color.parseColor("#20245C"))
+            background = rounded(Color.parseColor("#D9B8BCF6"), 40)
+            setPadding(dp(28), dp(12), dp(28), dp(12))
+        }
+        panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = rounded(Color.WHITE, 32)
+            elevation = dp(16).toFloat()
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+        }
+        stack.addView(bubble, LinearLayout.LayoutParams(-2, -2))
+        stack.addView(panel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) })
+        stack.setPadding(dp(24), dp(8), dp(24), dp(32))
+        windows.addView(stack, params(dp(PANEL_WIDTH), WindowManager.LayoutParams.WRAP_CONTENT, dp(PANEL_X), dp(PANEL_Y), touchable = true))
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(responses, IntentFilter(RESPONSE_ACTION), RECEIVER_EXPORTED)
+            registerReceiver(says, IntentFilter(SAY_ACTION), RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(responses, IntentFilter(RESPONSE_ACTION))
+            registerReceiver(says, IntentFilter(SAY_ACTION))
+        }
     }
 
     override fun onDestroy() {
         main.removeCallbacksAndMessages(null)
         unregisterReceiver(responses)
-        windows.removeView(panel)
+        unregisterReceiver(says)
+        windows.removeView(chrome)
+        windows.removeView(stack)
         voice.release()
         super.onDestroy()
     }
 
-    private fun send(scenario: Scenario) {
-        userBubble.text = scenario.utterance
-        replyBubble.text = "…"
-        Log.i(TAG, "send ${scenario.function} ${scenario.paramJson}")
-        sendBroadcast(Intent(scenario.function).setPackage(BYWAY).putExtra("ACTION_PARAM", scenario.paramJson))
-        main.removeCallbacks(noAnswer)
-        main.postDelayed(noAnswer, NO_ANSWER_MS)
+    /** 가이드의 상태 순서: 듣는 중(대기) → 듣는 중(말함) → 생각 중 → 말하는 중 → 잠시 머문 뒤 잠듦. */
+    private fun converse(scenario: Scenario) {
+        main.removeCallbacksAndMessages(null)
+        waiting = false
+        chrome.status = ChromeView.Status.LISTENING
+        chrome.visibility = View.VISIBLE
+        stack.visibility = View.VISIBLE
+        panel.visibility = View.GONE
+        bubble.text = "운전석에서 듣는 중..."
+        main.postDelayed({ bubble.text = scenario.utterance }, LISTEN_MS)
+        main.postDelayed({
+            chrome.status = ChromeView.Status.THINKING
+            waiting = true
+            Log.i(TAG, "send ${scenario.function} ${scenario.paramJson}")
+            sendBroadcast(Intent(scenario.function).setPackage(BYWAY).putExtra("ACTION_PARAM", scenario.paramJson))
+            main.postDelayed(noAnswer, NO_ANSWER_MS)
+        }, LISTEN_MS + SPOKEN_MS)
     }
 
-    private fun buildPanel(): View = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        background = box(Color.parseColor("#F2F3F5"), Color.parseColor("#9AA0A6"))
-        val pad = dp(24)
-        setPadding(pad, pad, pad, pad)
-        addView(text("시연용 Gleo 흉내 · 실제 Gleo 아님", 34f, Color.parseColor("#B3261E")).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
-        userBubble = text("", 38f, Color.BLACK).apply { gravity = Gravity.END }
-        replyBubble = text("말 버튼을 눌러 보세요", 38f, Color.BLACK).apply { background = box(Color.WHITE, Color.parseColor("#DADCE0")) }
-        addView(userBubble, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-        addView(replyBubble, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-        SCENARIOS.chunked(2).forEach { pair ->
-            addView(LinearLayout(context).apply {
-                pair.forEach { scenario ->
-                    addView(Button(context).apply {
-                        text = scenario.utterance
-                        isAllCaps = false
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
-                        setOnClickListener { send(scenario) }
-                    }, LinearLayout.LayoutParams(0, -2, 1f))
-                }
-            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+    private fun showReply(text: String, content: Panel?) {
+        chrome.status = ChromeView.Status.SPEAKING
+        bubble.text = text
+        panel.removeAllViews()
+        content?.items?.forEachIndexed { i, item ->
+            panel.addView(row(item), LinearLayout.LayoutParams(-1, -2).apply { if (i > 0) topMargin = dp(10) })
         }
-        addView(Button(context).apply {
-            text = "닫기"
-            setOnClickListener { stopSelf() }
-        }, LinearLayout.LayoutParams(-2, -2).apply { gravity = Gravity.END })
+        panel.visibility = if (content == null) View.GONE else View.VISIBLE
     }
 
-    private fun text(value: String, sp: Float, color: Int) = TextView(this).apply {
+    private fun sleep() {
+        chrome.visibility = View.GONE
+        stack.visibility = View.GONE
+    }
+
+    /** 목록 한 줄(가이드 List Type): 번호 동그라미, 굵은 제목, 설명 줄, 회색 태그. */
+    private fun row(item: PanelItem): View = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        background = rounded(Color.parseColor("#F3F4FB"), 20)
+        setPadding(dp(18), dp(14), dp(18), dp(14))
+        item.number?.let { n ->
+            addView(TextView(context).apply {
+                text = "$n"
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                typeface = Typeface.DEFAULT_BOLD
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(BLUE)
+                }
+            }, LinearLayout.LayoutParams(dp(32), dp(32)).apply {
+                topMargin = dp(4)
+                marginEnd = dp(14)
+            })
+        }
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(text(item.title, 30f, Color.parseColor("#111111"), bold = true))
+            if (item.meta.isNotEmpty()) addView(text(item.meta, 20f, GRAY), LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(4) })
+            if (item.tags.isNotEmpty()) {
+                addView(LinearLayout(context).apply {
+                    item.tags.forEach { tag ->
+                        addView(text(tag, 18f, GRAY).apply {
+                            background = rounded(Color.parseColor("#E8EAEF"), 10)
+                            setPadding(dp(10), dp(3), dp(10), dp(3))
+                        }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
+                    }
+                }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
+            }
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+    }
+
+    private fun text(value: String, sp: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
         text = value
         setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
         setTextColor(color)
-        val pad = dp(6)
-        setPadding(pad, pad, pad, pad)
+        if (bold) typeface = Typeface.DEFAULT_BOLD
     }
 
-    private fun box(fill: Int, line: Int) = GradientDrawable().apply {
+    private fun rounded(fill: Int, radius: Int) = GradientDrawable().apply {
         setColor(fill)
-        cornerRadius = dp(12).toFloat()
-        setStroke(dp(1), line)
+        cornerRadius = dp(radius).toFloat()
+    }
+
+    /**
+     * 겹창. 안드로이드 12+ 는 다른 앱의 눌리지 않는 겹창을 80% 불투명도로 제한하므로, 흰 패널은 눌리는 창으로 둔다
+     * (실제 Gleo 패널도 눌린다). 크롬 빛은 반투명이라 눌리지 않게 둔다.
+     */
+    private fun params(w: Int, h: Int, x: Int, y: Int, touchable: Boolean) = WindowManager.LayoutParams(
+        w, h,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or (if (touchable) 0 else WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE),
+        PixelFormat.TRANSLUCENT,
+    ).apply {
+        gravity = Gravity.TOP or Gravity.START
+        this.x = x
+        this.y = y
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
-    /** 화면 뒤로 가도 대화창과 Callback 수신이 살아 있게 포그라운드 서비스로 둔다. */
+    /** 화면 뒤로 가도 Gleo 화면과 Callback 수신이 살아 있게 포그라운드 서비스로 둔다. */
     private fun startInForeground() {
         val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Gleo 흉내", NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Gleo 시연", NotificationManager.IMPORTANCE_LOW))
         val notification = Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle("시연용 Gleo 흉내 실행 중")
+            .setContentTitle("Gleo 시연 화면 실행 중")
             .build()
         if (Build.VERSION.SDK_INT >= 34) startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) else startForeground(1, notification)
     }
@@ -153,7 +237,18 @@ class OverlayService : Service() {
         const val TAG = "GleoSim"
         const val BYWAY = "com.byway"
         const val RESPONSE_ACTION = "ai.pleos.playground.intent.action.APP_ACTION_RESPONSE"
+        const val SAY_ACTION = "com.byway.gleosim.SAY"
         const val CHANNEL = "gleosim"
         const val NO_ANSWER_MS = 7_000L
+        const val LISTEN_MS = 900L
+        const val SPOKEN_MS = 1_100L
+        const val STANDBY_MS = 6_000L
+        const val CHROME_WIDTH = 900
+        const val CHROME_HEIGHT = 170
+        const val PANEL_WIDTH = 760
+        const val PANEL_X = 60
+        const val PANEL_Y = 70
+        val BLUE = Color.parseColor("#5B66F5")
+        val GRAY = Color.parseColor("#5F6368")
     }
 }
