@@ -37,6 +37,7 @@ import kotlinx.serialization.json.jsonObject
 class OverlayService : Service() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var windows: WindowManager
+    private lateinit var cover: View
     private lateinit var chrome: ChromeView
     private lateinit var stack: LinearLayout
     private lateinit var bubble: TextView
@@ -79,6 +80,9 @@ class OverlayService : Service() {
         startInForeground()
         voice = SimVoice(this).also { it.start() }
         windows = getSystemService(WindowManager::class.java)
+        // 안전벨트 알림 덮개. Gleo 빛과 말풍선보다 아래에 깔리도록 먼저 붙인다. 눌리지 않는 창은 80% 불투명도로 제한되므로 눌리는 창으로 둔다.
+        cover = View(this).apply { setBackgroundColor(Color.WHITE) }
+        windows.addView(cover, params(dp(BELT_COVER.w), dp(BELT_COVER.h), dp(BELT_COVER.x), dp(BELT_COVER.y), touchable = true))
         chrome = ChromeView(this).apply { visibility = View.GONE }
         windows.addView(chrome, params(dp(CHROME_WIDTH), dp(CHROME_HEIGHT), dp(PANEL_X + PANEL_WIDTH / 2 - CHROME_WIDTH / 2), 0, touchable = false))
         stack = LinearLayout(this).apply {
@@ -115,6 +119,7 @@ class OverlayService : Service() {
         main.removeCallbacksAndMessages(null)
         unregisterReceiver(responses)
         unregisterReceiver(says)
+        windows.removeView(cover)
         windows.removeView(chrome)
         windows.removeView(stack)
         voice.release()
