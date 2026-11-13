@@ -61,7 +61,11 @@
 |---|---|---|---|
 | `FIND_DRIVING_COURSES` | service | 코스 찾기. 검색어, 무드, 내 주변 거리로 거른다 | "노을 보기 좋은 코스 찾아줘", "근처 바닷길 있어?" |
 | `START_DRIVING_COURSE` | service | 이름으로 코스를 골라 내비에 입히고 출발한다 | "팔당 노을 출발해줘", "두 번째 거로 가자" |
-| `CONTROL_RUNNING_COURSE` | service | 달리는 코스 조작과 상태 묻기 | "잠깐 들를게", "코스로 돌아갈래", "얼마나 남았어?", "코스 그만할래" |
+| `CONTROL_BYWAY_DRIVE` | service | 달리는 코스 조작, 상태 묻기, 주행 설정 | "잠깐 들를게", "얼마나 남았어?", "다음 볼거리 뭐야?", "음성 안내 꺼줘", "코스 그만할래" |
+
+- **한도 3개의 출처:** "최대 3개"는 Pleos 규칙이다(App Schema 작성 가이드의 `actionCalls`).
+- **기능을 늘리는 방법 [PM 11-13 "Gleo가 호출할 수 있는 도구로 대부분의 기능을"]:** 함수마다 선택지(enum)와 인자를 두어 한 함수로 여러 동작을 부른다.
+- **거대 함수 하나로 몰지 않는 이유:** 가이드가 "함수 이름에 대상까지", "설명은 한두 문장"을 권하고, 선택지가 너무 많으면 LLM이 엉뚱한 동작을 고를 위험이 커진다. 그래서 주제별 함수 3개로 나눈다.
 
 세 함수 모두 `service`를 쓴다 **[제안]**.
 - 이유: 내비가 넓게 떠 있거나 3분할로 달리는 중에 에움길 화면이 앞으로 튀어나와 배치를 흔들면 안 된다.
@@ -74,6 +78,10 @@
   - `mood`(string enum): `alone`, `date`, `family`, `spring`, `summer`, `autumn`, `winter`, `rain`, `sunrise`, `day`, `sunset`, `night`
     - `MOOD_KEYS` 12가지와 일대일로 대응한다.
   - `nearbyKm`(number): 차 위치에서 출발 지점까지 거리 상한(km)
+  - `lengthBand`(string enum): `up_to_30km`, `up_to_60km`, `up_to_100km`, `over_100km`. `LengthBand`와 같다.
+  - `region`(string enum): 앱의 지역 칩과 같은 지역 이름(수도권, 강원 …)이다. 정확한 목록은 builder가 코스 자료에서 뽑아 스키마에 고정한다.
+  - `rankBy`(string enum): `curves`, `driving_fun`, `scenery`, `length`. 랭킹 화면의 `RankBy` 4가지와 같다. 주면 그 순서로 정렬한다. 랭킹 화면처럼 더미 코스는 뺀다.
+  - `myCoursesOnly`(boolean): 내 코스(내가 만든 코스·받은 코스, `CourseStore…mine()`)만 찾는다.
 - **고르기:** 기존 `filterCourses`를 그대로 쓴다.
   - 검색어는 지금과 같은 방식으로 맞춘다. 모든 낱말이 들어 있어야 한다.
   - `nearbyKm`는 25 / 50 / 75 중 같거나 큰 가장 가까운 값으로 올린다. 75를 넘으면 75로 둔다 **[제안]**.
@@ -88,9 +96,10 @@
 
 ### 3-2. `START_DRIVING_COURSE`
 
-- **인자**
-  - `courseName`(string, **required**)
-  - `resultRank`(number, 선택): 직전 찾기 결과의 몇 번째인지
+- **인자:** 셋 다 선택이라 `required`는 비운다. 하나도 없으면 `asking`으로 되묻는다.
+  - `courseName`(string)
+  - `resultRank`(number): 직전 찾기 결과의 몇 번째인지
+  - `resumeLastRun`(boolean): 달리다 만 코스(`MyDrives.savedRun`)를 멈춘 지점부터 이어 달린다. 지금 화면의 "이어 달리기"와 같다. 저장된 것이 없으면 `fail`이다.
 - **이름 맞추기:** 아래 순서로 맞춘다. core의 순수 함수로 두고 시험한다.
   1. 이름이 정확히 같다(공백과 대소문자 무시).
   2. 이름에 말이 들어 있다.
@@ -120,21 +129,35 @@
   - `data`는 그대로 넣어 대화가 이어지게 한다.
   - `fail`과 `asking`은 Gleo가 말한다(기본 `voice`).
 
-### 3-3. `CONTROL_RUNNING_COURSE`
+### 3-3. `CONTROL_BYWAY_DRIVE`
 
 - **인자:** `command`(string enum, **required**)
 - **`command` 값과 동작**
 
-| command | 뜻 | 동작 |
-|---|---|---|
-| `stop_by` | 잠깐 들를게 | 묻는 중인 `Prompt.DETOUR`에 "예"로 답한다(`DriveService.answer(yes = true)`) |
-| `back_to_course` | 코스로 돌아갈래 | `DETOUR`에 "아니요"로 답한다. 복귀 경로를 안내한다 |
-| `resume` | 이어서 달릴래 | `Prompt.RESUME`에 "예"로 답한다 |
-| `end_course` | 코스 그만 | 지금 화면의 "코스 끝내기"와 같다(`DriveService.stop`) |
-| `status` | 얼마나 남았어 | 남은 km, 구간 i/n, 구간 이름, 다음 구간 이름을 `data`로 준다 |
+| command | 뜻 | 동작 | 달리는 코스 필요 |
+|---|---|---|---|
+| `stop_by` | 잠깐 들를게 | 묻는 중인 `Prompt.DETOUR`에 "예"로 답한다(`DriveService.answer(yes = true)`) | 예 |
+| `back_to_course` | 코스로 돌아갈래 | `DETOUR`에 "아니요"로 답한다. 복귀 경로를 안내한다 | 예 |
+| `resume` | 이어서 달릴래 | `Prompt.RESUME`에 "예"로 답한다 | 예 |
+| `end_course` | 코스 그만 | 지금 화면의 "코스 끝내기"와 같다(`DriveService.stop`) | 예 |
+| `status` | 얼마나 남았어 | 남은 km, 구간 i/n, 지금 구간 이름, 다음 구간 이름을 `data`로 준다 | 예 |
+| `next_spot` | 다음 볼거리 | 지금 위치보다 앞에 있는 코스 주변 지점(`Course.spots`, `pathIndex` 기준) 중 가장 가까운 것의 이름, 종류, 남은 km | 예 |
+| `voice_guide_on` / `voice_guide_off` | 음성 안내 켜기·끄기 | 설정의 "음성 안내"(`MyDrives.voiceOn`). 바로 적용된다 | 아니요 |
+| `cabin_effects_on` / `cabin_effects_off` | 차 안 연출 켜기·끄기 | 설정의 "차 안 연출"(`MyDrives.ambienceOn`) | 아니요 |
+| `stop_recording` | 기록 그만 | 달린 길 기록을 멈춘다(`DriveService.recordStop`). 저장은 지금처럼 정차 화면에서 한다 | 기록 중일 때 |
+| `stop_location_sharing` | 위치 공유 꺼줘 | 함께 달리기의 "위치 공유 끄기"와 같다 | 함께 달리기 중일 때 |
 
-- **화면이 가려져도 되는 이유:** 이 함수는 코스가 달리는 중에만 의미가 있다. 그때는 `DriveService`가 이미 포그라운드 서비스라 앱이 포그라운드로 취급되고, `startService`(지금의 `answer`, `stop`)가 막히지 않는다.
-- **안 되는 경우:** 달리는 코스가 없으면 `fail`이다. 묻는 중이 아닌데 `stop_by`, `back_to_course`, `resume`가 오면 `fail`로 "지금은 묻고 있지 않다"를 알린다.
+- **차 안 연출은 다음 코스부터 바뀐다:** 지금 앱은 이 설정을 코스를 시작할 때 읽는다(`DriveService` `courseFeatures` 거르기). 그래서 달리는 중에 끄면 다음 코스부터 적용된다.
+  - 음성으로 끌 때도 화면 설정과 똑같이 동작하고, `message`에 "다음 코스부터 적용"을 적는다 **[제안]**.
+  - 달리는 중에 바로 연출을 되돌리는 것은 이번 범위가 아니다.
+- **음성으로 하지 않는 것**
+  - **기록 시작:** 기록은 시작할 때마다 동의 화면을 거친다. 음성으로 시작하면 이 동의를 건너뛰게 된다.
+  - **함께 달리기 참여와 초대:** 동의 문구를 화면에서 읽고 눌러야 하는 흐름이다.
+
+- **화면이 가려져도 되는 이유**
+  - 코스 조작과 기록 그만은 `DriveService`가 이미 포그라운드 서비스로 돌 때만 의미가 있다. 그때는 앱이 포그라운드로 취급되므로 `startService`(지금의 `answer`, `stop`, `recordStop`)가 막히지 않는다.
+  - 설정 켜기·끄기는 앱 안의 값을 바꾸기만 하므로 서비스를 시작하지 않는다.
+- **안 되는 경우:** 표의 "달리는 코스 필요" 조건이 맞지 않으면 `fail`이다. 묻는 중이 아닌데 `stop_by`, `back_to_course`, `resume`가 오면 `fail`로 "지금은 묻고 있지 않다"를 알린다.
 - **`end_course`:** 정차 여부와 상관없이 받는다. 화면의 "코스 끝내기" 버튼도 주행 중에 눌린다(`DriveScreen`, 정차 조건 없음).
 - **`stop_by` / `back_to_course`:** 답을 받으면 Gleo가 짧게 말한다. 예: "Okay, I'll wait while you stop by."
 - **11-12 문제의 해결:** 이 함수로 "2분할에서 이탈 질문에 답할 수 없다"는 문제가 풀린다.
@@ -142,7 +165,7 @@
 ## 4. 하지 않는 것
 
 - 함께 달리기를 음성으로 다루지 않는다(코드로 참여, 친구 초대, 위치 공유 동의). 동의 문구를 화면에서 읽고 눌러야 하는 흐름이라 음성으로 대신하지 않는다.
-- 달린 길 기록, 설정, 공유를 음성으로 다루지 않는다.
+- 기록 시작, 코스 공유, 표에 없는 설정(음악 앱 재생, 분위기 효과, 지도 보기, 주행 화면 배치)은 음성으로 다루지 않는다.
 - 앱 안에 따로 음성 인식, 호출어, LLM을 두지 않는다. 모두 Gleo 쪽 일이다.
 - 음성으로 화면 배치(3분할·2분할)를 바꾸지 않는다. 앱이 창을 나눌 수 없다.
 - Gleo 대화창의 모양(목록, 카드, 칩)을 앱이 정하려 하지 않는다. 그런 문서가 없다.
@@ -200,12 +223,12 @@
 
 ## 8. 확인 방법
 
-- **단위 시험:** 인자 읽기 두 모양, 무드 대응, 이름 맞추기 네 단계, 찾기 결과 3개와 더미 뒤로 보내기, 함수별 판단(정차·주행·달리는 중·묻는 중), Callback JSON 모양, schema.json과 매니페스트 맞춤
+- **단위 시험:** 인자 읽기 두 모양, 무드·거리 구간·랭킹 기준 대응, 이름 맞추기 네 단계, 찾기 결과 3개와 더미 뒤로 보내기, 랭킹 정렬에서 더미 빼기, 이어 달리기, 함수별 판단(정차·주행·달리는 중·묻는 중·기록 중·함께 달리기 중), 다음 볼거리 고르기, Callback JSON 모양, schema.json과 매니페스트 맞춤
 - **에뮬레이터(Gleo 흉내):**
   ```
   adb shell am broadcast -a FIND_DRIVING_COURSES -p com.byway --es ACTION_PARAM '{"searchTerm":"노을"}'
   adb shell am broadcast -a START_DRIVING_COURSE -p com.byway --es ACTION_PARAM '{"courseName":"팔당 노을"}'
-  adb shell am broadcast -a CONTROL_RUNNING_COURSE -p com.byway --es ACTION_PARAM '{"command":"status"}'
+  adb shell am broadcast -a CONTROL_BYWAY_DRIVE -p com.byway --es ACTION_PARAM '{"command":"status"}'
   ```
   - Callback은 디버그 빌드에서만 그 내용을 logcat에 한 줄로 남겨 확인한다.
   - 이탈 장면은 기존 `detour.py`로 만든 뒤 `stop_by`와 `back_to_course`를 보낸다.
@@ -232,6 +255,8 @@
     - "잠깐 들를게"
     - "코스로 돌아갈래"
     - "얼마나 남았어?"
+    - "다음 볼거리 뭐야?"
+    - "음성 안내 꺼줘"
     - "코스 그만할래"
   - 버튼을 누르면 사용자 말풍선을 보인다.
   - 이어서 Gleo가 보낼 것과 **같은 방송**(action = 함수 이름, `setPackage("com.byway")`, `ACTION_PARAM`)을 보낸다. 실제 Gleo의 LLM 역할은 미리 짠 말 → 함수 호출 표가 대신한다.
@@ -243,6 +268,7 @@
 
 ## 10. 정해진 것 (PM 11-13)
 
-- 함수 세 개: 찾기, 출발, 달리는 중 조작. 함께 달리기는 뺀다.
+- 함수 세 개: 찾기(검색어, 무드, 내 주변, 거리, 지역, 랭킹 기준, 내 코스), 출발(이름, 순위, 이어 달리기), 에움길 조작(들르기, 복귀, 이어가기, 끝내기, 남은 거리, 다음 볼거리, 음성 안내, 차 안 연출, 기록 그만, 위치 공유 끄기).
+- 함께 달리기 참여와 초대, 기록 시작은 동의 화면이 필요해서 뺀다.
 - 주행 중에도 음성 출발을 허용한다.
 - 시연용 Gleo 흉내 앱을 만든다(9절).
