@@ -63,13 +63,14 @@ class OverlayService : Service() {
         windows = getSystemService(WindowManager::class.java)
         panel = buildPanel()
         windows.addView(panel, WindowManager.LayoutParams(
-            dp(1000), WindowManager.LayoutParams.WRAP_CONTENT,
+            dp(840), WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.BOTTOM or Gravity.END
-            x = dp(24)
+            // 왼쪽 차량 정보 칸 위에 둔다. 3분할의 에움길 칸(오른쪽 1/3)과 내비 칸을 가리지 않는다.
+            gravity = Gravity.BOTTOM or Gravity.START
+            x = dp(8)
             y = dp(96)
         })
         val filter = IntentFilter(RESPONSE_ACTION)
