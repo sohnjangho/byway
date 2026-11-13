@@ -122,6 +122,11 @@
   - 이때는 `DriveService.start`를 시도한다. `ForegroundServiceStartNotAllowedException`이 나면 `fail`로 "에움길을 화면에 띄운 뒤 다시 말해 달라"를 알린다 **[제안]**.
   - Gleo(시스템 앱)의 방송이 예외 허용을 함께 주는지는 문서에 없다. 그래서 에뮬레이터에서 실측해 결과를 이 절에 적는다.
   - 프로세스가 아예 없을 때도 수신기가 앱을 깨운다. 첫 코스 목록 읽기(더미 150개 포함)와 기어 확인이 6초 안에 끝나는지 함께 잰다.
+  - **실측 결과(11-13, 에뮬레이터 API 34, release 서명):** 내비가 앞에 나와 에움길이 가려지고 달리는 코스가 없으면 `ForegroundServiceStartNotAllowedException`으로 막힌다. 앱은 죽지 않고 `fail` "Open 에움길 on the screen and try again."으로 답한다.
+    - 흉내 앱(포그라운드 서비스와 겹창을 가진 앱)이 보내도, adb 셸이 보내도 똑같이 막힌다.
+    - 에움길이 화면에 보이면 정차 중(P)이든 주행 중(D)이든 출발한다.
+    - 실제 Gleo(시스템 앱)의 방송이 예외 허용을 함께 주는지는 승인 뒤 실차에서 확인한다.
+    - 그래도 막히면 `START`만 `component: "activity"`로 바꾸는 방법이 있다. 이 경우 Gleo가 에움길 화면을 띄운 뒤 출발한다. 다만 PM 결정 사항이다.
 - **Callback:** 출발 요청을 넣는 즉시 `success`를 보낸다. 내비 경로 계산이 끝나기를 기다리지 않는다(7초 제한).
   - `data`는 `name`, `km`, `sections`(구간 수), `firstSection`이다.
 - **겹치는 말 막기:** 엔진은 출발할 때 `Messages.courseStart(이름)`을 직접 말한다(`CourseEngine.start`). 출발 성공 Callback은 `mode: "silent"`로 보내 Gleo가 말하지 않게 하고, 에움길의 출발 안내를 그대로 쓴다 **[제안]**.
@@ -235,7 +240,27 @@
   - 2분할(에움길이 가려진 상태)에서 출발과 이탈 답하기가 되는지 본다.
 - **실제 Gleo:** Pleos 스키마 승인이 있어야 하므로 11-15 전에는 확인하지 못한다. 기획서에는 "스키마 작성 완료, 승인 신청 단계"로 쓴다.
   - 승인 뒤에 확인할 것: Gleo가 한국어 인자를 그대로 넘기는지, 최종 답을 한국어로 말하는지, Callback 방송이 도착하는지
-- **에뮬레이터 실측 항목:** 2분할로 가려졌고 달리는 코스가 없을 때 `START`가 출발하는지 아니면 `fail`이 되는지. 앱이 꺼진 상태에서 6초 안에 답하는지.
+- **에뮬레이터 실측 결과(11-13 16:41~16:49, release 서명 시연 빌드와 흉내 앱 `gleosim`)**
+
+| 장면 | 결과 |
+|---|---|
+| 정차, 에움길 보임, "노을 보기 좋은 코스 찾아줘"(`mood: sunset`) | success. 63곳 중 3곳. 보낸 뒤 답까지 0.53초 |
+| "1번 코스로 출발해줘"(`resultRank: 1`) | success/silent. 애월 노을 출발. 에움길이 "애월 노을 코스를 시작합니다"를 직접 말함 |
+| 같은 출발을 한 번 더 | fail "already running". 달리던 코스 그대로 |
+| 주행(D) 중 `courseName: 팔당 노을` | success. 코스 중간에서 시작 |
+| 이탈 → 질문 7초 뒤 `stop_by` | success. 에움길 "돌아오면 이어서 안내합니다". 22초 동안 복귀 안내 없음 |
+| 새 코스에서 이탈 → `back_to_course` | success. 에움길 "코스로 돌아가는 길을 안내합니다" |
+| 질문이 없을 때 `back_to_course` | fail "There is no detour question to answer right now." |
+| `status` / `next_spot` | 남은 18.9km, 구간 2/3 하남 팔당대교 / 세미원 18.6km 앞 |
+| `voice_guide_off/on`, `cabin_effects_off/on` | success. 차 안 연출은 "다음 코스부터" |
+| 내비가 앞에 있고(에움길 가려짐) 코스 없음 → 출발 | fail "Open 에움길 on the screen and try again."(3-2절) |
+| `end_course` 뒤 바로 출발 | 경로를 넣을 때 내비가 앞으로 나와 에움길이 가려진 상태라 위와 같이 fail. 에움길을 띄우면 출발함 |
+
+- **재현하지 못한 것: 앱 프로세스가 없을 때의 첫 응답 시간**
+  - 에뮬레이터가 user 빌드라 루트로 프로세스를 죽일 수 없다.
+  - `am force-stop`은 앱을 "멈춘 앱" 상태로 만들어 방송 자체가 오지 않는다. 안드로이드 규칙이고, 사용자가 강제 종료한 경우에만 생긴다.
+  - 에움길 창이 늘 화면 한쪽에 있어 시스템이 정리하지도 않는다.
+  - 대신 6초 안전장치와 한 번만 답하기를 단위 시험(`GleoReceiverTest.replyOnce`)으로 덮었다.
 
 ## 9. 시연용 Gleo 흉내 앱 [PM 11-13 "시연용 가짜 Gleo도"]
 
