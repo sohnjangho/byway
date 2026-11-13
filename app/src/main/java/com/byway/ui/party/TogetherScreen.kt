@@ -157,7 +157,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
     fun outside() {
         mood.show(null)
         drawing.visibility = noPicture
-        text.addView(label("함께달리기", Dimens.HEADING, bold = true))
+        text.addView(label("함께 달리기", Dimens.HEADING, bold = true))
         text.addSpaced(label(PARTY_INTRO, Dimens.SMALL, palette.inkSecondary), Dimens.SPACE_2)
         // 기능마다 칸으로 묶는다(PM 11-11 "각 기능별로 구획되지 않음"): 내 프로필 / 친구 초대 / 코드로 참여 / 즐겨찾기.
         text.addSpaced(section(null) { addView(profileBlock(context) { render() }) }, Dimens.SPACE_6)
@@ -210,7 +210,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         course?.let { drawing.show(it, emptyList()) }
         showPins(drawing, party)
         val code = party.code
-        text.addView(label("함께달리기", Dimens.SMALL, palette.inkSecondary))
+        text.addView(label("함께 달리기", Dimens.SMALL, palette.inkSecondary))
         text.addSpaced(label(party.name, Dimens.HEADING, bold = true), Dimens.SPACE_2)
         // 기능마다 칸으로 묶는다(PM 11-11): 코드 / 코스 / 함께 달릴 친구. 버튼 줄은 칸 밖 아래 칸이다.
         text.addSpaced(section("함께 달리기 코드") {
@@ -327,7 +327,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
             }
         }
 
-        text.addView(label("함께달리기", Dimens.SMALL, palette.inkSecondary))
+        text.addView(label("함께 달리기", Dimens.SMALL, palette.inkSecondary))
         text.addSpaced(label(PICK_BUTTON, Dimens.HEADING, bold = true), Dimens.SPACE_2)
         listOf(groups.mine, groups.listed, groups.received).zip(PICK_GROUPS).forEach { (choices, title) ->
             if (choices.isEmpty()) return@forEach
@@ -377,7 +377,7 @@ internal fun togetherScreen(context: Context, kit: BrowseKit, nav: Nav, go: (Nav
         val party = view
         when {
             !Share.available -> {
-                text.addView(label("함께달리기", Dimens.HEADING, bold = true))
+                text.addView(label("함께 달리기", Dimens.HEADING, bold = true))
                 text.addSpaced(label(OFFLINE_NOTE, Dimens.BODY, palette.inkSecondary), Dimens.SPACE_3)
             }
             MyParty.code(context) == null -> outside()
