@@ -2,6 +2,8 @@ package com.byway.gleosim
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,6 +17,15 @@ class ScenariosTest {
         assertEquals(8, SCENARIOS.size)
         assertEquals("노을 보기 좋은 코스 찾아줘", SCENARIOS.first().utterance)
         SCENARIOS.forEach { assertTrue(it.function, it.function in functions) }
+    }
+
+    /** 시연 영상의 다른 장면과 같은 코스(팔당 노을)로 이름을 불러 출발한다(기획서 세션 지시 11-13 4-2, PM). */
+    @Test
+    fun startScenarioNamesPaldang() {
+        val start = SCENARIOS[1]
+        assertEquals("팔당 노을로 출발해줘", start.utterance)
+        assertEquals("START_DRIVING_COURSE", start.function)
+        assertEquals("팔당 노을", Json.parseToJsonElement(start.paramJson).jsonObject["courseName"]?.jsonPrimitive?.content)
     }
 
     @Test

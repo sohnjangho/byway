@@ -14,7 +14,7 @@ private fun command(name: String) = """{"command":"$name"}"""
 
 val SCENARIOS: List<Scenario> = listOf(
     Scenario("노을 보기 좋은 코스 찾아줘", FIND, """{"mood":"sunset"}"""),
-    Scenario("1번 코스로 출발해줘", START, """{"resultRank":1}"""),
+    Scenario("팔당 노을로 출발해줘", START, """{"courseName":"팔당 노을"}"""),
     Scenario("잠깐 들를게", CONTROL, command("stop_by")),
     Scenario("코스로 돌아갈래", CONTROL, command("back_to_course")),
     Scenario("얼마나 남았어?", CONTROL, command("status")),
