@@ -19,6 +19,10 @@ object BrowseLocation {
 
     var last: GeoPoint? = null
         private set
+
+    /** [last]를 받은 시각(elapsedRealtime). Gleo 음성 찾기가 오래된 자리를 쓰지 않게 한다(검토 I4). */
+    var lastAt: Long? = null
+        private set
     private var told: GeoPoint? = null
     private var reader: PleosLocation? = null
     private var onMoved: () -> Unit = {}
@@ -37,6 +41,7 @@ object BrowseLocation {
         reader = try {
             PleosLocation(context.applicationContext) { point ->
                 last = point
+                lastAt = android.os.SystemClock.elapsedRealtime()
                 if (shouldTell(told, point)) {
                     told = point
                     onMoved()

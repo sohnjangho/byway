@@ -1,5 +1,6 @@
 package com.byway.ui
 
+import com.byway.core.course.Course
 import com.byway.core.course.CourseFilter
 import com.byway.core.course.CourseTags
 import com.byway.core.course.LengthBand
@@ -56,6 +57,9 @@ fun nearNote(filter: CourseFilter, open: String?, located: Boolean): String? =
     NO_POSITION.takeIf { !located && (filter.near != null || open == "near") }
 
 fun awayText(meters: Double): String = String.format(Locale.ROOT, "%dkm 거리", maxOf(1, Math.round(meters / 1_000).toInt()))
+
+/** 검색어를 맞춰 볼 화면 문구: 태그 이름, 무드 이름, 더미 표시. 더 많은 코스와 Gleo 음성 찾기가 같이 쓴다. */
+fun searchWords(course: Course): List<String> = tagLabels(course.tags) + moodWords(course.tags) + listOfNotNull(DUMMY_WORD.takeIf { course.dummy })
 
 /** 검색에 함께 쓰는 무드 이름. "비 오는 날"로 찾으면 비 오는 날 코스가 나온다. */
 fun moodWords(tags: CourseTags): List<String> = MOOD_KEYS.filter { key ->
