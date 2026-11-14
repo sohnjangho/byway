@@ -34,7 +34,7 @@ internal fun browseScreen(context: Context, kit: BrowseKit, nav: Nav, update: (N
     }
     val here = BrowseLocation.last ?: DriveBoard.state.position
     fun find(filter: CourseFilter): List<Found> =
-        filterCourses(kit.book.courses, filter, here, { kit.book.facts(it).meters }) { tagLabels(it.tags) + moodWords(it.tags) + listOfNotNull(DUMMY_WORD.takeIf { _ -> it.dummy }) }
+        filterCourses(kit.book.courses, filter, here, { kit.book.facts(it).meters }, ::searchWords)
     var found = find(nav.filter)
     var current = nav
     fun keep(next: Nav) {

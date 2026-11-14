@@ -39,7 +39,7 @@ internal fun partyAskScreen(context: Context, kit: BrowseKit, view: PartyView, c
     course?.let { drawing.show(it, emptyList()) } ?: run { drawing.visibility = View.INVISIBLE }
     val note = label("", Dimens.SMALL, palette.accent)
     val text = column().apply {
-        addView(label("함께달리기 · ${view.name}", Dimens.SMALL, palette.inkSecondary))
+        addView(label("함께 달리기 · ${view.name}", Dimens.SMALL, palette.inkSecondary))
         addSpaced(label(askTitle(view.leaderName, view.owner), Dimens.HEADING, bold = true), Dimens.SPACE_2)
         val line = course?.let { "${it.name} · ${kmText(it.path.zipWithNext { a, b -> a.distanceTo(b) }.sum())}" } ?: "코스를 받는 중입니다"
         addSpaced(label(line, Dimens.BODY), Dimens.SPACE_3)

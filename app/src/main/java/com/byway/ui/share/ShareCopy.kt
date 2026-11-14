@@ -8,7 +8,7 @@ internal val SHARE_SCOPES = listOf(Visibility.PUBLIC to "전체", Visibility.PAR
 internal fun scopeTitle(scope: String): String = SHARE_SCOPES.firstOrNull { it.first == scope }?.second ?: scope
 
 internal fun scopeHint(scope: String): String = when (scope) {
-    Visibility.PUBLIC -> "더 많은 코스와 랭킹에서 모든 사람이 봅니다"
+    Visibility.PUBLIC -> "코스 찾기와 랭킹에서 모든 사람이 봅니다"
     Visibility.PARTY -> "고른 함께 달리기의 함께 달릴 친구만 봅니다"
     else -> "코드를 받은 사람만 봅니다"
 }
@@ -24,6 +24,6 @@ internal fun consentLines(scope: String): List<String> = listOf(
 internal fun finishesText(count: Int): String = if (count == 0) "아직 완주 기록 없음" else "완주 ${count}회"
 
 /** 파티 범위로 공유하려면 파티가 있어야 한다. 파티는 함께달리기 메뉴에서 만든다. */
-internal const val PARTY_NEEDED = "먼저 함께달리기에서 함께 달릴 친구를 모으거나 참여해 주세요"
+internal const val PARTY_NEEDED = "먼저 함께 달리기에서 함께 달릴 친구를 모으거나 참여해 주세요"
 
 internal const val OFFLINE_NOTE = "공유 서버에 연결할 수 없습니다. 앱에 든 코스는 그대로 쓸 수 있습니다"

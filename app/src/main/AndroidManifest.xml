@@ -57,5 +57,16 @@
                 android:value="코스 주행 중 내비 구간 교체와 음성 안내" />
         </service>
 
+        <!-- Gleo 음성 연동(설계 2026-11-13). Gleo AI 가 setPackage 로 보내는 함수 세 개를 받는다. -->
+        <receiver
+            android:name=".service.GleoReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="FIND_DRIVING_COURSES" />
+                <action android:name="START_DRIVING_COURSE" />
+                <action android:name="CONTROL_BYWAY_DRIVE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>

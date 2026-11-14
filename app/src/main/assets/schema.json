@@ -1,0 +1,99 @@
+{
+  "packageName": "com.byway",
+  "appDescription": "A scenic driving course app that finds themed driving courses, sets a chosen course in the navigation and guides the driver along it section by section.",
+  "invokeWord": "에움길",
+  "version": "0.1.0",
+  "actionCalls": [
+    {
+      "type": "function",
+      "function": {
+        "name": "FIND_DRIVING_COURSES",
+        "description": "Finds scenic driving courses that match the requested words, mood, distance from the car, course length, region or ranking order.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "searchTerm": {
+              "type": "string",
+              "description": "Words to look for in course names, regions, places and mood names, kept as spoken by the user in the original language."
+            },
+            "mood": {
+              "type": "string",
+              "enum": ["alone", "date", "family", "spring", "summer", "autumn", "winter", "rain", "sunrise", "day", "sunset", "night"],
+              "description": "The companion, season, weather or time of day the course should suit."
+            },
+            "nearbyKm": {
+              "type": "number",
+              "description": "Maximum straight-line distance in kilometers from the car to the start of the course."
+            },
+            "lengthBand": {
+              "type": "string",
+              "enum": ["up_to_30km", "up_to_60km", "up_to_100km", "over_100km"],
+              "description": "The range of the total course length."
+            },
+            "region": {
+              "type": "string",
+              "enum": ["강원", "경상", "남해안", "수도권", "전라", "제주", "충청"],
+              "description": "The region of Korea where the course lies."
+            },
+            "rankBy": {
+              "type": "string",
+              "enum": ["curves", "driving_fun", "scenery", "length"],
+              "description": "Orders the courses by the number of curves, driving fun, share of natural scenery or total length, best first."
+            },
+            "myCoursesOnly": {
+              "type": "boolean",
+              "description": "True to search only the courses the user made or saved."
+            }
+          },
+          "required": []
+        },
+        "component": "service"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "START_DRIVING_COURSE",
+        "description": "Starts driving one course by setting its route in the navigation, chosen by course name, by its position in the latest search results, or by resuming the last unfinished course.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "courseName": {
+              "type": "string",
+              "description": "The name of the course to start, kept as spoken by the user in the original language."
+            },
+            "resultRank": {
+              "type": "number",
+              "description": "The position, counted from one, of the course in the latest search results."
+            },
+            "resumeLastRun": {
+              "type": "boolean",
+              "description": "True to continue the last unfinished course from where it stopped."
+            }
+          },
+          "required": []
+        },
+        "component": "service"
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "CONTROL_BYWAY_DRIVE",
+        "description": "Controls the course being driven and its drive settings, such as answering the detour question, ending the course, reporting progress or the next spot, and switching voice guidance or cabin effects.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "enum": ["stop_by", "back_to_course", "resume", "end_course", "status", "next_spot", "voice_guide_on", "voice_guide_off", "cabin_effects_on", "cabin_effects_off", "stop_recording", "stop_location_sharing"],
+              "description": "The action to take: stop_by keeps the course while the driver briefly leaves it, back_to_course guides back to it, resume continues a paused course, end_course ends it, status and next_spot report progress, and the rest switch settings, stop recording the drive or stop sharing location with the group."
+            }
+          },
+          "required": ["command"]
+        },
+        "component": "service"
+      }
+    }
+  ]
+}
