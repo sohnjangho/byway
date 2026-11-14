@@ -7,9 +7,13 @@ import com.byway.core.share.PartyView
 import com.byway.core.share.needsAnswer
 import com.byway.core.share.retryClear
 
-/** 리더가 고른 코스를 물으려고 파티를 받는 때. 정차 중이고, 코스가 달리지 않고, 파티에 들어가 있고, 서버가 있을 때뿐이다(함께달리기 설계 6-6, 6-10.1). */
-fun shouldWatch(parked: Boolean, running: Boolean, partyCode: String?, online: Boolean): Boolean =
-    parked && !running && partyCode != null && online
+/**
+ * 리더가 고른 코스를 물으려고 파티를 받는 때. 정차 중이고, 코스가 달리지 않고, 서버가 있을 때뿐이다(함께달리기 설계 6-6, 6-10.1).
+ * 아직 파티에 없어도 켜 둔다. 함께 달리기 탭에서 코드로 들어가면 탭만 다시 그려져, 들어간 때에 맞춰 켤 곳이 없다.
+ * 파티가 없는 동안은 서버에 묻지 않고 다음 차례만 기다린다.
+ */
+fun shouldWatch(parked: Boolean, running: Boolean, online: Boolean): Boolean =
+    parked && !running && online
 
 /**
  * 정차 중에 파티를 5초마다 받아, 리더가 코스를 골랐는지 본다. 함께달리기 탭 밖에서도 질문을 띄우려는 것이다.
