@@ -32,16 +32,22 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GleoReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val function = intent.action?.takeIf { it in GleoNames.ALL } ?: return
+        if (intent.action !in GleoNames.ALL) return
+        val pending = goAsync()
+        handle(context, intent) { pending.finish() }
+    }
+
+    /** 방송([GleoReceiver])과 출발 화면([GleoStartActivity])이 함께 쓰는 본문. 답을 보낸 뒤 [done]을 한 번 부른다. */
+    internal fun handle(context: Context, intent: Intent, done: () -> Unit) {
+        val function = intent.action?.takeIf { it in GleoNames.ALL } ?: return done()
         val raw = intent.getStringExtra(GleoNames.PARAM_EXTRA)
         @Suppress("DEPRECATION")
         val extras = intent.extras?.let { bundle -> bundle.keySet().associateWith { bundle.get(it) } }.orEmpty()
         val app = context.applicationContext
-        val pending = goAsync()
         val once = ReplyOnce { PleosGleo.respond(app, it) }
         val finished = AtomicBoolean(false)
         fun finish() {
-            if (finished.compareAndSet(false, true)) pending.finish()
+            if (finished.compareAndSet(false, true)) done()
         }
         val timeout = Runnable {
             once.reply(GleoReply(function, GleoStatus.FAIL, TIMEOUT_MESSAGE))

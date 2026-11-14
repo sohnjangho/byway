@@ -28,6 +28,14 @@ class ScenariosTest {
         assertEquals("팔당 노을", Json.parseToJsonElement(start.paramJson).jsonObject["courseName"]?.jsonPrimitive?.content)
     }
 
+    /** 에움길 스키마처럼 출발만 startActivity 로, 찾기와 조작은 방송으로 보낸다(Gleo 문서: component activity/service). */
+    @Test
+    fun onlyStartGoesAsActivity() {
+        assertTrue(byActivity("START_DRIVING_COURSE"))
+        assertTrue(!byActivity("FIND_DRIVING_COURSES"))
+        assertTrue(!byActivity("CONTROL_BYWAY_DRIVE"))
+    }
+
     @Test
     fun scenarioParamsAreJsonObjects() {
         SCENARIOS.forEach { assertTrue(it.paramJson, Json.parseToJsonElement(it.paramJson) is JsonObject) }

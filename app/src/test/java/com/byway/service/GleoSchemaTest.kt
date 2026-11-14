@@ -32,9 +32,23 @@ class GleoSchemaTest {
         assertEquals("com.byway", schema.getValue("packageName").jsonPrimitive.content)
         assertTrue(calls.size <= 3)
         assertEquals(GleoNames.ALL.toSet(), calls.map { it.getValue("name").jsonPrimitive.content }.toSet())
-        assertTrue(calls.all { it.getValue("component").jsonPrimitive.content == "service" })
         val manifest = File("src/main/AndroidManifest.xml").readText()
         GleoNames.ALL.forEach { assertTrue(it, Regex("""<action\s+android:name="$it"\s*/>""").containsMatchIn(manifest)) }
+    }
+
+    /**
+     * 출발만 activity 다. 안드로이드 12+ 는 화면 뒤에 있는 앱의 포그라운드 서비스 시작을 막는다. 에움길이 내비 뒤에 가려지고
+     * 달리는 코스가 없으면 방송으로는 출발할 수 없었다(설계 3-2 실측). Gleo 가 startActivity 로 부르면 투명한 출발 화면이
+     * 잠깐 떠 있는 동안 출발한다. 찾기와 조작은 지금처럼 화면 없이 방송으로 받는다.
+     */
+    @Test
+    fun onlyStartIsCalledAsActivity() {
+        val components = calls.associate { it.getValue("name").jsonPrimitive.content to it.getValue("component").jsonPrimitive.content }
+        assertEquals(mapOf(GleoNames.FIND to "service", GleoNames.START to "activity", GleoNames.CONTROL to "service"), components)
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val activity = Regex("""<activity[^>]*android:name="\.service\.GleoStartActivity"[\s\S]*?</activity>""").find(manifest)?.value.orEmpty()
+        assertTrue(activity, """<action android:name="${GleoNames.START}" />""" in activity)
+        assertTrue(activity, """<category android:name="android.intent.category.DEFAULT" />""" in activity)
     }
 
     @Test
