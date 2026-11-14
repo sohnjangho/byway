@@ -12,6 +12,9 @@ private const val CONTROL = "CONTROL_BYWAY_DRIVE"
 
 private fun command(name: String) = """{"command":"$name"}"""
 
+/** 에움길 스키마의 component. 출발만 activity(startActivity)이고, 나머지는 service(sendBroadcast)다. */
+fun byActivity(function: String): Boolean = function == START
+
 val SCENARIOS: List<Scenario> = listOf(
     Scenario("노을 보기 좋은 코스 찾아줘", FIND, """{"mood":"sunset"}"""),
     Scenario("팔당 노을로 출발해줘", START, """{"courseName":"팔당 노을"}"""),

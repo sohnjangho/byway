@@ -194,7 +194,7 @@ class MainActivity : AppCompatActivity() {
         val saved = savedRun()
         // 정차 중 파티에 들어가 있으면 리더가 코스를 골랐는지 받아 둔다. 고른 코스는 어느 정차 화면에서든 묻는다(함께달리기 설계 6-6).
         val partyCode = MyParty.code(this)
-        PartyWatch.keep(this, shouldWatch(state.parked, state.running, partyCode, Share.available)) {
+        PartyWatch.keep(this, shouldWatch(state.parked, state.running, Share.available)) {
             stale = true
             render(DriveBoard.state)
         }

@@ -58,6 +58,22 @@
         </service>
 
         <!-- Gleo 음성 연동(설계 2026-11-13). Gleo AI 가 setPackage 로 보내는 함수 세 개를 받는다. -->
+        <!-- 출발은 schema 에서 activity 다. 투명한 화면이 잠깐 떠 있는 동안 출발하고 바로 닫힌다(설계 3-2, 11-14).
+             에움길 창과 다른 작업으로 떠서 창 배치를 바꾸지 않는다. 주행 중 음성 출발이 되도록 주행 중 허용 화면이다. -->
+        <activity
+            android:name=".service.GleoStartActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="START_DRIVING_COURSE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="distractionOptimized" android:value="true" />
+        </activity>
+
         <receiver
             android:name=".service.GleoReceiver"
             android:exported="true">

@@ -60,14 +60,14 @@
 | 함수 | component | 하는 일 | 사용자 말(예) |
 |---|---|---|---|
 | `FIND_DRIVING_COURSES` | service | 코스 찾기. 검색어, 무드, 내 주변 거리로 거른다 | "노을 보기 좋은 코스 찾아줘", "근처 바닷길 있어?" |
-| `START_DRIVING_COURSE` | service | 이름으로 코스를 골라 내비에 입히고 출발한다 | "팔당 노을 출발해줘", "두 번째 거로 가자" |
+| `START_DRIVING_COURSE` | activity | 이름으로 코스를 골라 내비에 입히고 출발한다 | "팔당 노을 출발해줘", "두 번째 거로 가자" |
 | `CONTROL_BYWAY_DRIVE` | service | 달리는 코스 조작, 상태 묻기, 주행 설정 | "잠깐 들를게", "얼마나 남았어?", "다음 볼거리 뭐야?", "음성 안내 꺼줘", "코스 그만할래" |
 
 - **한도 3개의 출처:** "최대 3개"는 Pleos 규칙이다(App Schema 작성 가이드의 `actionCalls`).
 - **기능을 늘리는 방법 [PM 11-13 "Gleo가 호출할 수 있는 도구로 대부분의 기능을"]:** 함수마다 선택지(enum)와 인자를 두어 한 함수로 여러 동작을 부른다.
 - **거대 함수 하나로 몰지 않는 이유:** 가이드가 "함수 이름에 대상까지", "설명은 한두 문장"을 권하고, 선택지가 너무 많으면 LLM이 엉뚱한 동작을 고를 위험이 커진다. 그래서 주제별 함수 3개로 나눈다.
 
-세 함수 모두 `service`를 쓴다 **[제안]**.
+찾기와 조작은 `service`, 출발은 `activity`를 쓴다 **[PM 11-14]**. 출발만 activity인 까닭은 3-2절의 "화면 뒤에서 출발할 때"에 있다.
 - 이유: 내비가 넓게 떠 있거나 3분할로 달리는 중에 에움길 화면이 앞으로 튀어나와 배치를 흔들면 안 된다.
 - 결과는 Gleo가 말과 대화창으로 전한다.
 
@@ -127,6 +127,18 @@
     - 에움길이 화면에 보이면 정차 중(P)이든 주행 중(D)이든 출발한다.
     - 실제 Gleo(시스템 앱)의 방송이 예외 허용을 함께 주는지는 승인 뒤 실차에서 확인한다.
     - 그래도 막히면 `START`만 `component: "activity"`로 바꾸는 방법이 있다. 이 경우 Gleo가 에움길 화면을 띄운 뒤 출발한다. 다만 PM 결정 사항이다.
+  - **결정과 구현 [PM 11-14 "기능이 구현되어야"]:** `START`를 `activity`로 바꿨다.
+    - 투명한 `GleoStartActivity`가 받는다. 그림이 없고, 출발 요청을 넣고 답을 보낸 뒤 바로 닫힌다. 이 화면이 떠 있는 동안 앱이 보이는 상태라 포그라운드 서비스를 시작할 수 있다.
+    - 에움길 창과 다른 작업(`taskAffinity=""`)으로 떠서 창 배치를 바꾸지 않는다. 최근 앱 목록에 남지 않고, 주행 중 허용 화면(`distractionOptimized`)이다.
+    - 판단과 실행은 방송 수신기와 같은 본문(`GleoReceiver.handle`)을 쓴다. 방송으로 오는 `START`도 지금처럼 받는다(에움길이 보일 때만 됨).
+    - **실측(11-14, 에뮬레이터, 시연 Gleo가 startActivity로 보냄):**
+
+      | 상황 | 결과 |
+      |---|---|
+      | 정차, 내비가 앞(에움길 가려짐), 코스 없음 | success. 투명 화면 0.28초 뒤 닫힘, 답까지 0.58초, 내비 안내 시작 |
+      | 3분할(에움길 오른쪽 보임) | success. 창 배치 그대로, 에움길 칸이 주행 화면으로 |
+      | 기어 D, 에움길 가려짐, 코스 없음 | success. 내비 안내 시작 |
+
 - **Callback:** 출발 요청을 넣는 즉시 `success`를 보낸다. 내비 경로 계산이 끝나기를 기다리지 않는다(7초 제한).
   - `data`는 `name`, `km`, `sections`(구간 수), `firstSection`이다.
 - **겹치는 말 막기:** 엔진은 출발할 때 `Messages.courseStart(이름)`을 직접 말한다(`CourseEngine.start`). 출발 성공 Callback은 `mode: "silent"`로 보내 Gleo가 말하지 않게 하고, 에움길의 출발 안내를 그대로 쓴다 **[제안]**.
@@ -236,7 +248,7 @@
 - **에뮬레이터(Gleo 흉내):**
   ```
   adb shell am broadcast -a FIND_DRIVING_COURSES -p com.byway --es ACTION_PARAM '{"searchTerm":"노을"}'
-  adb shell am broadcast -a START_DRIVING_COURSE -p com.byway --es ACTION_PARAM '{"courseName":"팔당 노을"}'
+  adb shell am start -a START_DRIVING_COURSE -p com.byway --es ACTION_PARAM '{"courseName":"팔당 노을"}'
   adb shell am broadcast -a CONTROL_BYWAY_DRIVE -p com.byway --es ACTION_PARAM '{"command":"status"}'
   ```
   - Callback은 디버그 빌드에서만 그 내용을 logcat에 한 줄로 남겨 확인한다.
@@ -257,7 +269,7 @@
 | 질문이 없을 때 `back_to_course` | fail "There is no detour question to answer right now." |
 | `status` / `next_spot` | 남은 18.9km, 구간 2/3 하남 팔당대교 / 세미원 18.6km 앞 |
 | `voice_guide_off/on`, `cabin_effects_off/on` | success. 차 안 연출은 "다음 코스부터" |
-| 내비가 앞에 있고(에움길 가려짐) 코스 없음 → 출발 | fail "Open 에움길 on the screen and try again."(3-2절) |
+| 내비가 앞에 있고(에움길 가려짐) 코스 없음 → 출발 | fail "Open 에움길 on the screen and try again."(3-2절). **11-14 출발을 activity로 바꿔 해결(3-2절 실측)** |
 | `end_course` 뒤 바로 출발 | 경로를 넣을 때 내비가 앞으로 나와 에움길이 가려진 상태라 위와 같이 fail. 에움길을 띄우면 출발함 |
 
 - **재현하지 못한 것: 앱 프로세스가 없을 때의 첫 응답 시간**

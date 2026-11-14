@@ -140,7 +140,8 @@ class OverlayService : Service() {
             chrome.status = ChromeView.Status.THINKING
             waiting = true
             Log.i(TAG, "send ${scenario.function} ${scenario.paramJson}")
-            sendBroadcast(Intent(scenario.function).setPackage(BYWAY).putExtra("ACTION_PARAM", scenario.paramJson))
+            val call = Intent(scenario.function).setPackage(BYWAY).putExtra("ACTION_PARAM", scenario.paramJson)
+            if (byActivity(scenario.function)) startActivity(call.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) else sendBroadcast(call)
             main.postDelayed(noAnswer, NO_ANSWER_MS)
         }, LISTEN_MS + SPOKEN_MS)
     }
