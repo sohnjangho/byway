@@ -17,7 +17,7 @@ class ShareCopyTest {
     @Test
     fun threeScopesInOrder() {
         assertEquals(listOf("public" to "전체", "party" to "함께 달리기", "link" to "링크"), SHARE_SCOPES)
-        assertTrue("더 많은 코스" in scopeHint("public"))
+        assertTrue("코스 찾기" in scopeHint("public"))
         assertTrue("함께 달릴 친구" in scopeHint("party"))
         assertTrue("코드" in scopeHint("link"))
     }
@@ -57,6 +57,6 @@ class ShareCopyTest {
     /** 파티는 함께달리기 메뉴에서 만든다. 없앤 내 코스의 파티 버튼을 가리키지 않는다(검토 M-5). */
     @Test
     fun partyScopeSendsYouToTogether() {
-        assertTrue("함께달리기" in PARTY_NEEDED)
+        assertTrue("함께 달리기" in PARTY_NEEDED)
     }
 }

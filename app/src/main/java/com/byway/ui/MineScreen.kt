@@ -127,7 +127,7 @@ private fun Context.myList(courses: List<Course>, recent: List<String>, onPick: 
         return column().apply {
             gravity = Gravity.CENTER_VERTICAL
             addView(label("아직 달리거나 저장한 코스가 없습니다", Dimens.BODY))
-            addSpaced(quietButton("더 많은 코스 보기", onBrowse), Dimens.SPACE_3)
+            addSpaced(quietButton("코스 찾기", onBrowse), Dimens.SPACE_3)
         }
     }
     val list = column()

@@ -9,10 +9,10 @@ import java.io.Serializable
 /** 레일 메뉴. */
 enum class Tab(val title: String) {
     HOME("홈"),
-    BROWSE("더 많은 코스"),
+    BROWSE("코스 찾기"),
     RANKING("랭킹"),
     MINE("내 코스"),
-    TOGETHER("함께달리기"),
+    TOGETHER("함께 달리기"),
 }
 
 /** 앱 창 크기. 전체 2560, 2/3 1700, 1/3 841 폭이다. */

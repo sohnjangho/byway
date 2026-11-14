@@ -38,7 +38,7 @@ class ScreenForTest {
     /** 함께달리기는 내 코스 다음이다(함께달리기 설계 6-1). */
     @Test
     fun menuHasFiveEntries() {
-        assertEquals(listOf("홈", "더 많은 코스", "랭킹", "내 코스", "함께달리기"), Tab.entries.map { it.title })
+        assertEquals(listOf("홈", "코스 찾기", "랭킹", "내 코스", "함께 달리기"), Tab.entries.map { it.title })
     }
 
     /** 리더가 고른 코스는 정차했을 때만 묻는다. 달리던 코스 이어가기가 먼저이고, 코스가 달리는 동안에는 묻지 않는다. */
